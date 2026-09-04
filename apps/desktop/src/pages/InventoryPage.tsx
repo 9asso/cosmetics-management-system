@@ -123,7 +123,7 @@ export function InventoryPage({ canManage = true }: { canManage?: boolean }) {
               {products.isLoading && <tr><td colSpan={8} className="loading-cell">Chargement de l’inventaire…</td></tr>}
               {products.data?.items.map((product) => (
                 <tr key={product.variantId}>
-                  <td><div className="product-cell">{product.imageUrl ? <img src={product.imageUrl} alt="" /> : <span>{product.name.slice(0, 1)}</span>}<div><strong>{product.name}</strong><small>{product.brand} · {product.sku}</small></div></div></td>
+                  <td><div className="product-cell">{product.imageUrl ? <img src={product.imageUrl} alt="" /> : <span>{product.name.slice(0, 1)}</span>}<div><strong title={product.name}>{product.name}</strong><small title={`${product.brand} · ${product.sku}`}>{product.brand} · {product.sku}</small></div></div></td>
                   <td><span className="mono">{product.reference || '—'}</span><small className="sub-cell">{product.barcode || 'Sans code-barres'}</small></td>
                   <td>{categoryLabels[product.category]}</td>
                   <td><strong>{integer.format(product.onHand)}</strong><small className="sub-cell">{product.reserved} réservé</small></td>
