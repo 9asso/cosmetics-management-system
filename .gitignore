@@ -1,0 +1,14 @@
+node_modules/
+.turbo/
+.next/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+*.tsbuildinfo
+.DS_Store
+.deployment-credentials
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/

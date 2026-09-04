@@ -1,0 +1,214 @@
+import { ConflictException, Injectable } from '@nestjs/common';
+import type {
+  CreateProductInput,
+  Paginated,
+  ProductListItem,
+  ProductListQuery,
+} from '@cosmetics/contracts';
+import type { DatabaseError } from 'pg';
+import { DEFAULT_LOCATION_ID, DEFAULT_ORGANIZATION_ID } from '../constants.js';
+import { DatabaseService } from '../database/database.service.js';
+
+type ProductRow = Omit<
+  ProductListItem,
+  'purchasePrice' | 'wholesalePrice' | 'retailPrice' | 'onHand' | 'reserved' | 'available'
+> & {
+  purchasePrice: string;
+  wholesalePrice: string;
+  retailPrice: string;
+  onHand: number;
+  reserved: number;
+  available: number;
+  totalCount: string;
+};
+
+@Injectable()
+export class CatalogService {
+  constructor(private readonly db: DatabaseService) {}
+
+  async list(
+    query: ProductListQuery,
+    retailOnly = false,
+  ): Promise<Paginated<ProductListItem>> {
+    const values: unknown[] = [DEFAULT_ORGANIZATION_ID, DEFAULT_LOCATION_ID];
+    const filters = ['p.organization_id = $1', 'p.active = true', 'v.active = true'];
+    if (retailOnly) filters.push('p.retail_visible = true');
+
+    if (query.search) {
+      values.push(`%${query.search.toLowerCase()}%`);
+      const index = values.length;
+      filters.push(`(
+        lower(p.name) LIKE $${index} OR lower(p.brand) LIKE $${index}
+        OR lower(v.sku) LIKE $${index} OR lower(COALESCE(v.barcode, '')) LIKE $${index}
+        OR lower(v.reference) LIKE $${index}
+      )`);
+    }
+    if (query.category) {
+      values.push(query.category);
+      filters.push(`p.category = $${values.length}`);
+    }
+    if (query.stock === 'low') {
+      filters.push('COALESCE(b.on_hand, 0) > 0 AND COALESCE(b.on_hand, 0) <= v.low_stock_threshold');
+    } else if (query.stock === 'out') {
+      filters.push('COALESCE(b.on_hand, 0) = 0');
+    }
+
+    values.push(query.pageSize, (query.page - 1) * query.pageSize);
+    const limitIndex = values.length - 1;
+    const offsetIndex = values.length;
+    const result = await this.db.query<ProductRow>(
+      `SELECT
+        p.id,
+        v.id AS "variantId",
+        p.name,
+        p.brand,
+        p.category,
+        v.sku,
+        COALESCE(v.barcode, '') AS barcode,
+        v.reference,
+        COALESCE(s.name, '') AS "supplierName",
+        v.purchase_price AS "purchasePrice",
+        v.wholesale_price AS "wholesalePrice",
+        v.retail_price AS "retailPrice",
+        COALESCE(b.on_hand, 0)::int AS "onHand",
+        COALESCE(b.reserved, 0)::int AS reserved,
+        (COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0))::int AS available,
+        v.low_stock_threshold AS "lowStockThreshold",
+        p.retail_visible AS "retailVisible",
+        COUNT(*) OVER()::text AS "totalCount"
+      FROM products p
+      JOIN product_variants v ON v.product_id = p.id
+      LEFT JOIN inventory_balances b ON b.variant_id = v.id AND b.location_id = $2
+      LEFT JOIN product_supplier_links psl ON psl.variant_id = v.id AND psl.preferred = true
+      LEFT JOIN suppliers s ON s.id = psl.supplier_id
+      WHERE ${filters.join(' AND ')}
+      ORDER BY COALESCE(b.on_hand, 0) ASC, p.brand ASC, p.name ASC
+      LIMIT $${limitIndex} OFFSET $${offsetIndex}`,
+      values,
+    );
+
+    const items = result.rows.map(({ totalCount: _total, ...row }) => ({
+      ...row,
+      purchasePrice: Number(row.purchasePrice),
+      wholesalePrice: Number(row.wholesalePrice),
+      retailPrice: Number(row.retailPrice),
+    }));
+
+    return {
+      items,
+      page: query.page,
+      pageSize: query.pageSize,
+      total: Number(result.rows[0]?.totalCount ?? 0),
+    };
+  }
+
+  async create(input: CreateProductInput): Promise<ProductListItem> {
+    try {
+      const identifiers = await this.db.withTransaction(async (client) => {
+        const product = await client.query<{ id: string }>(
+          `INSERT INTO products
+            (organization_id, name, brand, category, description, retail_visible)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING id`,
+          [
+            DEFAULT_ORGANIZATION_ID,
+            input.name,
+            input.brand,
+            input.category,
+            input.description,
+            input.retailVisible,
+          ],
+        );
+        const productId = product.rows[0]!.id;
+
+        const variant = await client.query<{ id: string }>(
+          `INSERT INTO product_variants
+            (product_id, sku, barcode, reference, purchase_price, wholesale_price,
+             retail_price, low_stock_threshold)
+           VALUES ($1, $2, NULLIF($3, ''), $4, $5, $6, $7, $8)
+           RETURNING id`,
+          [
+            productId,
+            input.sku,
+            input.barcode,
+            input.reference,
+            input.purchasePrice,
+            input.wholesalePrice,
+            input.retailPrice,
+            input.lowStockThreshold,
+          ],
+        );
+        const variantId = variant.rows[0]!.id;
+
+        if (input.supplierName) {
+          const supplier = await client.query<{ id: string }>(
+            `INSERT INTO suppliers (organization_id, name)
+             SELECT $1, $2
+             WHERE NOT EXISTS (
+               SELECT 1 FROM suppliers WHERE organization_id = $1 AND lower(name) = lower($2)
+             )
+             RETURNING id`,
+            [DEFAULT_ORGANIZATION_ID, input.supplierName],
+          );
+          const supplierId =
+            supplier.rows[0]?.id ??
+            (
+              await client.query<{ id: string }>(
+                'SELECT id FROM suppliers WHERE organization_id = $1 AND lower(name) = lower($2) LIMIT 1',
+                [DEFAULT_ORGANIZATION_ID, input.supplierName],
+              )
+            ).rows[0]!.id;
+          await client.query(
+            `INSERT INTO product_supplier_links (variant_id, supplier_id, preferred)
+             VALUES ($1, $2, true)`,
+            [variantId, supplierId],
+          );
+        }
+
+        await client.query(
+          `INSERT INTO inventory_balances (variant_id, location_id, on_hand)
+           VALUES ($1, $2, $3)`,
+          [variantId, DEFAULT_LOCATION_ID, input.initialQuantity],
+        );
+
+        if (input.initialQuantity > 0) {
+          await client.query(
+            `INSERT INTO inventory_movements
+              (organization_id, variant_id, location_id, quantity_delta, reason, unit_cost, note)
+             VALUES ($1, $2, $3, $4, 'OPENING_BALANCE', $5, 'Initial product quantity')`,
+            [
+              DEFAULT_ORGANIZATION_ID,
+              variantId,
+              DEFAULT_LOCATION_ID,
+              input.initialQuantity,
+              input.purchasePrice,
+            ],
+          );
+        }
+
+        await client.query(
+          `INSERT INTO audit_logs (organization_id, action, entity_type, entity_id, after_data)
+           VALUES ($1, 'PRODUCT_CREATED', 'product', $2, $3::jsonb)`,
+          [DEFAULT_ORGANIZATION_ID, productId, JSON.stringify(input)],
+        );
+        await client.query(
+          `INSERT INTO outbox_events (aggregate_type, aggregate_id, event_type, payload)
+           VALUES ('product', $1, 'catalog.product.created', $2::jsonb)`,
+          [productId, JSON.stringify({ productId, variantId })],
+        );
+
+        return { productId, variantId };
+      });
+
+      const page = await this.list({ page: 1, pageSize: 100, search: input.sku, stock: 'all' });
+      const created = page.items.find((item) => item.variantId === identifiers.variantId);
+      if (!created) throw new Error('Created product could not be loaded');
+      return created;
+    } catch (error) {
+      if ((error as DatabaseError).code === '23505') {
+        throw new ConflictException('SKU or barcode already exists');
+      }
+      throw error;
+    }
+  }
+}

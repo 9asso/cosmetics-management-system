@@ -1,0 +1,30 @@
+{
+  "name": "cosmetics-commerce-platform",
+  "private": true,
+  "packageManager": "pnpm@10.34.5",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "format": "prettier --write .",
+    "db:migrate": "pnpm --filter @cosmetics/api db:migrate",
+    "deploy:vps": "node scripts/deploy-vps.mjs"
+  },
+  "devDependencies": {
+    "@types/ssh2": "^1.15.6",
+    "dotenv": "^17.4.2",
+    "prettier": "^3.6.2",
+    "ssh2": "^1.17.0",
+    "turbo": "^2.5.6",
+    "typescript": "^5.9.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "cpu-features",
+      "esbuild",
+      "ssh2"
+    ]
+  }
+}

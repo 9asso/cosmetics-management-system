@@ -1,0 +1,20 @@
+FROM node:24-alpine AS build
+RUN npm install --global pnpm@10.34.5
+WORKDIR /app
+COPY . .
+RUN pnpm install --frozen-lockfile
+ENV API_URL=http://api:4000/api/v1
+ENV NEXT_PUBLIC_API_URL=/api/v1
+RUN pnpm --filter @cosmetics/contracts build && pnpm --filter @cosmetics/storefront build
+
+FROM node:24-alpine AS runtime
+ENV NODE_ENV=production
+ENV API_URL=http://api:4000/api/v1
+RUN npm install --global pnpm@10.34.5
+WORKDIR /app
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/packages/contracts ./packages/contracts
+COPY --from=build /app/apps/storefront ./apps/storefront
+COPY --from=build /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+EXPOSE 3000
+CMD ["pnpm", "--filter", "@cosmetics/storefront", "start"]

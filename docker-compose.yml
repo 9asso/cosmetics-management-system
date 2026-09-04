@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: cosmetics
+      POSTGRES_USER: cosmetics
+      POSTGRES_PASSWORD: cosmetics
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cosmetics -d cosmetics"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - cosmetics-postgres:/var/lib/postgresql/data
+
+volumes:
+  cosmetics-postgres:
