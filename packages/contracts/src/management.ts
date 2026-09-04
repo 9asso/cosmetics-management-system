@@ -44,6 +44,13 @@ export const orderListQuerySchema = z.object({
 
 export const updateOrderStatusSchema = z.object({ status: orderStatusSchema });
 export const orderParamsSchema = z.object({ id: uuidSchema });
+export const invoiceQuerySchema = z.object({
+  search: z.string().trim().max(160).default(''),
+  kind: z.enum(['all', 'sale', 'purchase']).default('all'),
+  page: z.coerce.number().int().min(1).default(1),
+});
+export type InvoiceQuery = z.infer<typeof invoiceQuerySchema>;
+export const invoiceParamsSchema = z.object({ id: uuidSchema, kind: z.enum(['sale', 'purchase']) });
 
 export type CreateSupplierInput = z.infer<typeof createSupplierSchema>;
 export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;
@@ -82,4 +89,27 @@ export interface OrderListItem {
   amountPaid: number;
   paymentMethod: string;
   placedAt: string;
+}
+
+export interface InvoiceListItem {
+  id: string;
+  kind: 'sale' | 'purchase';
+  documentNumber: string;
+  partnerName: string;
+  status: string;
+  total: number;
+  amountPaid: number;
+  issuedAt: string;
+}
+
+export interface InvoiceDetail extends InvoiceListItem {
+  partner: BusinessPartner | null;
+  channel: string;
+  notes: string;
+  subtotal: number;
+  shippingTotal: number;
+  taxTotal: number;
+  discountTotal: number;
+  items: { description: string; quantity: number; unitMultiplier: number; unitPrice: number; lineTotal: number }[];
+  payments: { id: string; method: string; status: string; amount: number; paidAt: string }[];
 }

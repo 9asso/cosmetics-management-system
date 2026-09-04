@@ -11,3 +11,13 @@ export interface DashboardSummary {
   supplierPayables: number;
   pendingChecks: number;
 }
+
+export type DashboardAnalyticsRange = 'year' | 'month' | 'week';
+
+export interface DashboardAnalytics {
+  range: DashboardAnalyticsRange;
+  grain: 'month' | 'day';
+  generatedAt: string;
+  periods: { period: string; revenue: number; grossMargin: number; orderCount: number }[];
+  activity: { id: string; title: string; detail: string; occurredAt: string }[];
+}

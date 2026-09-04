@@ -1,3 +1,4 @@
+import { ui } from "./lib/ui";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AuthUser, UserRole } from "@cosmetics/contracts";
@@ -15,18 +16,22 @@ import {
   ShieldCheck,
   ShoppingBag,
   Store,
+  Pencil,
 } from "lucide-react";
 import { DashboardPage } from "./pages/DashboardPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { LoginPage } from "./pages/LoginPage";
 import { OrdersPage } from "./pages/OrdersPage";
+import { InvoicesPage } from './pages/InvoicesPage';
 import {
   PartnersPage,
   PurchasesPage,
   WholesaleSalesPage,
 } from "./pages/OperationsPages";
 import { TeamPage } from "./pages/TeamPage";
-import { api, hasAccessToken, setAccessToken } from "./lib/api";
+import { EditNameModal } from "./components/EditNameModal";
+import { ErrorState } from "./components/EmptyState";
+import { api, ApiRequestError, hasAccessToken, setAccessToken } from "./lib/api";
 
 type Section =
   | "dashboard"
@@ -34,6 +39,7 @@ type Section =
   | "purchases"
   | "sales"
   | "orders"
+  | "invoices"
   | "partners"
   | "team";
 
@@ -69,6 +75,7 @@ const navigation: Array<{
         roles: ["OWNER", "MANAGER", "CASHIER"],
       },
       { id: "orders", label: "Commandes & livraisons", icon: ReceiptText },
+      { id: 'invoices', label: 'Historique des factures', icon: ReceiptText },
     ],
   },
   {
@@ -92,7 +99,7 @@ const pageTitles: Record<
   dashboard: {
     eyebrow: "Centre de pilotage",
     title: "Vue d’ensemble",
-    description: "Les chiffres essentiels de votre activité aujourd’hui.",
+    description: "Suivez vos ventes et votre stock partagé.",
   },
   inventory: {
     eyebrow: "Catalogue unifié",
@@ -120,6 +127,7 @@ const pageTitles: Record<
     title: "Clients & fournisseurs",
     description: "Centralisez les partenaires de votre activité.",
   },
+  invoices: { eyebrow: 'Documents commerciaux', title: 'Historique des factures', description: 'Retrouvez les achats, ventes, coordonnées et paiements.' },
   team: {
     eyebrow: "Sécurité",
     title: "Équipe & rôles",
@@ -143,6 +151,7 @@ export function App() {
   const [active, setActive] = useState<Section>("dashboard");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [editProfile, setEditProfile] = useState(false);
   const me = useQuery({
     queryKey: ["me"],
     queryFn: api.me,
@@ -158,12 +167,12 @@ export function App() {
 
   useEffect(() => {
     if (me.data) setUser(me.data);
-    if (me.isError) {
+    if (me.error instanceof ApiRequestError && me.error.status === 401) {
       setAccessToken("");
       setAuthenticated(false);
       setUser(null);
     }
-  }, [me.data, me.isError]);
+  }, [me.data, me.error]);
 
   const visibleNavigation = useMemo(
     () =>
@@ -200,15 +209,17 @@ export function App() {
       <LoginPage
         onLogin={(result) => {
           setAccessToken(result.accessToken);
+          cache.setQueryData(['me'], result.user);
           setUser(result.user);
           setAuthenticated(true);
         }}
       />
     );
   }
+  if (!user && me.isError) return <div className="grid min-h-screen place-items-center p-6"><ErrorState message="Le serveur est temporairement indisponible. Votre session est conservée." retry={() => void me.refetch()} /></div>;
   if (!user)
     return (
-      <div className="app-loading">
+      <div className={ui("app-loading")}>
         <span />
         <strong>Ouverture de votre espace…</strong>
       </div>
@@ -224,23 +235,27 @@ export function App() {
     .toUpperCase();
 
   return (
-    <div className={`app-shell ${collapsed ? "sidebar-collapsed" : ""}`}>
+    <div className={ui(`app-shell ${collapsed ? "sidebar-collapsed" : ""}`)}>
       {mobileMenu && (
         <button
-          className="mobile-backdrop"
+          className={ui("mobile-backdrop")}
           aria-label="Fermer le menu"
           onClick={() => setMobileMenu(false)}
         />
       )}
-      <aside className={`sidebar ${mobileMenu ? "mobile-open" : ""}`}>
-        <div className="brand">
-          <div className="brand-mark">G</div>
+      <aside className={ui(`sidebar ${mobileMenu ? "mobile-open" : ""}`)}>
+        <div className={ui("brand")}>
+          <img
+            className={ui("brand-mark")}
+            src={`${import.meta.env.BASE_URL}brand-onight.png`}
+            alt=""
+          />
           <div>
-            <strong>GlowCare</strong>
+            <strong>ONight</strong>
             <small>Espace de gestion</small>
           </div>
           <button
-            className="collapse-button"
+            className={ui("collapse-button")}
             onClick={() => setCollapsed(!collapsed)}
             aria-label={collapsed ? "Agrandir le menu" : "Réduire le menu"}
             aria-expanded={!collapsed}
@@ -254,68 +269,80 @@ export function App() {
         </div>
         <nav aria-label="Navigation principale">
           {visibleNavigation.map((group) => (
-            <section className="nav-group" key={group.group}>
-              <p className="nav-label">{group.group}</p>
+            <section className={ui("nav-group")} key={group.group}>
+              <p className={ui("nav-label")}>{group.group}</p>
               {group.items.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
                   title={collapsed ? label : undefined}
-                  className={active === id ? "nav-item active" : "nav-item"}
+                  className={ui(active === id ? "nav-item active" : "nav-item")}
                   onClick={() => navigate(id)}
                 >
                   <Icon size={18} />
                   <span>{label}</span>
                   {active === id && (
-                    <ChevronLeft size={14} className="nav-chevron" />
+                    <ChevronLeft size={14} className={ui("nav-chevron")} />
                   )}
                 </button>
               ))}
             </section>
           ))}
         </nav>
-        <div className="sidebar-footer">
-          <button className="store-link" onClick={openStore}>
+        <div className={ui("sidebar-footer")}>
+          <button className={ui("store-link")} onClick={openStore} aria-label="Voir la boutique">
             <Store size={18} />
             <span>
               <strong>Voir la boutique</strong>
               <small>Catalogue retail en direct</small>
             </span>
           </button>
-          <p className="sidebar-account-label">Compte</p>
-          <div className="profile">
-            <span className="avatar">{initials}</span>
-            <div>
-              <strong>{user.displayName}</strong>
-              <small>{roleLabels[user.role]}</small>
+          {/* <p className={ui("sidebar-account-label")}>Compte</p> */}
+          <div className={ui("profile")}>
+            <span className={ui("avatar")}>{initials}</span>
+            <div className="min-w-0 flex-1">
+              {user.role === "OWNER" ? (
+                <button
+                  className="flex max-w-full items-center gap-1 text-left hover:text-white/80 text-white"
+                  onClick={() => setEditProfile(true)}
+                  title="Modifier mon nom"
+                  aria-label="Modifier mon nom"
+                >
+                  <strong className="hover:text-white/80 text-white">{user.displayName}</strong>
+                  <Pencil size={11} color="white" className="shrink-0 text-white" />
+                </button>
+              ) : (
+                <strong className="text-white">{user.displayName}</strong>
+              )}
+              <small className="text-white!">{roleLabels[user.role]}</small>
             </div>
             <button onClick={logout} title="Se déconnecter">
-              <LogOut size={16} />
+              <LogOut size={26} color="white" className="hover:bg-white/20 p-1 rounded-full transition-all delay-75" />
             </button>
           </div>
         </div>
       </aside>
 
-      <main className="main-area">
-        <header className="topbar">
+      <main className={ui("main-area")}>
+        <header className={ui("topbar")}>
           <button
-            className="mobile-menu-button"
+            className={ui("mobile-menu-button")}
             aria-label="Ouvrir le menu"
             onClick={() => setMobileMenu(true)}
           >
             <Menu size={20} />
           </button>
-          <div className="breadcrumb">
-            <span>GlowCare</span>
+          <div className={ui("breadcrumb")}>
+            <span>ONight</span>
             <ChevronLeft size={13} />
             <strong>{pageTitles[active].title}</strong>
           </div>
-          <div className="top-actions">
-            <button className="secondary-button" onClick={openStore}>
+          <div className={ui("top-actions")}>
+            <button className={ui("secondary-button")} onClick={openStore}>
               <Store size={16} /> Boutique
             </button>
             {canManageStock && (
               <button
-                className="secondary-button"
+                className={ui("secondary-button")}
                 onClick={() => navigate("purchases")}
               >
                 <PackagePlus size={16} /> Nouvel achat
@@ -323,7 +350,7 @@ export function App() {
             )}
             {canSell && (
               <button
-                className="primary-button"
+                className={ui("primary-button")}
                 onClick={() => navigate("sales")}
               >
                 <ShoppingBag size={16} /> Nouvelle vente
@@ -332,14 +359,16 @@ export function App() {
           </div>
         </header>
 
-        <div className="page">
-          <header className="page-heading">
+        <div className={ui("page")}>
+          <header className={ui("page-heading")}>
             <div>
               <p>{pageTitles[active].eyebrow}</p>
               <h1>{pageTitles[active].title}</h1>
               <small>{pageTitles[active].description}</small>
             </div>
-            <span className={`connection ${health.isError ? "offline" : ""}`}>
+            <span
+              className={ui(`connection ${health.isError ? "offline" : ""}`)}
+            >
               <i />
               {health.isError
                 ? "Serveur indisponible"
@@ -354,6 +383,7 @@ export function App() {
           )}
           {active === "purchases" && <PurchasesPage />}
           {active === "sales" && <WholesaleSalesPage />}
+          {active === 'invoices' && <InvoicesPage />}
           {active === "orders" && (
             <OrdersPage
               canUpdate={["OWNER", "MANAGER", "CASHIER", "WAREHOUSE"].includes(
@@ -362,9 +392,29 @@ export function App() {
             />
           )}
           {active === "partners" && <PartnersPage role={user.role} />}
-          {active === "team" && user.role === "OWNER" && <TeamPage />}
+          {active === "team" && user.role === "OWNER" && (
+            <TeamPage
+              currentUser={user}
+              onUserSaved={(saved) => {
+                if (saved.id === user.id) {
+                  setUser(saved);
+                  cache.setQueryData(["me"], saved);
+                }
+              }}
+            />
+          )}
         </div>
       </main>
+      {editProfile && user.role === "OWNER" && (
+        <EditNameModal
+          user={user}
+          onClose={() => setEditProfile(false)}
+          onSaved={(saved) => {
+            setUser(saved);
+            cache.setQueryData(["me"], saved);
+          }}
+        />
+      )}
     </div>
   );
 }

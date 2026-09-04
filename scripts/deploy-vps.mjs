@@ -26,7 +26,7 @@ function shellQuote(value) {
 }
 
 function makeCredentials(adminPassword = randomBytes(18).toString("base64url")) {
-  const adminEmail = "owner@glowcare.ma";
+  const adminEmail = "owner@onight.ma";
   return {
     adminEmail,
     adminPassword,
@@ -38,7 +38,7 @@ function makeCredentials(adminPassword = randomBytes(18).toString("base64url")) 
       `Email: ${adminEmail}`,
       `Password: ${adminPassword}`,
       "",
-      "Use this owner account on the GlowCare Business login page.",
+      "Use this owner account on the ONight Business login page.",
       "",
     ].join("\n"),
   };

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import {
   createCustomerSchema,
   createPurchaseSchema,
@@ -7,6 +7,7 @@ import {
   orderListQuerySchema,
   orderParamsSchema,
   updateOrderStatusSchema,
+  invoiceQuerySchema, invoiceParamsSchema, type InvoiceQuery,
   type CreateCustomerInput,
   type CreatePurchaseInput,
   type CreateSupplierInput,
@@ -22,6 +23,44 @@ import { ManagementService } from './management.service.js';
 @Controller()
 export class ManagementController {
   constructor(private readonly management: ManagementService) {}
+
+  @Roles('OWNER')
+  @Patch('suppliers/:id')
+  updateSupplier(@Param(new ZodValidationPipe(orderParamsSchema)) params: { id: string },
+    @Body(new ZodValidationPipe(createSupplierSchema)) input: CreateSupplierInput,
+    @CurrentUser() user: AuthenticatedUser) {
+    return this.management.updatePartner('suppliers', params.id, input, user.id);
+  }
+
+  @Roles('OWNER')
+  @Patch('customers/:id')
+  updateCustomer(@Param(new ZodValidationPipe(orderParamsSchema)) params: { id: string },
+    @Body(new ZodValidationPipe(createCustomerSchema)) input: CreateCustomerInput,
+    @CurrentUser() user: AuthenticatedUser) {
+    return this.management.updatePartner('customers', params.id, input, user.id);
+  }
+
+  @Roles('OWNER')
+  @Delete('suppliers/:id')
+  deleteSupplier(@Param(new ZodValidationPipe(orderParamsSchema)) params: { id: string }, @CurrentUser() user: AuthenticatedUser) {
+    return this.management.archivePartner('suppliers', params.id, user.id);
+  }
+
+  @Roles('OWNER')
+  @Delete('customers/:id')
+  deleteCustomer(@Param(new ZodValidationPipe(orderParamsSchema)) params: { id: string }, @CurrentUser() user: AuthenticatedUser) {
+    return this.management.archivePartner('customers', params.id, user.id);
+  }
+
+  @Get('invoices')
+  invoices(@Query(new ZodValidationPipe(invoiceQuerySchema)) query: InvoiceQuery) {
+    return this.management.invoices(query);
+  }
+
+  @Get('invoices/:kind/:id')
+  invoice(@Param(new ZodValidationPipe(invoiceParamsSchema)) params: { kind: 'sale' | 'purchase'; id: string }) {
+    return this.management.invoice(params.kind, params.id);
+  }
 
   @Get('suppliers')
   suppliers() {

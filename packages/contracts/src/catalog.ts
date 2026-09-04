@@ -23,6 +23,8 @@ export const createProductSchema = z.object({
   barcode: z.string().trim().max(80).default(''),
   reference: z.string().trim().max(100).default(''),
   supplierName: z.string().trim().max(160).default(''),
+  supplierId: z.string().uuid().optional(),
+  imageUpload: z.object({ data: z.string().min(4).max(7_000_000) }).optional(),
   purchasePrice: moneySchema,
   wholesalePrice: moneySchema,
   retailPrice: moneySchema,

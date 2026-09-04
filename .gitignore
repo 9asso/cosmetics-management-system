@@ -10,5 +10,6 @@ coverage/
 *.tsbuildinfo
 .DS_Store
 .deployment-credentials
+.local/
 apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/gen/

@@ -275,11 +275,11 @@ export function StoreShell({ products }: { products: ProductListItem[] }) {
   return (
     <>
       <header className="store-header">
-        <a className="store-logo" href="#accueil" aria-label="GlowCare accueil">
+        <a className="store-logo" href="#accueil" aria-label="ONight accueil">
           <span>
-            <Leaf size={25} />
+            <img src="/brand-onight.png" width={46} height={46} alt="" />
           </span>
-          <strong>GlowCare</strong>
+          <strong className="text-brand!">ONight Store</strong>
           <small>Health &amp; Beauty</small>
         </a>
         <button
@@ -429,9 +429,9 @@ export function StoreShell({ products }: { products: ProductListItem[] }) {
           </div>
         </section>
 
-        <section className="beauty-edit" aria-label="Sélections GlowCare">
+        <section className="beauty-edit" aria-label="Sélections ONight">
           <div className="edit-intro">
-            <p>Le GlowCare edit</p>
+            <p>Le ONight edit</p>
             <h2>
               Une beauté qui suit
               <br />
@@ -477,7 +477,7 @@ export function StoreShell({ products }: { products: ProductListItem[] }) {
             <div>
               <span className="section-kicker">Fraîchement arrivés</span>
               <h2>Nouveautés à ne pas manquer</h2>
-              <p>Les derniers essentiels ajoutés au catalogue GlowCare.</p>
+              <p>Les derniers essentiels ajoutés au catalogue ONight.</p>
             </div>
             <button onClick={() => scrollToCatalog("ALL")}>
               Tout découvrir <ArrowRight size={16} />
@@ -648,7 +648,7 @@ export function StoreShell({ products }: { products: ProductListItem[] }) {
                   : saleOnly
                     ? "Offres du moment"
                     : category === "ALL"
-                      ? "La sélection GlowCare"
+                      ? "La sélection ONight"
                       : categoryCards.find((item) => item.id === category)
                           ?.name}
               </h2>
@@ -776,7 +776,7 @@ export function StoreShell({ products }: { products: ProductListItem[] }) {
             <Quote size={28} />
             <p>Prendre soin de soi ne devrait jamais être compliqué.</p>
             <span>
-              GlowCare rassemble les bons produits, les conseils simples et une
+              ONight rassemble les bons produits, les conseils simples et une
               livraison pensée pour votre quotidien.
             </span>
           </div>
@@ -867,9 +867,9 @@ export function StoreShell({ products }: { products: ProductListItem[] }) {
           <div className="footer-about">
             <a className="store-logo" href="#accueil">
               <span>
-                <Leaf size={24} />
+                <img src="/brand-icon.svg" width={32} height={32} alt="" />
               </span>
-              <strong>GlowCare</strong>
+              <strong>ONight</strong>
               <small>Health &amp; Beauty</small>
             </a>
             <p>
@@ -921,7 +921,7 @@ export function StoreShell({ products }: { products: ProductListItem[] }) {
               </button>
             </div>
             <div>
-              <strong>L’expérience GlowCare</strong>
+              <strong>L’expérience ONight</strong>
               <span>
                 <MapPin size={15} /> Livraison partout au Maroc
               </span>
@@ -935,7 +935,7 @@ export function StoreShell({ products }: { products: ProductListItem[] }) {
           </div>
         </div>
         <div className="footer-bottom">
-          <span>© 2026 GlowCare. Tous droits réservés.</span>
+          <span>© 2026 ONight. Tous droits réservés.</span>
           <div>
             <button
               onClick={() =>
@@ -1031,7 +1031,7 @@ export function StoreShell({ products }: { products: ProductListItem[] }) {
               </div>
               <p className="product-description">
                 {selectedProduct.description ||
-                  "Produit cosmétique sélectionné avec soin par GlowCare."}
+                  "Produit cosmétique sélectionné avec soin par ONight."}
               </p>
               <small className="product-reference">
                 Référence : {selectedProduct.sku} · {selectedProduct.available}{" "}

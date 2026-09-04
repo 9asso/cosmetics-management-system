@@ -21,7 +21,9 @@ import type {
   ProductListQuery,
   TeamUser,
   UpdateUserInput,
+  DashboardAnalytics, DashboardAnalyticsRange, InvoiceListItem, InvoiceDetail, InvoiceQuery,
 } from '@cosmetics/contracts';
+import { confirmChange, mutationConfirmation } from './confirmation';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api/v1';
 const TOKEN_KEY = 'cosmetics_access_token';
@@ -48,6 +50,10 @@ export class ApiRequestError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  if (init?.method && !['GET', 'HEAD'].includes(init.method) && path !== '/auth/login') {
+    const confirmed = await confirmChange(mutationConfirmation(path, init.method, typeof init.body === 'string' ? init.body : undefined));
+    if (!confirmed) throw new ApiRequestError('', 499);
+  }
   let response: Response;
   try {
     response = await fetch(`${API_URL}${path}`, {
@@ -84,6 +90,9 @@ export const api = {
     request<LoginResult>('/auth/login', { method: 'POST', body: JSON.stringify(input) }),
   me: () => request<AuthUser>('/auth/me'),
   dashboard: () => request<DashboardSummary>('/dashboard/summary'),
+  analytics: (range: DashboardAnalyticsRange = 'year') => request<DashboardAnalytics>(`/dashboard/analytics?range=${range}`),
+  invoices: (query: Partial<InvoiceQuery> = {}) => request<Paginated<InvoiceListItem>>(`/invoices?${queryString(query)}`),
+  invoice: (kind: 'sale' | 'purchase', id: string) => request<InvoiceDetail>(`/invoices/${kind}/${id}`),
   products: (query: Partial<ProductListQuery> = {}) =>
     request<Paginated<ProductListItem>>(`/products?${queryString(query)}`),
   createProduct: (input: CreateProductInput) =>
@@ -94,6 +103,10 @@ export const api = {
       body: JSON.stringify(input),
     }),
   suppliers: () => request<BusinessPartner[]>('/suppliers'),
+  updateSupplier: (id: string, input: CreateSupplierInput) => request<BusinessPartner>(`/suppliers/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
+  deleteSupplier: (id: string) => request<{ archived: boolean }>(`/suppliers/${id}`, { method: 'DELETE' }),
+  updateCustomer: (id: string, input: CreateCustomerInput) => request<BusinessPartner>(`/customers/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
+  deleteCustomer: (id: string) => request<{ archived: boolean }>(`/customers/${id}`, { method: 'DELETE' }),
   createSupplier: (input: CreateSupplierInput) =>
     request<BusinessPartner>('/suppliers', { method: 'POST', body: JSON.stringify(input) }),
   customers: () => request<BusinessPartner[]>('/customers'),

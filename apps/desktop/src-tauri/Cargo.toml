@@ -2,7 +2,7 @@
 name = "cosmetics-desktop"
 version = "0.1.0"
 description = "Wholesale cosmetics management desktop application"
-authors = ["Maison Élan"]
+authors = ["ONight"]
 edition = "2021"
 
 [lib]

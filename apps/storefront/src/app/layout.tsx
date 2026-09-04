@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './store.css';
 
 export const metadata: Metadata = {
-  title: 'GlowCare | Health & Beauty',
+  title: 'ONight | Health & Beauty',
   description: 'Cosmétiques sélectionnés avec soin, livrés partout au Maroc.',
 };
 

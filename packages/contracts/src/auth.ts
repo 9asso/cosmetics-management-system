@@ -1,7 +1,14 @@
-import { z } from 'zod';
-import { uuidSchema } from './shared.js';
+import { z } from "zod";
+import { uuidSchema } from "./shared.js";
 
-export const userRoles = ['OWNER', 'MANAGER', 'CASHIER', 'WAREHOUSE', 'ACCOUNTANT', 'STAFF'] as const;
+export const userRoles = [
+  "OWNER",
+  "MANAGER",
+  "CASHIER",
+  "WAREHOUSE",
+  "ACCOUNTANT",
+  "STAFF",
+] as const;
 export const userRoleSchema = z.enum(userRoles);
 
 export const loginSchema = z.object({
@@ -16,11 +23,20 @@ export const createUserSchema = z.object({
   role: userRoleSchema,
 });
 
-export const updateUserSchema = z.object({
-  role: userRoleSchema.optional(),
-  active: z.boolean().optional(),
-  password: z.string().min(8).max(128).optional(),
-});
+export const updateUserSchema = z
+  .object({
+    displayName: z.string().trim().min(2).max(160).optional(),
+    role: userRoleSchema.optional(),
+    active: z.boolean().optional(),
+    password: z.string().min(8).max(128).optional(),
+  })
+  .strict()
+  .refine(
+    (input) => Object.values(input).some((value) => value !== undefined),
+    {
+      message: "Au moins un champ est requis.",
+    },
+  );
 
 export const updateUserParamsSchema = z.object({ id: uuidSchema });
 

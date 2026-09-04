@@ -1,4 +1,5 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import sharp from 'sharp';
 import type {
   CreateProductInput,
   Paginated,
@@ -26,6 +27,12 @@ type ProductRow = Omit<
 @Injectable()
 export class CatalogService {
   constructor(private readonly db: DatabaseService) {}
+
+  async image(id: string) {
+    const result = await this.db.query<{ data: Buffer }>('SELECT data FROM product_images WHERE id = $1 AND organization_id = $2', [id, DEFAULT_ORGANIZATION_ID]);
+    if (!result.rows[0]) throw new NotFoundException('Image introuvable.');
+    return result.rows[0].data;
+  }
 
   async list(
     query: ProductListQuery,
@@ -109,8 +116,30 @@ export class CatalogService {
   }
 
   async create(input: CreateProductInput): Promise<ProductListItem> {
+    let image: Buffer | undefined;
+    if (input.imageUpload) {
+      const data = input.imageUpload.data;
+      if (!/^[A-Za-z0-9+/]+={0,2}$/.test(data)) throw new BadRequestException('Image invalide.');
+      const bytes = Buffer.from(data, 'base64');
+      if (bytes.length > 5 * 1024 * 1024) throw new BadRequestException('Image limitée à 5 Mo.');
+      try {
+        const source = sharp(bytes, { limitInputPixels: 25_000_000 });
+        const metadata = await source.metadata();
+        if (!['jpeg', 'png', 'webp'].includes(metadata.format ?? '')) throw new Error('format');
+        image = await source.rotate().resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }).webp({ quality: 85 }).toBuffer();
+        if (image.length > 2 * 1024 * 1024) throw new Error('size');
+      } catch {
+        throw new BadRequestException('Image illisible ou trop grande. Utilisez JPG, PNG ou WebP (25 mégapixels maximum).');
+      }
+    }
     try {
       const identifiers = await this.db.withTransaction(async (client) => {
+        let imageUrl = input.imageUrl;
+        if (image) {
+          const saved = await client.query<{ id: string }>('INSERT INTO product_images (organization_id, data) VALUES ($1, $2) RETURNING id', [DEFAULT_ORGANIZATION_ID, image]);
+          const base = (process.env.PUBLIC_API_URL ?? process.env.API_URL ?? 'http://localhost:4000/api/v1').replace(/\/$/, '');
+          imageUrl = `${base}/media/${saved.rows[0]!.id}`;
+        }
         const product = await client.query<{ id: string }>(
           `INSERT INTO products
             (organization_id, name, brand, category, description, image_url, source_url, retail_visible)
@@ -122,7 +151,7 @@ export class CatalogService {
             input.brand,
             input.category,
             input.description,
-            input.imageUrl,
+            imageUrl,
             input.sourceUrl,
             input.retailVisible,
           ],
@@ -149,7 +178,11 @@ export class CatalogService {
         );
         const variantId = variant.rows[0]!.id;
 
-        if (input.supplierName) {
+        if (input.supplierId) {
+          const supplier = await client.query('SELECT id FROM suppliers WHERE id = $1 AND organization_id = $2 AND active = true FOR SHARE', [input.supplierId, DEFAULT_ORGANIZATION_ID]);
+          if (!supplier.rowCount) throw new BadRequestException('Fournisseur archivé ou introuvable.');
+          await client.query('INSERT INTO product_supplier_links (variant_id, supplier_id, preferred) VALUES ($1, $2, true)', [variantId, input.supplierId]);
+        } else if (input.supplierName) {
           const supplier = await client.query<{ id: string }>(
             `INSERT INTO suppliers (organization_id, name)
              SELECT $1, $2
@@ -198,7 +231,7 @@ export class CatalogService {
         await client.query(
           `INSERT INTO audit_logs (organization_id, action, entity_type, entity_id, after_data)
            VALUES ($1, 'PRODUCT_CREATED', 'product', $2, $3::jsonb)`,
-          [DEFAULT_ORGANIZATION_ID, productId, JSON.stringify(input)],
+          [DEFAULT_ORGANIZATION_ID, productId, JSON.stringify({ ...input, imageUpload: undefined, imageUrl })],
         );
         await client.query(
           `INSERT INTO outbox_events (aggregate_type, aggregate_id, event_type, payload)
