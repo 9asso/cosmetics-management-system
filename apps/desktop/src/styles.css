@@ -3,8 +3,9 @@
 
 @theme {
   --font-sans: "Quicksand", system-ui, sans-serif;
-  --color-brand: #ff4455;
-  --color-brand-secondary: #f66897;
+  --color-brand: #ff848f;
+  --color-brand-secondary: #ff848f;
+  /* --color-brand-secondary: #ff9f84; */
   --color-brand-soft: #fff0f3;
   --color-ink: #4c4c4c;
   --color-muted: #82747d;
