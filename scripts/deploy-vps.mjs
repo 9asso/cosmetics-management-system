@@ -58,6 +58,7 @@ function createArchive() {
       "-czf",
       localArchive,
       "--no-xattrs",
+      "--no-mac-metadata",
       "--exclude=.git",
       "--exclude=.env",
       "--exclude=.deployment-credentials",
