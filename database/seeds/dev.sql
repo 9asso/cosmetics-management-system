@@ -65,7 +65,8 @@ ON CONFLICT (variant_id, location_id) DO NOTHING;
 INSERT INTO inventory_movements (organization_id, variant_id, location_id, quantity_delta, reason, unit_cost, note)
 SELECT '00000000-0000-4000-8000-000000000001',v.id,'00000000-0000-4000-8000-000000000001',b.on_hand,'OPENING_BALANCE',v.purchase_price,'Development seed opening balance'
 FROM product_variants v JOIN inventory_balances b ON b.variant_id=v.id
-WHERE NOT EXISTS (SELECT 1 FROM inventory_movements m WHERE m.variant_id=v.id AND m.reason='OPENING_BALANCE');
+WHERE b.on_hand <> 0
+  AND NOT EXISTS (SELECT 1 FROM inventory_movements m WHERE m.variant_id=v.id AND m.reason='OPENING_BALANCE');
 
 INSERT INTO sales_orders (id, organization_id, location_id, customer_id, order_number, channel, status, subtotal, shipping_total, grand_total, amount_paid, placed_at) VALUES
 ('40000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000001','11000000-0000-4000-8000-000000000001','FAC-DEMO-001','WHOLESALE_DESKTOP','PARTIALLY_PAID',5800,0,5800,3500,now()-interval '3 days'),
