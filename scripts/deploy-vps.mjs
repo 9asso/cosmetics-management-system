@@ -25,8 +25,10 @@ function shellQuote(value) {
   return `'${String(value).replaceAll("'", `'\"'\"'`)}'`;
 }
 
-function makeCredentials(adminPassword = randomBytes(18).toString("base64url")) {
-  const adminEmail = "owner@onight.ma";
+function makeCredentials(
+  adminPassword = randomBytes(18).toString("base64url"),
+  adminEmail = "owner@onight.ma",
+) {
   return {
     adminEmail,
     adminPassword,
@@ -116,7 +118,8 @@ mkdir -p ${shellQuote(`${remoteRoot}/releases`)} ${shellQuote(`${remoteRoot}/sha
       execRemote(connection, `cat ${shellQuote(`${remoteRoot}/shared/.env`)}`, { quiet: true }),
     ]);
     const savedPassword = readEnvironmentValue(savedEnvironment, "ADMIN_PASSWORD") ?? savedCredentials.match(/^Password: (.+)$/m)?.[1] ?? randomBytes(18).toString("base64url");
-    const credentials = makeCredentials(savedPassword);
+    const savedEmail = readEnvironmentValue(savedEnvironment, "ADMIN_EMAIL") ?? savedCredentials.match(/^Email: (.+)$/m)?.[1] ?? "owner@onight.ma";
+    const credentials = makeCredentials(savedPassword, savedEmail);
     const upgradedEnvironment = upsertEnvironment(savedEnvironment, {
       AUTH_SECRET: readEnvironmentValue(savedEnvironment, "AUTH_SECRET") ?? credentials.authSecret,
       ADMIN_EMAIL: readEnvironmentValue(savedEnvironment, "ADMIN_EMAIL") ?? credentials.adminEmail,
