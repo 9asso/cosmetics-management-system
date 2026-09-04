@@ -9,9 +9,9 @@ import { api, ApiRequestError } from '../lib/api';
 import { integer, money } from '../lib/format';
 
 const emptyProduct: CreateProductInput = {
-  name: '', brand: '', category: 'OTHER', description: '', sku: '', barcode: '',
+  name: '', brand: '', category: 'OTHER', description: '', imageUrl: '', sourceUrl: '', sku: '', barcode: '',
   reference: '', supplierName: '', purchasePrice: 0, wholesalePrice: 0,
-  retailPrice: 0, initialQuantity: 0, lowStockThreshold: 5, retailVisible: false,
+  retailPrice: 0, compareAtPrice: undefined, initialQuantity: 0, lowStockThreshold: 5, retailVisible: false,
 };
 
 const categoryLabels: Record<string, string> = {
@@ -123,7 +123,7 @@ export function InventoryPage({ canManage = true }: { canManage?: boolean }) {
               {products.isLoading && <tr><td colSpan={8} className="loading-cell">Chargement de l’inventaire…</td></tr>}
               {products.data?.items.map((product) => (
                 <tr key={product.variantId}>
-                  <td><div className="product-cell"><span>{product.name.slice(0, 1)}</span><div><strong>{product.name}</strong><small>{product.brand} · {product.sku}</small></div></div></td>
+                  <td><div className="product-cell">{product.imageUrl ? <img src={product.imageUrl} alt="" /> : <span>{product.name.slice(0, 1)}</span>}<div><strong>{product.name}</strong><small>{product.brand} · {product.sku}</small></div></div></td>
                   <td><span className="mono">{product.reference || '—'}</span><small className="sub-cell">{product.barcode || 'Sans code-barres'}</small></td>
                   <td>{categoryLabels[product.category]}</td>
                   <td><strong>{integer.format(product.onHand)}</strong><small className="sub-cell">{product.reserved} réservé</small></td>
@@ -153,8 +153,11 @@ export function InventoryPage({ canManage = true }: { canManage?: boolean }) {
               <label><span>Prix d’achat (MAD)</span><input required type="number" min="0" step="0.01" value={draft.purchasePrice} onChange={(e) => setDraft({ ...draft, purchasePrice: Number(e.target.value) })} /></label>
               <label><span>Prix grossiste (MAD)</span><input required type="number" min="0" step="0.01" value={draft.wholesalePrice} onChange={(e) => setDraft({ ...draft, wholesalePrice: Number(e.target.value) })} /></label>
               <label><span>Prix retail (MAD)</span><input required type="number" min="0" step="0.01" value={draft.retailPrice} onChange={(e) => setDraft({ ...draft, retailPrice: Number(e.target.value) })} /></label>
+              <label><span>Ancien prix / prix barré</span><input type="number" min="0" step="0.01" value={draft.compareAtPrice ?? ''} onChange={(e) => setDraft({ ...draft, compareAtPrice: e.target.value ? Number(e.target.value) : undefined })} /></label>
               <label><span>Stock initial</span><input required type="number" min="0" step="1" value={draft.initialQuantity} onChange={(e) => setDraft({ ...draft, initialQuantity: Number(e.target.value) })} /></label>
+              <label><span>URL de l’image</span><input type="url" value={draft.imageUrl} onChange={(e) => setDraft({ ...draft, imageUrl: e.target.value })} placeholder="https://…" /></label>
             </div>
+            <label className="full-field"><span>Description</span><textarea value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Description complète du produit…" /></label>
             <label className="checkbox"><input type="checkbox" checked={draft.retailVisible} onChange={(e) => setDraft({ ...draft, retailVisible: e.target.checked })} /><span>Afficher immédiatement dans la boutique retail</span></label>
             {create.isError && <p className="form-error">{create.error instanceof ApiRequestError ? create.error.message : 'Impossible d’ajouter ce produit.'}</p>}
             <footer className="modal-actions"><button className="secondary-button" type="button" onClick={() => setShowCreate(false)}>Annuler</button><button className="primary-button" type="submit" disabled={create.isPending}>{create.isPending ? 'Enregistrement…' : 'Ajouter le produit'}</button></footer>

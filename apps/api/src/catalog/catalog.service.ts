@@ -11,11 +11,12 @@ import { DatabaseService } from '../database/database.service.js';
 
 type ProductRow = Omit<
   ProductListItem,
-  'purchasePrice' | 'wholesalePrice' | 'retailPrice' | 'onHand' | 'reserved' | 'available'
+  'purchasePrice' | 'wholesalePrice' | 'retailPrice' | 'compareAtPrice' | 'onHand' | 'reserved' | 'available'
 > & {
   purchasePrice: string;
   wholesalePrice: string;
   retailPrice: string;
+  compareAtPrice: string | null;
   onHand: number;
   reserved: number;
   available: number;
@@ -63,6 +64,9 @@ export class CatalogService {
         p.name,
         p.brand,
         p.category,
+        p.description,
+        p.image_url AS "imageUrl",
+        p.source_url AS "sourceUrl",
         v.sku,
         COALESCE(v.barcode, '') AS barcode,
         v.reference,
@@ -70,6 +74,7 @@ export class CatalogService {
         v.purchase_price AS "purchasePrice",
         v.wholesale_price AS "wholesalePrice",
         v.retail_price AS "retailPrice",
+        v.compare_at_price AS "compareAtPrice",
         COALESCE(b.on_hand, 0)::int AS "onHand",
         COALESCE(b.reserved, 0)::int AS reserved,
         (COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0))::int AS available,
@@ -82,7 +87,7 @@ export class CatalogService {
       LEFT JOIN product_supplier_links psl ON psl.variant_id = v.id AND psl.preferred = true
       LEFT JOIN suppliers s ON s.id = psl.supplier_id
       WHERE ${filters.join(' AND ')}
-      ORDER BY COALESCE(b.on_hand, 0) ASC, p.brand ASC, p.name ASC
+      ORDER BY ${retailOnly ? "(p.image_url <> '') DESC, p.updated_at DESC" : 'COALESCE(b.on_hand, 0) ASC, p.brand ASC, p.name ASC'}
       LIMIT $${limitIndex} OFFSET $${offsetIndex}`,
       values,
     );
@@ -92,6 +97,7 @@ export class CatalogService {
       purchasePrice: Number(row.purchasePrice),
       wholesalePrice: Number(row.wholesalePrice),
       retailPrice: Number(row.retailPrice),
+      compareAtPrice: row.compareAtPrice === null ? null : Number(row.compareAtPrice),
     }));
 
     return {
@@ -107,8 +113,8 @@ export class CatalogService {
       const identifiers = await this.db.withTransaction(async (client) => {
         const product = await client.query<{ id: string }>(
           `INSERT INTO products
-            (organization_id, name, brand, category, description, retail_visible)
-           VALUES ($1, $2, $3, $4, $5, $6)
+            (organization_id, name, brand, category, description, image_url, source_url, retail_visible)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
            RETURNING id`,
           [
             DEFAULT_ORGANIZATION_ID,
@@ -116,6 +122,8 @@ export class CatalogService {
             input.brand,
             input.category,
             input.description,
+            input.imageUrl,
+            input.sourceUrl,
             input.retailVisible,
           ],
         );
@@ -124,8 +132,8 @@ export class CatalogService {
         const variant = await client.query<{ id: string }>(
           `INSERT INTO product_variants
             (product_id, sku, barcode, reference, purchase_price, wholesale_price,
-             retail_price, low_stock_threshold)
-           VALUES ($1, $2, NULLIF($3, ''), $4, $5, $6, $7, $8)
+             retail_price, compare_at_price, low_stock_threshold)
+           VALUES ($1, $2, NULLIF($3, ''), $4, $5, $6, $7, $8, $9)
            RETURNING id`,
           [
             productId,
@@ -135,6 +143,7 @@ export class CatalogService {
             input.purchasePrice,
             input.wholesalePrice,
             input.retailPrice,
+            input.compareAtPrice ?? null,
             input.lowStockThreshold,
           ],
         );

@@ -17,6 +17,8 @@ export const createProductSchema = z.object({
   brand: z.string().trim().min(1).max(100),
   category: productCategorySchema.default('OTHER'),
   description: z.string().trim().max(2_000).default(''),
+  imageUrl: z.string().trim().max(2_000).default(''),
+  sourceUrl: z.string().trim().max(2_000).default(''),
   sku: z.string().trim().min(1).max(80),
   barcode: z.string().trim().max(80).default(''),
   reference: z.string().trim().max(100).default(''),
@@ -24,6 +26,7 @@ export const createProductSchema = z.object({
   purchasePrice: moneySchema,
   wholesalePrice: moneySchema,
   retailPrice: moneySchema,
+  compareAtPrice: moneySchema.optional(),
   initialQuantity: z.coerce.number().int().min(0).max(999_999).default(0),
   lowStockThreshold: z.coerce.number().int().min(0).max(999_999).default(5),
   retailVisible: z.boolean().default(false),
@@ -45,6 +48,9 @@ export interface ProductListItem {
   name: string;
   brand: string;
   category: (typeof productCategories)[number];
+  description: string;
+  imageUrl: string;
+  sourceUrl: string;
   sku: string;
   barcode: string;
   reference: string;
@@ -52,6 +58,7 @@ export interface ProductListItem {
   purchasePrice: number;
   wholesalePrice: number;
   retailPrice: number;
+  compareAtPrice: number | null;
   onHand: number;
   reserved: number;
   available: number;

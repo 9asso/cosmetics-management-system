@@ -10,6 +10,7 @@
     "lint": "turbo lint",
     "format": "prettier --write .",
     "db:migrate": "pnpm --filter @cosmetics/api db:migrate",
+    "import:zwine-demo": "node scripts/import-zwine-demo.mjs",
     "deploy:vps": "node scripts/deploy-vps.mjs"
   },
   "devDependencies": {
