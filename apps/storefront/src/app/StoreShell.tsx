@@ -97,9 +97,9 @@ export function StoreShell({ products }: { products: ProductListItem[] }) {
 
       <section className="trust-strip" aria-label="Nos engagements"><div><ShieldCheck /><span><strong>100% authentiques</strong><small>Marques vérifiées</small></span></div><div><UserRound /><span><strong>Sélection experte</strong><small>Produits testés</small></span></div><div><Truck /><span><strong>Livraison rapide</strong><small>Partout au Maroc</small></span></div><div><RotateCcw /><span><strong>Retour facile</strong><small>Conditions simples</small></span></div></section>
 
-      <section className="categories-section" id="categories"><div className="store-section-title"><h2>Acheter par catégorie</h2><button onClick={() => scrollToCatalog("ALL")}>Voir toutes les catégories <ArrowRight size={16} /></button></div><div className="category-grid">{categoryCards.map((card, index) => {
+      <section className="categories-section" id="categories"><div className="store-section-title"><h2>Acheter par catégorie</h2><button onClick={() => scrollToCatalog("ALL")}>Voir toutes les catégories <ArrowRight size={16} /></button></div><div className="category-grid">{categoryCards.map((card) => {
         const available = products.filter((product) => product.category === card.id).length;
-        return <button className={`category-card ${card.className}`} key={card.id} onClick={() => scrollToCatalog(card.id)}><span className="category-art" aria-hidden="true"><i /><b /><em /></span><strong>{card.name}</strong><small>{available || index * 8 + 12}+ produits · {card.subtitle}</small></button>;
+        return <button className={`category-card ${card.className}`} key={card.id} onClick={() => scrollToCatalog(card.id)}><span className="category-art" aria-hidden="true"><i /><b /><em /></span><strong>{card.name}</strong><small>{available} produit{available === 1 ? '' : 's'} · {card.subtitle}</small></button>;
       })}</div></section>
 
       <section className="offer-banner" id="offres"><div className="offer-products" aria-hidden="true"><i /><b /><span /></div><div><p><Sparkles size={15} /> Offre à durée limitée</p><h2>Jusqu’à 30% de réduction</h2><span>Sur une sélection beauté &amp; bien-être</span><button onClick={() => scrollToCatalog("ALL")}>Voir la sélection <ArrowRight size={17} /></button></div></section>

@@ -139,7 +139,7 @@ test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/api/v1/products
 set -a
 . ${shellQuote(`${remoteRoot}/shared/.env`)}
 set +a
-curl -fsS -H 'Content-Type: application/json' --data "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}" http://127.0.0.1/api/v1/auth/login >/dev/null
+curl -fsS -H 'Content-Type: application/json' --data "$(printf '{\"email\":\"%s\",\"password\":\"%s\"}' "$ADMIN_EMAIL" "$ADMIN_PASSWORD")" http://127.0.0.1/api/v1/auth/login >/dev/null
 docker compose --env-file ${shellQuote(`${remoteRoot}/shared/.env`)} -p cosmetics-management -f compose.production.yml ps`);
   console.log(`Deployment complete. Credentials were saved to ${localCredentialPath}`);
 } finally {
