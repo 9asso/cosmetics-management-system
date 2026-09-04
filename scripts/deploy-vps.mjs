@@ -57,6 +57,7 @@ function createArchive() {
     [
       "-czf",
       localArchive,
+      "--no-xattrs",
       "--exclude=.git",
       "--exclude=.env",
       "--exclude=.deployment-credentials",
@@ -67,7 +68,11 @@ function createArchive() {
       "--exclude=target",
       ".",
     ],
-    { cwd: repoRoot, stdio: "inherit" },
+    {
+      cwd: repoRoot,
+      stdio: "inherit",
+      env: { ...process.env, COPYFILE_DISABLE: "1" },
+    },
   );
 }
 
