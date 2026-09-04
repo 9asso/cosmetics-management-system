@@ -69,7 +69,7 @@ export class StorefrontService {
         `INSERT INTO sales_orders
           (organization_id, location_id, customer_id, order_number, channel, status,
            subtotal, shipping_total, grand_total, amount_paid, notes, placed_at)
-         VALUES ($1, $2, $3, $4, 'RETAIL_WEB', 'CONFIRMED', $5, $6, $7, 0, $8, now())
+         VALUES ($1, $2, $3, $4, 'RETAIL_WEB', 'ORDERED', $5, $6, $7, 0, $8, now())
          RETURNING id`,
         [
           DEFAULT_ORGANIZATION_ID,
@@ -129,7 +129,7 @@ export class StorefrontService {
       return {
         id: orderId,
         orderNumber,
-        status: 'CONFIRMED',
+        status: 'ORDERED',
         paymentMethod: 'COD',
         subtotal,
         shippingTotal,

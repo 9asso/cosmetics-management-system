@@ -21,7 +21,7 @@ export type CreateRetailOrderInput = z.infer<typeof createRetailOrderSchema>;
 export interface RetailOrderResult {
   id: string;
   orderNumber: string;
-  status: 'CONFIRMED';
+  status: 'ORDERED';
   paymentMethod: 'COD';
   subtotal: number;
   shippingTotal: number;

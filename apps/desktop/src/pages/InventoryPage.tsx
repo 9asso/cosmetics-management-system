@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CreateProductInput, ProductListItem } from '@cosmetics/contracts';
-import { ArrowDownToLine, ChevronLeft, ChevronRight, MoreHorizontal, PackagePlus, Search, SlidersHorizontal } from 'lucide-react';
+import { ArrowDownToLine, PackagePlus, Search, SlidersHorizontal } from 'lucide-react';
 import { ErrorState } from '../components/EmptyState';
 import { Modal } from '../components/Modal';
 import { StatusPill } from '../components/StatusPill';
@@ -25,15 +25,34 @@ function StockStatus({ product }: { product: ProductListItem }) {
   return <StatusPill tone="good">Disponible</StatusPill>;
 }
 
-export function InventoryPage() {
+export function InventoryPage({ canManage = true }: { canManage?: boolean }) {
   const client = useQueryClient();
   const [search, setSearch] = useState('');
   const [stock, setStock] = useState<'all' | 'low' | 'out'>('all');
+  const [category, setCategory] = useState<CreateProductInput['category'] | ''>('');
   const [showCreate, setShowCreate] = useState(false);
+  const [adjustProduct, setAdjustProduct] = useState<ProductListItem | null>(null);
+  const [adjustment, setAdjustment] = useState({ quantityDelta: 1, note: 'Correction après comptage physique' });
   const [draft, setDraft] = useState<CreateProductInput>(emptyProduct);
   const products = useQuery({
-    queryKey: ['products', search, stock],
-    queryFn: () => api.products({ search, stock, page: 1, pageSize: 50 }),
+    queryKey: ['products', search, stock, category],
+    queryFn: () => api.products({ search, stock, category: category || undefined, page: 1, pageSize: 50 }),
+  });
+  const adjust = useMutation({
+    mutationFn: () => api.adjustInventory({
+      variantId: adjustProduct!.variantId,
+      quantityDelta: adjustment.quantityDelta,
+      reason: 'CORRECTION',
+      note: adjustment.note,
+    }),
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ['products'] }),
+        client.invalidateQueries({ queryKey: ['dashboard-summary'] }),
+      ]);
+      setAdjustProduct(null);
+      setAdjustment({ quantityDelta: 1, note: 'Correction après comptage physique' });
+    },
   });
   const create = useMutation({
     mutationFn: api.createProduct,
@@ -58,6 +77,19 @@ export function InventoryPage() {
     create.mutate(draft);
   };
 
+  const exportProducts = () => {
+    const rows = products.data?.items ?? [];
+    const csv = [
+      ['Produit', 'Marque', 'SKU', 'Catégorie', 'Stock', 'Réservé', 'Prix achat', 'Prix grossiste', 'Prix retail'],
+      ...rows.map((product) => [product.name, product.brand, product.sku, product.category, product.onHand, product.reserved, product.purchasePrice, product.wholesalePrice, product.retailPrice]),
+    ].map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(',')).join('\n');
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    link.download = `inventaire-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
   if (products.isError) {
     const message = products.error instanceof ApiRequestError ? products.error.message : 'Impossible de charger l’inventaire.';
     return <ErrorState message={message} retry={() => void products.refetch()} />;
@@ -69,7 +101,7 @@ export function InventoryPage() {
         <div><small>Références actives</small><strong>{integer.format(counts.total)}</strong></div>
         <div><small>Unités affichées</small><strong>{integer.format(counts.units)}</strong></div>
         <div><small>Valeur affichée</small><strong>{money.format(counts.value)}</strong></div>
-        <button className="primary-button" onClick={() => setShowCreate(true)}><PackagePlus size={18} /> Nouveau produit</button>
+        {canManage && <button className="primary-button" onClick={() => setShowCreate(true)}><PackagePlus size={18} /> Nouveau produit</button>}
       </section>
 
       <section className="panel inventory-panel">
@@ -80,8 +112,8 @@ export function InventoryPage() {
             <button className={stock === 'low' ? 'active' : ''} onClick={() => setStock('low')}>Faible</button>
             <button className={stock === 'out' ? 'active' : ''} onClick={() => setStock('out')}>Rupture</button>
           </div>
-          <button className="secondary-button"><SlidersHorizontal size={16} /> Filtres</button>
-          <button className="secondary-button"><ArrowDownToLine size={16} /> Exporter</button>
+          <label className="category-filter"><SlidersHorizontal size={15} /><select value={category} onChange={(event) => setCategory(event.target.value as typeof category)}><option value="">Toutes catégories</option>{Object.entries(categoryLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+          <button className="secondary-button" onClick={exportProducts}><ArrowDownToLine size={16} /> Exporter</button>
         </div>
 
         <div className="table-wrap">
@@ -98,14 +130,14 @@ export function InventoryPage() {
                   <td>{money.format(product.purchasePrice)}</td>
                   <td>{money.format(product.wholesalePrice)}</td>
                   <td><StockStatus product={product} /></td>
-                  <td><button className="icon-button"><MoreHorizontal size={18} /></button></td>
+                  <td>{canManage ? <button className="secondary-button compact" onClick={() => setAdjustProduct(product)}>Ajuster</button> : <span>Lecture seule</span>}</td>
                 </tr>
               ))}
               {products.data?.items.length === 0 && <tr><td colSpan={8} className="loading-cell">Aucun produit ne correspond à cette recherche.</td></tr>}
             </tbody>
           </table>
         </div>
-        <footer className="table-footer"><span>{counts.total} résultat{counts.total === 1 ? '' : 's'}</span><div><button disabled><ChevronLeft size={16} /></button><b>1</b><button disabled><ChevronRight size={16} /></button></div></footer>
+        <footer className="table-footer"><span>{counts.total} résultat{counts.total === 1 ? '' : 's'}</span><span>Export CSV disponible</span></footer>
       </section>
 
       {showCreate && (
@@ -123,9 +155,19 @@ export function InventoryPage() {
               <label><span>Prix retail (MAD)</span><input required type="number" min="0" step="0.01" value={draft.retailPrice} onChange={(e) => setDraft({ ...draft, retailPrice: Number(e.target.value) })} /></label>
               <label><span>Stock initial</span><input required type="number" min="0" step="1" value={draft.initialQuantity} onChange={(e) => setDraft({ ...draft, initialQuantity: Number(e.target.value) })} /></label>
             </div>
-            <label className="checkbox"><input type="checkbox" checked={draft.retailVisible} onChange={(e) => setDraft({ ...draft, retailVisible: e.target.checked })} /><span>Publier plus tard dans la boutique retail</span></label>
+            <label className="checkbox"><input type="checkbox" checked={draft.retailVisible} onChange={(e) => setDraft({ ...draft, retailVisible: e.target.checked })} /><span>Afficher immédiatement dans la boutique retail</span></label>
             {create.isError && <p className="form-error">{create.error instanceof ApiRequestError ? create.error.message : 'Impossible d’ajouter ce produit.'}</p>}
             <footer className="modal-actions"><button className="secondary-button" type="button" onClick={() => setShowCreate(false)}>Annuler</button><button className="primary-button" type="submit" disabled={create.isPending}>{create.isPending ? 'Enregistrement…' : 'Ajouter le produit'}</button></footer>
+          </form>
+        </Modal>
+      )}
+      {adjustProduct && (
+        <Modal title={`Ajuster · ${adjustProduct.name}`} subtitle={`Stock actuel : ${adjustProduct.onHand} · réservé : ${adjustProduct.reserved}`} onClose={() => setAdjustProduct(null)}>
+          <form className="product-form" onSubmit={(event) => { event.preventDefault(); adjust.mutate(); }}>
+            <div className="form-grid"><label><span>Variation de quantité</span><input required type="number" step="1" value={adjustment.quantityDelta} onChange={(event) => setAdjustment({ ...adjustment, quantityDelta: Number(event.target.value) })} /></label><label><span>Motif</span><input required minLength={3} value={adjustment.note} onChange={(event) => setAdjustment({ ...adjustment, note: event.target.value })} /></label></div>
+            <p className="form-hint">Utilisez une valeur positive pour ajouter du stock, négative pour le retirer.</p>
+            {adjust.isError && <p className="form-error">{adjust.error instanceof ApiRequestError ? adjust.error.message : 'Ajustement impossible.'}</p>}
+            <footer className="modal-actions"><button className="secondary-button" type="button" onClick={() => setAdjustProduct(null)}>Annuler</button><button className="primary-button" disabled={adjust.isPending}>{adjust.isPending ? 'Validation…' : 'Valider l’ajustement'}</button></footer>
           </form>
         </Modal>
       )}

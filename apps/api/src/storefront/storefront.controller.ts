@@ -3,7 +3,9 @@ import { createRetailOrderSchema, productListQuerySchema, type CreateRetailOrder
 import { CatalogService } from '../catalog/catalog.service.js';
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import { StorefrontService } from './storefront.service.js';
+import { Public } from '../auth/auth.decorators.js';
 
+@Public()
 @Controller('store')
 export class StorefrontController {
   constructor(private readonly catalog: CatalogService, private readonly storefront: StorefrontService) {}

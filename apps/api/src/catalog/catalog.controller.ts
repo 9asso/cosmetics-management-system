@@ -7,6 +7,7 @@ import {
 } from '@cosmetics/contracts';
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import { CatalogService } from './catalog.service.js';
+import { Roles } from '../auth/auth.decorators.js';
 
 @Controller('products')
 export class CatalogController {
@@ -20,6 +21,7 @@ export class CatalogController {
   }
 
   @Post()
+  @Roles('OWNER', 'MANAGER', 'WAREHOUSE')
   create(
     @Body(new ZodValidationPipe(createProductSchema)) input: CreateProductInput,
   ) {

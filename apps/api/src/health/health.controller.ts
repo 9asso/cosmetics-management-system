@@ -1,6 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service.js';
+import { Public } from '../auth/auth.decorators.js';
 
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(private readonly db: DatabaseService) {}

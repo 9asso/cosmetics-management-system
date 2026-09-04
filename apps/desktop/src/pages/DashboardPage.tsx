@@ -8,7 +8,7 @@ import {
   PackageX,
   Scale,
   ShoppingCart,
-  Sparkles,
+  PackagePlus,
   TrendingUp,
   WalletCards,
 } from 'lucide-react';
@@ -22,7 +22,11 @@ const activity = [
   { title: 'Ajustement inventaire', detail: 'Glow Serum · +6 unités', time: 'Hier', tone: 'blue' },
 ];
 
-export function DashboardPage({ onOpenInventory }: { onOpenInventory: () => void }) {
+export function DashboardPage({
+  onNavigate,
+}: {
+  onNavigate: (section: 'inventory' | 'sales' | 'purchases' | 'orders') => void;
+}) {
   const summary = useQuery({ queryKey: ['dashboard-summary'], queryFn: api.dashboard });
 
   if (summary.isError) {
@@ -54,7 +58,7 @@ export function DashboardPage({ onOpenInventory }: { onOpenInventory: () => void
         <article className="panel performance-panel">
           <div className="panel-heading">
             <div><p className="overline">Performance</p><h2>Activité commerciale</h2></div>
-            <select aria-label="Période"><option>Ce mois</option><option>Cette semaine</option><option>Cette année</option></select>
+            <span className="live-label">Vue cumulée</span>
           </div>
           <div className="chart-placeholder">
             <div className="chart-y"><span>75k</span><span>50k</span><span>25k</span><span>0</span></div>
@@ -70,22 +74,22 @@ export function DashboardPage({ onOpenInventory }: { onOpenInventory: () => void
 
         <article className="panel alerts-panel">
           <div className="panel-heading"><div><p className="overline">Attention requise</p><h2>Alertes</h2></div></div>
-          <button className="alert-row" onClick={onOpenInventory}>
+          <button className="alert-row" onClick={() => onNavigate('inventory')}>
             <span className="alert-icon warning"><AlertTriangle size={18} /></span>
             <div><strong>Stock faible</strong><small>{value?.lowStockCount ?? '—'} références sous le seuil</small></div>
             <ArrowRight size={17} />
           </button>
-          <button className="alert-row" onClick={onOpenInventory}>
+          <button className="alert-row" onClick={() => onNavigate('inventory')}>
             <span className="alert-icon danger"><PackageX size={18} /></span>
             <div><strong>Ruptures de stock</strong><small>{value?.outOfStockCount ?? '—'} références indisponibles</small></div>
             <ArrowRight size={17} />
           </button>
-          <button className="alert-row">
+          <button className="alert-row" onClick={() => onNavigate('orders')}>
             <span className="alert-icon blue"><Banknote size={18} /></span>
             <div><strong>Chèques en attente</strong><small>{value?.pendingChecks ?? '—'} chèques à suivre</small></div>
             <ArrowRight size={17} />
           </button>
-          <button className="text-button" onClick={onOpenInventory}>Voir toutes les alertes <ArrowRight size={15} /></button>
+          <button className="text-button" onClick={() => onNavigate('inventory')}>Voir toutes les alertes <ArrowRight size={15} /></button>
         </article>
       </section>
 
@@ -93,9 +97,9 @@ export function DashboardPage({ onOpenInventory }: { onOpenInventory: () => void
         <article className="panel quick-panel">
           <div className="panel-heading"><div><p className="overline">Raccourcis</p><h2>Actions rapides</h2></div></div>
           <div className="quick-actions">
-            <button><span><ShoppingCart size={20} /></span><strong>Nouvelle vente</strong><small>Créer une facture</small></button>
-            <button onClick={onOpenInventory}><span><Boxes size={20} /></span><strong>Ajouter un produit</strong><small>Enrichir le catalogue</small></button>
-            <button><span><Sparkles size={20} /></span><strong>Enregistrer un retour</strong><small>Restituer le stock</small></button>
+            <button onClick={() => onNavigate('sales')}><span><ShoppingCart size={20} /></span><strong>Nouvelle vente</strong><small>Créer une facture grossiste</small></button>
+            <button onClick={() => onNavigate('inventory')}><span><Boxes size={20} /></span><strong>Ajouter un produit</strong><small>Enrichir le catalogue</small></button>
+            <button onClick={() => onNavigate('purchases')}><span><PackagePlus size={20} /></span><strong>Nouvel achat</strong><small>Réceptionner du stock</small></button>
           </div>
         </article>
         <article className="panel activity-panel">

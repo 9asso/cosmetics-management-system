@@ -3,7 +3,11 @@ import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { Pool } from 'pg';
 
-export async function runSqlDirectory(directory: string, trackMigrations: boolean) {
+export async function runSqlDirectory(
+  directory: string,
+  trackMigrations: boolean,
+  onlyFilename?: string,
+) {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error('DATABASE_URL is required');
 
@@ -19,7 +23,9 @@ export async function runSqlDirectory(directory: string, trackMigrations: boolea
       `);
     }
 
-    const files = (await readdir(directory)).filter((name) => name.endsWith('.sql')).sort();
+    const files = (await readdir(directory))
+      .filter((name) => name.endsWith('.sql') && (!onlyFilename || name === onlyFilename))
+      .sort();
     for (const filename of files) {
       const sql = await readFile(resolve(directory, filename), 'utf8');
       const checksum = createHash('sha256').update(sql).digest('hex');

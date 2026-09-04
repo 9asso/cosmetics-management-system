@@ -26,6 +26,9 @@ services:
       API_PORT: 4000
       DATABASE_URL: postgresql://cosmetics:${POSTGRES_PASSWORD}@postgres:5432/cosmetics
       CORS_ORIGINS: ${PUBLIC_ORIGIN}
+      AUTH_SECRET: ${AUTH_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,7 +58,6 @@ services:
       - "80:80"
     volumes:
       - ./deploy/gateway-nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - /opt/cosmetics-management/shared/.htpasswd:/etc/nginx/.htpasswd:ro
     depends_on:
       - api
       - storefront

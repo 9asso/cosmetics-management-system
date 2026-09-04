@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './store.css';
 
 export const metadata: Metadata = {
-  title: 'Maison Élan | Beauté authentique',
+  title: 'GlowCare | Health & Beauty',
   description: 'Cosmétiques sélectionnés avec soin, livrés partout au Maroc.',
 };
 
