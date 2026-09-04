@@ -145,7 +145,7 @@ mkdir -p ${shellQuote(`${remoteRoot}/releases`)} ${shellQuote(`${remoteRoot}/sha
     await execRemote(
       connection,
       `install -m 600 ${shellQuote(`${remoteRoot}/shared/.env.upload`)} ${shellQuote(`${remoteRoot}/shared/.env`)}
-install -m 600 ${shellQuote(`${remoteRoot}/shared/.htpasswd.upload`)} ${shellQuote(`${remoteRoot}/shared/.htpasswd`)}
+install -m 644 ${shellQuote(`${remoteRoot}/shared/.htpasswd.upload`)} ${shellQuote(`${remoteRoot}/shared/.htpasswd`)}
 install -m 600 ${shellQuote(`${remoteRoot}/shared/deployment-credentials.upload`)} ${shellQuote(`${remoteRoot}/shared/deployment-credentials`)}
 rm -f ${shellQuote(`${remoteRoot}/shared/.env.upload`)} ${shellQuote(`${remoteRoot}/shared/.htpasswd.upload`)} ${shellQuote(`${remoteRoot}/shared/deployment-credentials.upload`)}`,
       { quiet: true },
@@ -159,6 +159,12 @@ rm -f ${shellQuote(`${remoteRoot}/shared/.env.upload`)} ${shellQuote(`${remoteRo
     );
     writeFileSync(localCredentialPath, savedCredentials, { mode: 0o600 });
   }
+
+  await execRemote(
+    connection,
+    `chmod 644 ${shellQuote(`${remoteRoot}/shared/.htpasswd`)}`,
+    { quiet: true },
+  );
 
   console.log("Uploading the application...");
   await upload(connection, localArchive, remoteArchive);
