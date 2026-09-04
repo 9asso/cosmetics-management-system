@@ -62,7 +62,9 @@ function createArchive() {
   execFileSync("tar", [
     "-czf", localArchive, "--no-xattrs", "--no-mac-metadata", "--exclude=.git",
     "--exclude=.env", "--exclude=.deployment-credentials", "--exclude=node_modules",
-    "--exclude=.turbo", "--exclude=dist", "--exclude=.next", "--exclude=target", ".",
+    "--exclude=.env.local", "--exclude=.local", "--exclude=old",
+    "--exclude=database/seeds/dev 2.sql", "--exclude=.turbo", "--exclude=dist",
+    "--exclude=.next", "--exclude=target", ".",
   ], { cwd: repoRoot, stdio: "inherit", env: { ...process.env, COPYFILE_DISABLE: "1" } });
 }
 
