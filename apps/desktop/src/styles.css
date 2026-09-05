@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: "Quicksand", system-ui, sans-serif;
@@ -12,4 +13,14 @@
   --color-line: #eee7eb;
   --color-surface: #fcfafb;
   --shadow-sm: 0 3px 15px rgb(60 28 41 / 0.035);
+}
+
+.dark {
+  color-scheme: dark;
+  --color-brand-soft: #39272b;
+  --color-ink: #f7f3f5;
+  --color-muted: #b9adb3;
+  --color-line: #40383d;
+  --color-surface: #211e21;
+  --shadow-sm: 0 3px 18px rgb(0 0 0 / 0.18);
 }

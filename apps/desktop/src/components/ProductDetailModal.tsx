@@ -13,7 +13,7 @@ const categories: Record<ProductListItem['category'], string> = {
 };
 
 function Detail({ label, value }: { label: string; value: string | number }) {
-  return <div className="rounded-xl border border-line bg-white p-3">
+  return <div className="rounded-xl border border-line bg-white p-3 dark:bg-[#302b2f]">
     <dt className="text-[9px] font-bold uppercase tracking-wider text-muted">{label}</dt>
     <dd className="mt-1.5 break-words text-xs font-bold text-ink">{value}</dd>
   </div>;
@@ -31,10 +31,10 @@ export function ProductDetailModal({ product, onClose }: { product: ProductListI
     <div className="p-5 sm:p-6">
       <section className="grid overflow-hidden rounded-2xl border border-line bg-surface md:grid-cols-[260px_1fr]">
         <div className="relative grid min-h-60 place-items-center overflow-hidden bg-linear-to-br from-brand-soft via-white to-pink-50 p-6">
-          <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-brand shadow-sm">{categories[product.category]}</span>
+          <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-brand shadow-sm dark:bg-[#302b2f]/90">{categories[product.category]}</span>
           {product.imageUrl
             ? <img src={product.imageUrl} alt={product.name} className="max-h-56 w-full object-contain drop-shadow-[0_18px_28px_rgba(60,28,41,.12)]" />
-            : <span className="grid size-28 place-items-center rounded-3xl bg-white text-5xl font-bold text-brand shadow-sm">{product.name[0]}</span>}
+            : <span className="grid size-28 place-items-center rounded-3xl bg-white text-5xl font-bold text-brand shadow-sm dark:bg-[#302b2f]">{product.name[0]}</span>}
         </div>
         <div className="flex flex-col justify-between p-5 sm:p-7">
           <div>
@@ -57,7 +57,7 @@ export function ProductDetailModal({ product, onClose }: { product: ProductListI
       </section>
 
       <section className="mt-5 grid gap-3 sm:grid-cols-3">
-        <article className="rounded-2xl border border-line bg-white p-4 shadow-sm">
+        <article className="rounded-2xl border border-line bg-white p-4 shadow-sm dark:bg-[#302b2f] dark:shadow-none">
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted"><Boxes size={16} className="text-brand" />Stock physique</div>
           <strong className="mt-2 block text-2xl text-ink">{product.onHand}</strong>
           <small className="text-[10px] text-muted">{product.reserved} unité(s) réservée(s)</small>

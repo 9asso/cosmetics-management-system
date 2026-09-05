@@ -1,5 +1,5 @@
 import { ui } from "./lib/ui";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AuthUser, UserRole } from "@cosmetics/contracts";
 import {
@@ -17,6 +17,8 @@ import {
   ShoppingBag,
   Store,
   Pencil,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { DashboardPage } from "./pages/DashboardPage";
 import { InventoryPage } from "./pages/InventoryPage";
@@ -144,6 +146,25 @@ const roleLabels: Record<UserRole, string> = {
   STAFF: "Employé",
 };
 
+const themeStorageKey = "onight-dashboard-theme";
+
+function themeStorage() {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function initialDarkMode() {
+  if (typeof window === "undefined") return false;
+  const saved = themeStorage()?.getItem(themeStorageKey);
+  if (saved === "dark") return true;
+  if (saved === "light") return false;
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
+}
+
 export function App() {
   const cache = useQueryClient();
   const [authenticated, setAuthenticated] = useState(hasAccessToken());
@@ -152,6 +173,7 @@ export function App() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [editProfile, setEditProfile] = useState(false);
+  const [darkMode, setDarkMode] = useState(initialDarkMode);
   const me = useQuery({
     queryKey: ["me"],
     queryFn: api.me,
@@ -164,6 +186,12 @@ export function App() {
     retry: 1,
     refetchInterval: 30_000,
   });
+
+  useLayoutEffect(() => {
+    document.documentElement.classList.toggle("dark", darkMode);
+    themeStorage()?.setItem(themeStorageKey, darkMode ? "dark" : "light");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", darkMode ? "#181619" : "#ff848f");
+  }, [darkMode]);
 
   useEffect(() => {
     if (me.data) setUser(me.data);
@@ -298,7 +326,7 @@ export function App() {
           </button>
           {/* <p className={ui("sidebar-account-label")}>Compte</p> */}
           <div className={ui("profile")}>
-            <span className={ui("avatar")}>{initials}</span>
+            {/* <span className={ui("avatar")}>{initials}</span> */}
             <div className="min-w-0 flex-1">
               {user.role === "OWNER" ? (
                 <button
@@ -316,7 +344,7 @@ export function App() {
               <small className="text-white!">{roleLabels[user.role]}</small>
             </div>
             <button onClick={logout} title="Se déconnecter">
-              <LogOut size={26} color="white" className="hover:bg-white/20 p-1 rounded-full transition-all delay-75" />
+              <LogOut size={18} color="white" className="hover:scale-[1.1] transition-all delay-75" />
             </button>
           </div>
         </div>
@@ -337,6 +365,17 @@ export function App() {
             <strong>{pageTitles[active].title}</strong>
           </div>
           <div className={ui("top-actions")}>
+            <button
+              className={ui("theme-toggle")}
+              type="button"
+              aria-label={darkMode ? "Activer le mode clair" : "Activer le mode sombre"}
+              aria-pressed={darkMode}
+              title={darkMode ? "Mode clair" : "Mode sombre"}
+              onClick={() => setDarkMode((enabled) => !enabled)}
+            >
+              {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+              <span className="max-lg:hidden">{darkMode ? "Mode clair" : "Mode sombre"}</span>
+            </button>
             <button className={ui("secondary-button")} onClick={openStore}>
               <Store size={16} /> Boutique
             </button>

@@ -28,7 +28,7 @@ export function InvoiceDetailModal({ kind, id, onClose, surface = 'invoice' }: {
     {detail.isLoading && <p className="py-12 text-center text-muted">Chargement…</p>}
     {detail.isError && <ErrorState message="Document indisponible." retry={() => void detail.refetch()} />}
     {value && <div className="space-y-5 p-5 sm:p-6">
-      <section className="overflow-hidden rounded-2xl border border-line bg-white">
+      <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-[#282428]">
         <div className="flex flex-wrap items-start justify-between gap-4 bg-linear-to-r from-brand-soft/80 via-white to-pink-50 px-5 py-5 sm:px-6">
           <div className="flex items-center gap-3">
             <span className="grid size-11 place-items-center rounded-xl bg-linear-to-br from-brand to-brand-secondary text-white shadow-sm"><ReceiptText size={21} /></span>
@@ -52,13 +52,13 @@ export function InvoiceDetailModal({ kind, id, onClose, surface = 'invoice' }: {
             <p className="text-[9px] font-bold uppercase tracking-widest text-muted">Canal &amp; règlement</p>
             <p className="mt-4 flex items-center gap-2 text-xs font-bold text-ink"><PackageOpen size={16} className="text-brand" />{value.channel === 'RETAIL_WEB' ? 'Boutique · paiement à la livraison' : kind === 'purchase' ? 'Achat fournisseur' : 'Vente en gros'}</p>
             <div className="mt-5 flex items-end justify-between gap-3"><div><small className="text-[9px] text-muted">Montant réglé</small><strong className="mt-1 block text-lg text-ink">{money.format(value.amountPaid)}</strong></div><span className="text-[10px] font-bold text-brand">{paidProgress}%</span></div>
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white"><i className="block h-full rounded-full bg-linear-to-r from-brand to-brand-secondary transition-all" style={{ width: `${paidProgress}%` }} /></div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white dark:bg-[#171518]"><i className="block h-full rounded-full bg-linear-to-r from-brand to-brand-secondary transition-all" style={{ width: `${paidProgress}%` }} /></div>
             {!isCancelled && <p className="mt-3 text-[10px] text-muted">Reste à régler : <strong className="text-ink">{money.format(balance)}</strong></p>}
           </div>
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-line bg-white">
+      <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-[#282428]">
         <div className="flex items-center justify-between border-b border-line px-4 py-3"><div><p className="text-[9px] font-bold uppercase tracking-widest text-brand">Contenu</p><h3 className="mt-1 text-sm font-bold">Articles du document</h3></div><span className="rounded-lg bg-brand-soft px-2.5 py-1 text-[10px] font-bold text-brand">{value.items.length} ligne(s)</span></div>
         <div className={ui('table-wrap')}><table><thead><tr><th>Produit</th><th>Quantité</th><th>Prix unitaire</th><th>Total</th></tr></thead>
           <tbody>{value.items.map((item, index) => <tr key={index}><td className="whitespace-normal! font-semibold text-ink">{item.description}</td><td>{item.quantity}{item.unitMultiplier > 1 && ` × ${item.unitMultiplier}`}</td><td>{money.format(item.unitPrice)}</td><td><strong>{money.format(item.lineTotal)}</strong></td></tr>)}</tbody>
@@ -78,7 +78,7 @@ export function InvoiceDetailModal({ kind, id, onClose, surface = 'invoice' }: {
         </dl>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-line bg-white">
+      <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-[#282428]">
         <div className="flex items-center justify-between border-b border-line px-4 py-3"><div><p className="text-[9px] font-bold uppercase tracking-widest text-brand">Règlements</p><h3 className="mt-1 text-sm font-bold">Historique des paiements</h3></div><CreditCard size={19} className="text-brand" /></div>
         {value.payments.length === 0 ? <div className="flex items-center gap-3 p-5 text-xs text-muted"><span className="grid size-9 place-items-center rounded-xl bg-stone-100"><CreditCard size={16} /></span>Aucun paiement enregistré.</div> : <div className="divide-y divide-line">{value.payments.map(payment => <div key={payment.id} className="grid items-center gap-3 px-4 py-3 text-xs sm:grid-cols-[1fr_1fr_1fr_auto]">
           <span className="flex items-center gap-2 text-ink"><CalendarDays size={14} className="text-brand" />{new Date(payment.paidAt).toLocaleDateString('fr-FR')}</span>

@@ -120,37 +120,37 @@ export function DashboardPage({
               <p className={ui("overline")}>Performance</p>
               <h2>Chiffre d’affaires &amp; marge</h2>
             </div>
-            <div className="flex rounded-xl bg-[#f7f7fa] p-1" aria-label="Période du graphique" role="group">
+            <div className="flex rounded-xl bg-[#f7f7fa] p-1 dark:bg-[#1b191b]" aria-label="Période du graphique" role="group">
               {(['year', 'month', 'week'] as const).map(value => <button
                 key={value}
                 type="button"
                 aria-pressed={range === value}
-                className={`rounded-lg px-3 py-1.5 text-[10px] font-bold transition-all ${range === value ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'}`}
+                className={`rounded-lg px-3 py-1.5 text-[10px] font-bold transition-all ${range === value ? 'bg-white text-ink shadow-sm dark:bg-[#332e32]' : 'text-muted hover:text-ink'}`}
                 onClick={() => setRange(value)}
               >{rangeCopy[value].button}</button>)}
             </div>
           </div>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[10px] text-muted">
             <p>MAD · période actuelle incomplète · hors annulations et remboursements.</p>
-            <div className="flex items-center gap-4"><span className="flex items-center gap-1.5"><i className="size-2 rounded-full bg-[#302d33]" />CA</span><span className="flex items-center gap-1.5"><i className="size-2 rounded-full bg-brand-secondary/45" />Marge</span></div>
+            <div className="flex items-center gap-4"><span className="flex items-center gap-1.5"><i className="size-2 rounded-full bg-[#302d33] dark:bg-white" />CA</span><span className="flex items-center gap-1.5"><i className="size-2 rounded-full bg-brand-secondary/45" />Marge</span></div>
           </div>
           {analytics.isError ? <ErrorState message="Impossible de charger les statistiques." retry={() => void analytics.refetch()} /> : analytics.isLoading ? <p className="py-16 text-center text-muted">Chargement des statistiques…</p> : <>
             {!periods.some(period => period.orderCount > 0) && <p className="rounded-lg bg-brand-soft p-3 text-sm">Aucune vente confirmée sur cette période.</p>}
             <div className="h-72 min-w-0 text-[10px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={periods} margin={{ top: 58, right: 18, bottom: 8, left: 0 }} accessibilityLayer>
-                  <CartesianGrid stroke="#eeeef2" strokeWidth={1} vertical={false} />
-                  {highlighted && bandStart && bandEnd && <ReferenceArea x1={bandStart} x2={bandEnd} fill="#f5f6f9" fillOpacity={0.72} stroke="none" />}
-                  <XAxis dataKey="period" tickFormatter={periodLabel} tickLine={false} axisLine={false} minTickGap={22} tick={{ fill: '#82747d', fontSize: 10 }} />
-                  <YAxis domain={[0, (maximum: number) => Math.max(100, Math.ceil(maximum * 1.2))]} tickFormatter={number => new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(Number(number))} tickLine={false} axisLine={false} width={48} tick={{ fill: '#82747d', fontSize: 10 }} />
+                  <CartesianGrid stroke="var(--color-line)" strokeWidth={1} vertical={false} />
+                  {highlighted && bandStart && bandEnd && <ReferenceArea x1={bandStart} x2={bandEnd} fill="var(--color-brand-soft)" fillOpacity={0.72} stroke="none" />}
+                  <XAxis dataKey="period" tickFormatter={periodLabel} tickLine={false} axisLine={false} minTickGap={22} tick={{ fill: 'var(--color-muted)', fontSize: 10 }} />
+                  <YAxis domain={[0, (maximum: number) => Math.max(100, Math.ceil(maximum * 1.2))]} tickFormatter={number => new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(Number(number))} tickLine={false} axisLine={false} width={48} tick={{ fill: 'var(--color-muted)', fontSize: 10 }} />
                   <Tooltip
                     labelFormatter={period => periodLabel(String(period))}
                     formatter={(number, name) => [money.format(Number(number)), name]}
-                    contentStyle={{ border: '1px solid #eee7eb', borderRadius: 12, boxShadow: '0 12px 30px rgba(60,28,41,.1)', fontSize: 11 }}
-                    cursor={{ stroke: '#d9d8de', strokeDasharray: '4 4' }}
+                    contentStyle={{ border: '1px solid var(--color-line)', borderRadius: 12, background: 'var(--color-surface)', color: 'var(--color-ink)', boxShadow: '0 12px 30px rgba(0,0,0,.14)', fontSize: 11 }}
+                    cursor={{ stroke: 'var(--color-muted)', strokeDasharray: '4 4' }}
                   />
                   <Line type="monotone" dataKey="grossMargin" name="Marge produits" stroke="#efc6d4" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#f66897', stroke: '#fff', strokeWidth: 2 }} />
-                  <Line type="monotone" dataKey="revenue" name="Chiffre d’affaires" stroke="#302d33" strokeWidth={3} dot={false} activeDot={{ r: 5, fill: '#302d33', stroke: '#fff', strokeWidth: 3 }} />
+                  <Line type="monotone" dataKey="revenue" name="Chiffre d’affaires" stroke="var(--color-ink)" strokeWidth={3} dot={false} activeDot={{ r: 5, fill: 'var(--color-ink)', stroke: 'var(--color-surface)', strokeWidth: 3 }} />
                   {highlighted && changeLabel && <ReferenceDot
                     x={highlighted.period}
                     y={highlighted.revenue}

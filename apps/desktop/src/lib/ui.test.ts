@@ -22,9 +22,11 @@ describe("Tailwind recipes", () => {
   it("keeps the stylesheet limited to Tailwind imports and theme tokens", () => {
     const css = readFileSync(resolve("src/styles.css"), "utf8");
     expect(css).toContain('@import "tailwindcss"');
-    expect(css).not.toMatch(/\.[a-z][\w-]*\s*\{/);
+    expect(css).toContain('@custom-variant dark');
+    expect(css.replace(/\.dark\s*\{[^}]*\}/s, '')).not.toMatch(/\.[a-z][\w-]*\s*\{/);
     expect(css).not.toContain("@apply");
     expect(css).not.toMatch(/#677b74|#263b33/);
+    expect(css).toContain('--color-surface: #211e21');
   });
   it("covers every semantic class passed to ui in the dashboard", () => {
     const files = [

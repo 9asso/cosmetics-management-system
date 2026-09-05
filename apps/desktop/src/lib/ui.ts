@@ -3,7 +3,7 @@ import { twMerge } from "tailwind-merge";
 // Shared Tailwind recipes. Keep complete utility names here so Vite can discover
 // them statically. Semantic markers are only hooks for parent/child variants;
 // there are no corresponding CSS rules or runtime-generated utility names.
-const card = "rounded-xl border border-line bg-white shadow-sm";
+const card = "rounded-xl border border-line bg-white shadow-sm transition-colors dark:bg-[#282428] dark:shadow-none";
 const button =
   "inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-50";
 const form =
@@ -11,35 +11,35 @@ const form =
 const toolbar =
   "flex flex-wrap items-center gap-2 border-b border-line px-3.5 py-3";
 const tones = {
-  good: "bg-emerald-50 text-emerald-700",
-  warn: "bg-amber-50 text-amber-700",
-  bad: "bg-rose-50 text-rose-700",
-  neutral: "bg-sky-50 text-sky-700",
+  good: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/55 dark:text-emerald-300",
+  warn: "bg-amber-50 text-amber-700 dark:bg-amber-950/55 dark:text-amber-300",
+  bad: "bg-rose-50 text-rose-700 dark:bg-rose-950/55 dark:text-rose-300",
+  neutral: "bg-sky-50 text-sky-700 dark:bg-sky-950/55 dark:text-sky-300",
 };
 
 export const recipes: Record<string, string> = {
   "app-shell":
-    "group/shell flex min-h-screen bg-[#f8f8f8] g-[radial-gradient(ellipse_at_0%_10%,#fff4f59e_0%,transparent_65%),linear-gradient(180deg,#fff7f700,#ffffff)]",
+    "group/shell flex min-h-screen bg-[#f8f8f8] transition-colors dark:bg-[#171518]",
   "sidebar-collapsed": "",
   sidebar:
-    "fixed inset-y-0 left-0 z-30 flex w-[250px] -translate-x-full flex-col overflow-y-auto px-3 py-3 text-ink transition-transform max-md:bg-rose-50 md:translate-x-0 md:group-[.sidebar-collapsed]/shell:w-[68px]",
+    "fixed inset-y-0 left-0 z-30 flex w-[250px] -translate-x-full flex-col overflow-y-auto px-3 pb-2 pt-4 text-ink transition-all max-md:bg-rose-50 dark:max-md:bg-[#211e21] md:translate-x-0 md:group-[.sidebar-collapsed]/shell:w-[68px]",
   "mobile-open": "translate-x-0 shadow-xl md:shadow-none",
   "mobile-backdrop": "fixed inset-0 z-20 bg-black/35 md:hidden",
   brand:
     "relative border-b border-dashed border-black/25 flex items-center gap-2 px-1 pb-3 mb-5 [&>div]:flex [&>div]:min-w-0 [&>div]:flex-col [&_strong]:text-base [&_strong]:font-bold [&_small]:mt-0.5 [&_small]:whitespace-nowrap [&_small]:text-[9px] [&_small]:text-muted md:group-[.sidebar-collapsed]/shell:pb-14 md:group-[.sidebar-collapsed]/shell:[&>div]:hidden",
   "brand-mark": "size-9 shrink-0 rounded-xl shadow-sm",
   "collapse-button":
-    "ml-auto hidden h-7 w-6 shrink-0 place-items-center rounded-md text-muted hover:bg-white md:grid md:group-[.sidebar-collapsed]/shell:absolute md:group-[.sidebar-collapsed]/shell:top-12 md:group-[.sidebar-collapsed]/shell:left-2",
+    "ml-auto hidden h-7 w-6 shrink-0 place-items-center rounded-md text-muted hover:bg-white dark:hover:bg-white/10 md:grid md:group-[.sidebar-collapsed]/shell:absolute md:group-[.sidebar-collapsed]/shell:top-12 md:group-[.sidebar-collapsed]/shell:left-2",
   "nav-group": "mb-5 md:group-[.sidebar-collapsed]/shell:mb-3",
   "nav-label":
     "px-2.5 pb-2 text-[10px] font-medium text-muted md:group-[.sidebar-collapsed]/shell:hidden",
   "nav-item":
-    "my-0.5 flex min-h-9 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-ink transition-colors hover:bg-white/70 [&_svg]:shrink-0 [&_svg]:stroke-[1.8] [&_span]:flex-1 [&_span]:text-[11px] [&_span]:font-semibold md:group-[.sidebar-collapsed]/shell:justify-center md:group-[.sidebar-collapsed]/shell:px-0 md:group-[.sidebar-collapsed]/shell:[&_span]:hidden",
+    "my-0.5 flex min-h-9 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-ink transition-colors hover:bg-white/70 dark:hover:bg-white/8 [&_svg]:shrink-0 [&_svg]:stroke-[1.8] [&_span]:flex-1 [&_span]:text-[11px] [&_span]:font-semibold md:group-[.sidebar-collapsed]/shell:justify-center md:group-[.sidebar-collapsed]/shell:px-0 md:group-[.sidebar-collapsed]/shell:[&_span]:hidden",
   active: "bg-brand text-white shadow-sm hover:bg-brand/90 md:group-[.sidebar-collapsed]/shell:bg-brand/90",
   "nav-chevron": "rotate-180 md:group-[.sidebar-collapsed]/shell:hidden",
-  "sidebar-footer": "mt-auto p-3 bg-brand md:group-[.sidebar-collapsed]/shell:hidden rounded-lg ",
+  "sidebar-footer": "mt-auto p-3 bg-brand md:group-[.sidebar-collapsed]/shell:hidden rounded-2xl ",
   "store-link":
-    "flex w-full items-center gap-2.5 rounded-lg border border-brand/15 bg-white -mt-9 shadow-[0px_0px_20px_rgba(60,28,41,0.1)] p-2.5 text-left text-brand hover:bg-white [&_svg]:shrink-0 [&_span]:flex [&_span]:flex-col [&_strong]:text-[11px] [&_small]:mt-0.5 [&_small]:text-[9px] [&_small]:text-muted md:group-[.sidebar-collapsed]/shell:justify-center md:group-[.sidebar-collapsed]/shell:px-0 md:group-[.sidebar-collapsed]/shell:[&_span]:hidden",
+    "flex w-full hover:scale-[1.025] transition-all delay-75 items-center gap-2.5 rounded-2xl  border-brand/15 bg-white -mt-9 shadow-[0px_0px_20px_rgba(60,28,41,0.1)] p-2.5 text-left text-brand hover:bg-white dark:bg-[#2d282c] dark:hover:bg-[#342e33] [&_svg]:shrink-0 [&_span]:flex [&_span]:flex-col [&_strong]:text-[11px] [&_small]:mt-0.5 [&_small]:text-[9px] [&_small]:text-muted md:group-[.sidebar-collapsed]/shell:justify-center md:group-[.sidebar-collapsed]/shell:px-0 md:group-[.sidebar-collapsed]/shell:[&_span]:hidden",
   "sidebar-account-label":
     "mx-2.5 mt-5 mb-2 text-[10px] text-muted md:group-[.sidebar-collapsed]/shell:hidden",
   profile:
@@ -47,17 +47,18 @@ export const recipes: Record<string, string> = {
   avatar:
     "grid size-8.5 shrink-0 place-items-center rounded-full bg-linear-to-br from-brand to-brand-secondary text-[11px] font-bold text-white ring-1 ring-white/35",
   "main-area":
-    "min-w-0 flex-1 shadow-[0px_0px_15px_rgba(60,28,41,0.085)] bg-surface md:m-2 md:ml-[250px] md:rounded-[19px] md:border md:border-line md:group-[.sidebar-collapsed]/shell:ml-[68px]",
+    "min-w-0 flex-1 bg-surface shadow-[0px_0px_15px_rgba(60,28,41,0.085)] transition-colors dark:shadow-[0_0_22px_rgba(0,0,0,.3)] md:m-2 md:ml-[250px] md:rounded-[19px] md:border md:border-line md:group-[.sidebar-collapsed]/shell:ml-[68px]",
   topbar:
-    "sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-line bg-white/95 px-3.5 backdrop-blur-md md:h-[59px] md:rounded-t-[19px] md:px-5",
+    "sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-line bg-white/95 px-3.5 backdrop-blur-md transition-colors dark:bg-[#211e21]/95 md:h-[59px] md:rounded-t-[19px] md:px-5",
   "mobile-menu-button":
-    "grid size-9 shrink-0 place-items-center rounded-lg border border-line bg-white md:hidden",
+    "grid size-9 shrink-0 place-items-center rounded-lg border border-line bg-white dark:bg-[#2d282c] md:hidden",
   breadcrumb:
     "flex items-center gap-2 text-[10px] text-muted [&_strong]:text-ink max-md:[&>span]:hidden max-md:[&>svg]:hidden",
   "top-actions":
     "ml-auto flex gap-2 [&_button]:min-h-8 [&_button]:rounded-lg [&_button]:px-2.5 [&_button]:py-1.5 [&_button]:text-[10px] max-lg:[&_.secondary-button]:hidden max-md:[&_.primary-button]:w-8 max-md:[&_.primary-button]:text-[0px] max-md:[&_.primary-button]:gap-0",
   "primary-button": `${button} border border-transparent bg-linear-to-r from-brand to-brand-secondary text-white shadow-sm transition-all hover:brightness-95 active:scale-[.98]`,
-  "secondary-button": `${button} border border-line bg-linear-to-r from-white to-brand-soft/60 text-ink hover:border-brand-secondary hover:from-brand-soft hover:to-white`,
+  "secondary-button": `${button} border border-line bg-linear-to-r from-white to-brand-soft/60 text-ink hover:border-brand-secondary hover:from-brand-soft hover:to-white dark:from-[#302a2f] dark:to-[#39272b] dark:hover:from-[#39272b] dark:hover:to-[#302a2f]`,
+  "theme-toggle": `${button} border border-line bg-white text-ink hover:border-brand hover:text-brand dark:bg-[#2d282c]`,
   "text-button":
     "mt-3 inline-flex items-center gap-1.5 py-1 text-[11px] font-semibold text-brand hover:underline",
   "icon-button":
@@ -80,9 +81,9 @@ export const recipes: Record<string, string> = {
   "metric-top":
     "flex items-center justify-between gap-2 text-[11px] text-muted [&_i]:grid [&_i]:size-8 [&_i]:shrink-0 [&_i]:place-items-center [&_i]:rounded-lg",
   "metric-ink": "[&_i]:bg-brand-soft [&_i]:text-brand",
-  "metric-green": "[&_i]:bg-emerald-50 [&_i]:text-emerald-700",
-  "metric-gold": "[&_i]:bg-amber-50 [&_i]:text-amber-700",
-  "metric-rose": "[&_i]:bg-rose-50 [&_i]:text-rose-700",
+  "metric-green": "[&_i]:bg-emerald-50 [&_i]:text-emerald-700 dark:[&_i]:bg-emerald-950/55 dark:[&_i]:text-emerald-300",
+  "metric-gold": "[&_i]:bg-amber-50 [&_i]:text-amber-700 dark:[&_i]:bg-amber-950/55 dark:[&_i]:text-amber-300",
+  "metric-rose": "[&_i]:bg-rose-50 [&_i]:text-rose-700 dark:[&_i]:bg-rose-950/55 dark:[&_i]:text-rose-300",
   "dashboard-grid":
     "grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.65fr)_minmax(280px,0.8fr)]",
   "lower-grid": "lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,1fr)]",
@@ -152,18 +153,18 @@ export const recipes: Record<string, string> = {
   "modal-backdrop":
     "fixed inset-0 z-50 grid place-items-center bg-black/40 p-3 backdrop-blur-sm sm:p-7",
   modal:
-    "max-h-[92dvh] w-full max-w-[700px] overflow-y-auto rounded-2xl border border-white/50 bg-white shadow-2xl",
+    "max-h-[92dvh] w-full max-w-[700px] overflow-y-auto rounded-2xl border border-white/50 bg-white text-ink shadow-2xl dark:border-line dark:bg-[#282428]",
   "modal-header":
-    "sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-line bg-white/95 px-6 pt-5 pb-4 backdrop-blur-md [&_h2]:text-lg [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-xs [&_p]:text-muted",
+    "sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-line bg-white/95 px-6 pt-5 pb-4 backdrop-blur-md dark:bg-[#282428]/95 [&_h2]:text-lg [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-xs [&_p]:text-muted",
   "product-form": `${form} px-6 pt-5`,
   "form-grid": "grid grid-cols-1 gap-3 sm:grid-cols-2",
   "full-field": "mt-3.5 [&_textarea]:min-h-22 [&_textarea]:resize-y",
   checkbox:
     "mt-4 flex-row! items-center [&_input]:w-auto! [&_input]:accent-brand",
-  "form-error": "my-3 rounded-lg bg-rose-50 px-3 py-2.5 text-xs text-rose-700",
-  "inline-error": "bg-rose-50 px-4 py-3 text-xs text-rose-700",
+  "form-error": "my-3 rounded-lg bg-rose-50 px-3 py-2.5 text-xs text-rose-700 dark:bg-rose-950/55 dark:text-rose-300",
+  "inline-error": "bg-rose-50 px-4 py-3 text-xs text-rose-700 dark:bg-rose-950/55 dark:text-rose-300",
   "form-success":
-    "my-3 flex items-center gap-2 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-700",
+    "my-3 flex items-center gap-2 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-700 dark:bg-emerald-950/55 dark:text-emerald-300",
   "form-hint": "my-3 text-xs text-muted",
   "modal-actions":
     "mt-5 flex flex-wrap justify-end gap-2 border-t border-line pt-4 pb-5",
@@ -173,7 +174,7 @@ export const recipes: Record<string, string> = {
   "push-right": "ml-auto",
   "channel-label": "inline-flex items-center gap-1.5",
   "row-actions":
-    "flex items-center gap-1.5 [&_button]:grid [&_button]:size-8 [&_button]:place-items-center [&_button]:rounded-lg [&_button]:border [&_button]:border-line [&_button]:bg-linear-to-r [&_button]:from-white [&_button]:to-brand-soft/70 [&_button:hover]:border-brand [&_span]:text-[10px] [&_span]:text-muted",
+    "flex items-center gap-1.5 [&_button]:grid [&_button]:size-8 [&_button]:place-items-center [&_button]:rounded-lg [&_button]:border [&_button]:border-line [&_button]:bg-linear-to-r [&_button]:from-white [&_button]:to-brand-soft/70 dark:[&_button]:from-[#302a2f] dark:[&_button]:to-[#39272b] [&_button:hover]:border-brand [&_span]:text-[10px] [&_span]:text-muted",
   "operation-layout":
     "grid grid-cols-1 items-start gap-3.5 lg:grid-cols-[minmax(0,1.65fr)_minmax(280px,0.75fr)]",
   "operation-form": `${form} p-5 [&>.primary-button]:mt-4`,
@@ -194,7 +195,7 @@ export const recipes: Record<string, string> = {
   "empty-icon":
     "grid size-12 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand",
   "login-page":
-    "grid min-h-screen grid-cols-1 bg-white md:grid-cols-[1.4fr_0.6fr]",
+    "grid min-h-screen grid-cols-1 bg-white transition-colors dark:bg-[#181619] md:grid-cols-[1.4fr_0.6fr]",
   "login-story":
     "relative hidden flex-col justify-between gap-12 m-3 rounded-4xl isolate overflow-hidden bg-brand-soft [&>div:not(.absolute)]:relative [&>span]:relative p-[clamp(12px,3vw,50px)] text-ink md:flex [&_h1]:my-4 [&_h1]:max-w-[620px] [&_h1]:text-[clamp(35px,4vw,57px)] [&_h1]:leading-[1.08] [&_h1]:font-bold [&_h1]:tracking-[-0.055em] [&_.eyebrow]:text-brand [&>div>p:not(.eyebrow)]:max-w-lg [&>div>p:not(.eyebrow)]:text-sm [&>div>p:not(.eyebrow)]:leading-relaxed",
   "login-brand":

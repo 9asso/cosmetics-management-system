@@ -24,7 +24,7 @@ export function ConfirmationHost() {
   if (!pending) return null;
   return <dialog ref={dialog} aria-labelledby="confirmation-title" aria-describedby="confirmation-detail"
     onCancel={event => { event.preventDefault(); answer(false); }}
-    className="fixed inset-0 m-auto w-[min(440px,calc(100%-32px))] rounded-2xl border border-line bg-white p-6 text-ink shadow-2xl backdrop:bg-black/40 backdrop:backdrop-blur-sm">
+    className="fixed inset-0 m-auto w-[min(440px,calc(100%-32px))] rounded-2xl border border-line bg-white p-6 text-ink shadow-2xl backdrop:bg-black/40 backdrop:backdrop-blur-sm dark:bg-[#282428]">
     <ShieldCheck className="mb-3 text-brand" size={28} />
     <h2 id="confirmation-title" className="text-lg font-bold">{pending.title}</h2>
     <p id="confirmation-detail" className="my-4 text-sm leading-relaxed text-muted">{pending.detail}</p>

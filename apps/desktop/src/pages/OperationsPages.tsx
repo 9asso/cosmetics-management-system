@@ -533,7 +533,7 @@ export function PartnersPage({
               <Building2 size={15} /> Fournisseurs
             </button>
           </div>
-          <input aria-label="Rechercher un contact" placeholder="Nom, téléphone, email" value={search} onChange={event => setSearch(event.target.value)} className="rounded-lg border border-line px-3 py-2 text-xs" />
+          <input aria-label="Rechercher un contact" placeholder="Nom, téléphone, email" value={search} onChange={event => setSearch(event.target.value)} className="rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink outline-none focus:border-brand" />
           {canCreate && (
             <button
               className={ui("primary-button push-right")}

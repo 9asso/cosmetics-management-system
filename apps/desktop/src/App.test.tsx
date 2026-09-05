@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App } from './App';
@@ -13,7 +13,25 @@ vi.mock('./lib/api', () => {
 });
 vi.mock('./pages/DashboardPage', () => ({ DashboardPage: () => <div>Dashboard ready</div> }));
 const user = { id: 'owner', email: 'owner@example.test', displayName: 'Admin ONight', role: 'OWNER' as const };
-afterEach(() => { cleanup(); vi.resetAllMocks(); });
+const stored = new Map<string, string>();
+beforeEach(() => {
+  stored.clear();
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (key: string) => stored.get(key) ?? null,
+      setItem: (key: string, value: string) => stored.set(key, value),
+      removeItem: (key: string) => stored.delete(key),
+      clear: () => stored.clear(),
+    },
+  });
+});
+afterEach(() => {
+  cleanup();
+  vi.resetAllMocks();
+  window.localStorage.clear();
+  document.documentElement.classList.remove('dark');
+});
 describe('local session recovery', () => {
   it('preserves a session when the development API temporarily restarts', async () => {
     vi.mocked(hasAccessToken).mockReturnValue(true);
@@ -40,6 +58,21 @@ describe('local session recovery', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }));
     await waitFor(() => expect(screen.getByText('Dashboard ready')).toBeTruthy());
     expect(client.getQueryData(['me'])).toEqual(user);
+    client.clear();
+  });
+  it('persists and applies the dashboard dark mode', async () => {
+    vi.mocked(hasAccessToken).mockReturnValue(true);
+    vi.mocked(api.me).mockResolvedValue(user);
+    vi.mocked(api.health).mockResolvedValue({ status: 'ok' });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><App /></QueryClientProvider>);
+    expect(await screen.findByText('Dashboard ready')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Activer le mode sombre' }));
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(window.localStorage.getItem('onight-dashboard-theme')).toBe('dark');
+    fireEvent.click(screen.getByRole('button', { name: 'Activer le mode clair' }));
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(window.localStorage.getItem('onight-dashboard-theme')).toBe('light');
     client.clear();
   });
 });
