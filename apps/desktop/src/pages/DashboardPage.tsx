@@ -136,7 +136,7 @@ export function DashboardPage({
           </div>
           {analytics.isError ? <ErrorState message="Impossible de charger les statistiques." retry={() => void analytics.refetch()} /> : analytics.isLoading ? <p className="py-16 text-center text-muted">Chargement des statistiques…</p> : <>
             {!periods.some(period => period.orderCount > 0) && <p className="rounded-lg bg-brand-soft p-3 text-sm">Aucune vente confirmée sur cette période.</p>}
-            <div className="h-72 min-w-0 text-[10px]">
+            <div className="h-72 min-w-0 text-[10px] [&_.recharts-surface]:outline-none [&_.recharts-surface_*]:outline-none">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={periods} margin={{ top: 58, right: 18, bottom: 8, left: 0 }} accessibilityLayer>
                   <CartesianGrid stroke="var(--color-line)" strokeWidth={1} vertical={false} />
