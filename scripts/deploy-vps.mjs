@@ -138,14 +138,14 @@ test -s ${shellQuote(`${remoteRoot}/shared/backups/before-${releaseId}.dump`)}` 
 docker compose --env-file ${shellQuote(`${remoteRoot}/shared/.env`)} -p cosmetics-management -f compose.production.yml up -d --no-build
 ${!hasSecrets ? `docker compose --env-file ${shellQuote(`${remoteRoot}/shared/.env`)} -p cosmetics-management -f compose.production.yml exec -T api node dist/database/seed.js` : ''}
 printf '%s\n' ${shellQuote(commit)} > REVISION
-curl --retry 10 --retry-delay 3 --retry-connrefused -fsS http://127.0.0.1/api/v1/health
-curl --retry 10 --retry-delay 3 --retry-connrefused -fsS http://127.0.0.1/ >/dev/null
-test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/admin/)" = 200
-test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/api/v1/products)" = 401
+curl --retry 10 --retry-delay 3 --retry-all-errors -fsS http://127.0.0.1/api/v1/health
+curl --retry 10 --retry-delay 3 --retry-all-errors -fsS http://127.0.0.1/ >/dev/null
+test "$(curl --retry 10 --retry-delay 3 --retry-all-errors -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/admin/)" = 200
+test "$(curl --retry 10 --retry-delay 3 --retry-all-errors -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/api/v1/products)" = 401
 set -a
 . ${shellQuote(`${remoteRoot}/shared/.env`)}
 set +a
-curl -fsS -H 'Content-Type: application/json' --data "$(printf '{\"email\":\"%s\",\"password\":\"%s\"}' "$ADMIN_EMAIL" "$ADMIN_PASSWORD")" http://127.0.0.1/api/v1/auth/login >/dev/null
+curl --retry 10 --retry-delay 3 --retry-all-errors -fsS -H 'Content-Type: application/json' --data "$(printf '{\"email\":\"%s\",\"password\":\"%s\"}' "$ADMIN_EMAIL" "$ADMIN_PASSWORD")" http://127.0.0.1/api/v1/auth/login >/dev/null
 ln -sfn ${shellQuote(remoteRelease)} ${shellQuote(`${remoteRoot}/current`)}
 docker compose --env-file ${shellQuote(`${remoteRoot}/shared/.env`)} -p cosmetics-management -f compose.production.yml ps`);
   console.log(`Deployment complete. Credentials were saved to ${localCredentialPath}`);
