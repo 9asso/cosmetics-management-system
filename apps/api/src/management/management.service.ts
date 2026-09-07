@@ -1,3 +1,4 @@
+import { createPurchaseSchema, createWholesaleSaleSchema } from '@cosmetics/contracts';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type {
   BusinessPartner,
@@ -156,14 +157,17 @@ export class ManagementService {
   }
 
   async createPurchase(input: CreatePurchaseInput, actorId: string): Promise<OperationResult> {
+    input = createPurchaseSchema.parse(input);
+    const collected = input.paymentMethod === 'CHECK' ? 0 : input.paidAmount;
     return this.db.withTransaction(async (client) => {
       await this.requireActivePartner(client, 'suppliers', input.supplierId);
-      const variants = await this.loadVariants(client, input.items.map((item) => item.variantId));
+      const variants = await this.loadVariants(client, input.items.map((item) => item.variantId), true);
       const variantMap = new Map(variants.map((variant) => [variant.id, variant]));
       if (variantMap.size !== new Set(input.items.map((item) => item.variantId)).size) {
         throw new BadRequestException('Un ou plusieurs produits sont introuvables.');
       }
-      const total = input.items.reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
+      const total = input.items.reduce((sum, item) => sum + item.quantity * Math.round(item.unitCost * 100), 0) / 100;
+      if (total > 999_999_999) throw new BadRequestException('Le total dépasse le montant maximum autorisé.');
       if (input.paidAmount > total) throw new BadRequestException('Le paiement dépasse le total.');
       const documentNumber = `ACH-${Date.now().toString(36).toUpperCase()}`;
       const purchase = await client.query<{ id: string }>(
@@ -177,7 +181,7 @@ export class ManagementService {
           input.supplierId,
           documentNumber,
           total,
-          input.paidAmount,
+          collected,
           actorId,
         ],
       );
@@ -215,10 +219,10 @@ export class ManagementService {
         );
       }
       if (input.paidAmount > 0) {
-        await client.query(
+        const payment = await client.query<{ id: string }>(
           `INSERT INTO payments
-            (organization_id, supplier_id, direction, method, status, amount, reference, created_by)
-           VALUES ($1, $2, 'OUT', $3, $4, $5, $6, $7)`,
+            (organization_id, supplier_id, direction, method, status, amount, reference, created_by, purchase_order_id)
+           VALUES ($1, $2, 'OUT', $3, $4, $5, $6, $7, $8) RETURNING id`,
           [
             DEFAULT_ORGANIZATION_ID,
             input.supplierId,
@@ -227,8 +231,12 @@ export class ManagementService {
             input.paidAmount,
             documentNumber,
             actorId,
+            purchaseId,
           ],
         );
+        if (input.paymentMethod === 'CHECK' && input.check) {
+          await client.query(`INSERT INTO checks(payment_id,bank_name,check_number,due_date) VALUES($1,$2,$3,$4)`, [payment.rows[0]!.id,input.check.bankName,input.check.checkNumber,input.check.dueDate]);
+        }
       }
       return { id: purchaseId, documentNumber, status: 'RECEIVED', total };
     });
@@ -238,6 +246,8 @@ export class ManagementService {
     input: CreateWholesaleSaleInput,
     actorId: string,
   ): Promise<OperationResult> {
+    input = createWholesaleSaleSchema.parse(input);
+    const collected = input.paymentMethod === 'CHECK' ? 0 : input.paidAmount;
     return this.db.withTransaction(async (client) => {
       await this.requireActivePartner(client, 'customers', input.customerId);
       const variants = await this.loadVariants(
@@ -255,10 +265,11 @@ export class ManagementService {
       }
       const total = input.items.reduce((sum, item) => {
         const variant = variantMap.get(item.variantId)!;
-        return sum + item.quantity * (item.unitPrice ?? Number(variant.wholesalePrice));
-      }, 0);
+        return sum + item.quantity * Math.round((item.unitPrice ?? Number(variant.wholesalePrice)) * 100);
+      }, 0) / 100;
+      if (total > 999_999_999) throw new BadRequestException('Le total dépasse le montant maximum autorisé.');
       if (input.paidAmount > total) throw new BadRequestException('Le paiement dépasse le total.');
-      const status = input.paidAmount >= total ? 'PAID' : input.paidAmount > 0 ? 'PARTIALLY_PAID' : 'CONFIRMED';
+      const status = collected >= total ? 'PAID' : collected > 0 ? 'PARTIALLY_PAID' : 'CONFIRMED';
       const documentNumber = `FAC-${Date.now().toString(36).toUpperCase()}`;
       const order = await client.query<{ id: string }>(
         `INSERT INTO sales_orders
@@ -273,7 +284,7 @@ export class ManagementService {
           documentNumber,
           status,
           total,
-          input.paidAmount,
+          collected,
           input.notes,
           actorId,
         ],
@@ -321,10 +332,10 @@ export class ManagementService {
         );
       }
       if (input.paidAmount > 0) {
-        await client.query(
+        const payment = await client.query<{ id: string }>(
           `INSERT INTO payments
-            (organization_id, customer_id, direction, method, status, amount, reference, created_by)
-           VALUES ($1, $2, 'IN', $3, $4, $5, $6, $7)`,
+            (organization_id, customer_id, direction, method, status, amount, reference, created_by, sales_order_id)
+           VALUES ($1, $2, 'IN', $3, $4, $5, $6, $7, $8) RETURNING id`,
           [
             DEFAULT_ORGANIZATION_ID,
             input.customerId,
@@ -333,8 +344,12 @@ export class ManagementService {
             input.paidAmount,
             documentNumber,
             actorId,
+            orderId,
           ],
         );
+        if (input.paymentMethod === 'CHECK' && input.check) {
+          await client.query(`INSERT INTO checks(payment_id,bank_name,check_number,due_date) VALUES($1,$2,$3,$4)`, [payment.rows[0]!.id,input.check.bankName,input.check.checkNumber,input.check.dueDate]);
+        }
       }
       return { id: orderId, documentNumber, status, total };
     });
@@ -403,7 +418,7 @@ export class ManagementService {
 
       const items = await client.query<{ variantId: string; quantity: number; unitCost: string }>(
         `SELECT variant_id AS "variantId", quantity::int, unit_cost_snapshot AS "unitCost"
-         FROM sales_order_items WHERE sales_order_id = $1`,
+         FROM sales_order_items WHERE sales_order_id = $1 ORDER BY variant_id`,
         [id],
       );
       if (status === 'DELIVERED' && order.channel === 'RETAIL_WEB') {
@@ -434,8 +449,8 @@ export class ManagementService {
         }
         await client.query(
           `UPDATE payments SET status = 'COMPLETED', paid_at = now()
-           WHERE reference = $1 AND method = 'COD' AND status = 'PENDING'`,
-          [order.orderNumber],
+           WHERE reference = $1 AND organization_id = $2 AND method = 'COD' AND status = 'PENDING'`,
+          [order.orderNumber, DEFAULT_ORGANIZATION_ID],
         );
         await client.query('UPDATE sales_orders SET amount_paid = grand_total WHERE id = $1', [id]);
       }
@@ -475,10 +490,11 @@ export class ManagementService {
         }
         await client.query(
           `UPDATE payments SET status = 'CANCELLED'
-           WHERE reference = $1 AND status = 'PENDING'`,
-          [order.orderNumber],
+           WHERE reference = $1 AND organization_id = $2 AND status = 'PENDING'`,
+          [order.orderNumber, DEFAULT_ORGANIZATION_ID],
         );
       }
+      await client.query(`UPDATE checks c SET status = 'CANCELLED' FROM payments p WHERE c.payment_id=p.id AND p.organization_id=$1 AND p.reference=$2 AND p.status='CANCELLED' AND c.status IN ('PENDING','DEPOSITED')`, [DEFAULT_ORGANIZATION_ID,order.orderNumber]);
       await client.query('UPDATE sales_orders SET status = $2, updated_at = now() WHERE id = $1', [
         id,
         status,
@@ -505,7 +521,7 @@ export class ManagementService {
        FROM product_variants v JOIN products p ON p.id = v.product_id
        JOIN inventory_balances b ON b.variant_id = v.id AND b.location_id = $2
        WHERE p.organization_id = $1 AND p.active = true AND v.active = true
-         AND v.id = ANY($3::uuid[]) ${lock ? 'FOR UPDATE OF b' : ''}`,
+         AND v.id = ANY($3::uuid[]) ORDER BY v.id ${lock ? 'FOR UPDATE OF b' : ''}`,
       [DEFAULT_ORGANIZATION_ID, DEFAULT_LOCATION_ID, ids],
     );
     return result.rows;

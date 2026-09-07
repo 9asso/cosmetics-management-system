@@ -4,9 +4,10 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const catalogUrl = 'https://zwine.ma/products.json?limit=250';
-const imageDirectory = join(repoRoot, 'apps/storefront/public/products/zwine');
-const sqlPath = join(repoRoot, 'database/seeds/zwine-demo.sql');
+const catalogUrl = process.env.DEMO_CATALOG_URL;
+if (!catalogUrl) throw new Error('Set DEMO_CATALOG_URL to the authorized demo catalogue JSON endpoint.');
+const imageDirectory = join(repoRoot, 'apps/storefront/public/products/catalog');
+const sqlPath = join(repoRoot, 'database/seeds/catalog-demo.sql');
 const organizationId = '00000000-0000-4000-8000-000000000001';
 const locationId = '00000000-0000-4000-8000-000000000001';
 const supplierId = '10000000-0000-4000-8000-00000000a001';
@@ -53,7 +54,7 @@ function inferCategory(product) {
 }
 
 function brandFromTitle(title) {
-  const first = title.split(/\s+-\s+/)[0]?.trim() || 'Zwine Selection';
+  const first = title.split(/\s+-\s+/)[0]?.trim() || 'Catalogue Selection';
   return first.replace(/\s+/g, ' ').slice(0, 100);
 }
 
@@ -71,11 +72,11 @@ async function download(product) {
   const response = await fetch(url, { headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg' } });
   if (!response.ok) throw new Error(`Image ${response.status}: ${product.title}`);
   await writeFile(output, Buffer.from(await response.arrayBuffer()));
-  return `/products/zwine/${filename}`;
+  return `/products/catalog/${filename}`;
 }
 
 const response = await fetch(catalogUrl, { headers: { Accept: 'application/json' } });
-if (!response.ok) throw new Error(`Zwine catalog request failed with ${response.status}`);
+if (!response.ok) throw new Error(`Demo catalog request failed with ${response.status}`);
 const { products: rawProducts } = await response.json();
 const candidates = rawProducts.filter((product) => product.images?.[0]?.src && product.variants?.some((variant) => Number(variant.price) > 0));
 const counts = Object.fromEntries(Object.keys(categoryCaps).map((category) => [category, 0]));
@@ -103,7 +104,7 @@ for (let offset = 0; offset < selected.length; offset += 6) {
 const lines = [
   'BEGIN;',
   '',
-  `INSERT INTO suppliers (id, organization_id, name, email, notes) VALUES (${sql(supplierId)}, ${sql(organizationId)}, 'Catalogue Démo Zwine', 'contact@zwine-demo.invalid', 'Import de démonstration depuis le catalogue public zwine.ma') ON CONFLICT (id) DO NOTHING;`,
+  `INSERT INTO suppliers (id, organization_id, name, email, notes) VALUES (${sql(supplierId)}, ${sql(organizationId)}, 'Catalogue Démo', 'contact@catalog-demo.invalid', 'Catalogue de démonstration') ON CONFLICT (id) DO NOTHING;`,
   '',
 ];
 
@@ -114,23 +115,23 @@ for (const [index, product] of imported.entries()) {
   const purchasePrice = Math.round(retailPrice * 0.58 * 100) / 100;
   const wholesalePrice = Math.round(retailPrice * 0.78 * 100) / 100;
   const quantity = 18 + ((index * 11) % 75);
-  const productId = uuid('zwine-product', product.id);
-  const variantId = uuid('zwine-variant', variant.id);
+  const productId = uuid('catalog-product', product.id);
+  const variantId = uuid('catalog-variant', variant.id);
   const name = product.title.replace(/\s+/g, ' ').trim().slice(0, 160);
-  const sourceUrl = `https://zwine.ma/products/${product.handle}`;
-  const sku = `ZWN-${product.id}`.slice(0, 80);
-  const reference = `ZWINE-${product.id}`.slice(0, 100);
-  const description = plainText(product.body_html) || `${name}. Produit de démonstration importé du catalogue public Zwine.`;
+  const sourceUrl = '';
+  const sku = `DEMO-${product.id}`.slice(0, 80);
+  const reference = `CAT-${product.id}`.slice(0, 100);
+  const description = plainText(product.body_html) || `${name}. Produit de démonstration importé du catalogue de démonstration.`;
   lines.push(
-    `INSERT INTO products (id, organization_id, name, brand, category, description, image_url, source_url, retail_visible) VALUES (${sql(productId)}, ${sql(organizationId)}, ${sql(name)}, ${sql(brandFromTitle(product.title))}, ${sql(product.category)}, ${sql(description)}, ${sql(product.localImage)}, ${sql(sourceUrl)}, true) ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, brand=EXCLUDED.brand, category=EXCLUDED.category, description=EXCLUDED.description, image_url=EXCLUDED.image_url, source_url=EXCLUDED.source_url, retail_visible=true, updated_at=now();`,
+    `INSERT INTO products (id, organization_id, name, brand, category, description, image_url, source_url, retail_visible) VALUES (${sql(productId)}, ${sql(organizationId)}, ${sql(name)}, ${sql(brandFromTitle(product.title))}, ${sql(product.category)}, ${sql(description)}, ${sql(product.localImage)}, ${sql(sourceUrl)}, true) ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, brand=EXCLUDED.brand, category=EXCLUDED.category, description=EXCLUDED.description, source_url=EXCLUDED.source_url, retail_visible=true, updated_at=now();`,
     `INSERT INTO product_variants (id, product_id, sku, reference, purchase_price, wholesale_price, retail_price, compare_at_price, low_stock_threshold) VALUES (${sql(variantId)}, ${sql(productId)}, ${sql(sku)}, ${sql(reference)}, ${purchasePrice}, ${wholesalePrice}, ${retailPrice}, ${compareAtPrice ?? 'NULL'}, 8) ON CONFLICT (id) DO UPDATE SET purchase_price=EXCLUDED.purchase_price, wholesale_price=EXCLUDED.wholesale_price, retail_price=EXCLUDED.retail_price, compare_at_price=EXCLUDED.compare_at_price, updated_at=now();`,
     `INSERT INTO product_supplier_links (variant_id, supplier_id, preferred) VALUES (${sql(variantId)}, ${sql(supplierId)}, true) ON CONFLICT DO NOTHING;`,
     `INSERT INTO inventory_balances (variant_id, location_id, on_hand, reserved) VALUES (${sql(variantId)}, ${sql(locationId)}, ${quantity}, 0) ON CONFLICT (variant_id, location_id) DO NOTHING;`,
-    `INSERT INTO inventory_movements (organization_id, variant_id, location_id, quantity_delta, reason, unit_cost, note) SELECT ${sql(organizationId)}, ${sql(variantId)}, ${sql(locationId)}, ${quantity}, 'OPENING_BALANCE', ${purchasePrice}, 'Stock initial du catalogue démo Zwine' WHERE NOT EXISTS (SELECT 1 FROM inventory_movements WHERE variant_id=${sql(variantId)} AND reason='OPENING_BALANCE');`,
+    `INSERT INTO inventory_movements (organization_id, variant_id, location_id, quantity_delta, reason, unit_cost, note) SELECT ${sql(organizationId)}, ${sql(variantId)}, ${sql(locationId)}, ${quantity}, 'OPENING_BALANCE', ${purchasePrice}, 'Stock initial du catalogue démo' WHERE NOT EXISTS (SELECT 1 FROM inventory_movements WHERE variant_id=${sql(variantId)} AND reason='OPENING_BALANCE');`,
     '',
   );
 }
-lines.push('COMMIT;', '');
+lines.push("UPDATE products SET images = jsonb_build_array(image_url) WHERE images = '[]'::jsonb AND image_url <> '';", 'COMMIT;', '');
 await writeFile(sqlPath, lines.join('\n'));
 process.stdout.write(`Imported ${imported.length} products into ${sqlPath}\n`);
 process.stdout.write(`${JSON.stringify(counts)}\n`);

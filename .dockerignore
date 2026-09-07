@@ -8,3 +8,9 @@ node_modules
 .turbo
 *.log
 *.tsbuildinfo
+
+.env.*
+.deployment-credentials
+.local
+old
+database/seeds/dev 2.sql

@@ -78,7 +78,7 @@ WHERE b.on_hand <> 0
 
 INSERT INTO sales_orders (id, organization_id, location_id, customer_id, order_number, channel, status, subtotal, shipping_total, grand_total, amount_paid, placed_at) VALUES
 ('40000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000001','11000000-0000-4000-8000-000000000001','FAC-DEMO-001','WHOLESALE_DESKTOP','PARTIALLY_PAID',5800,0,5800,3500,now()-interval '3 days'),
-('40000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000001','11000000-0000-4000-8000-000000000002','FAC-DEMO-002','WHOLESALE_DESKTOP','PAID',4050,0,4050,4050,now()-interval '1 day'),
+('40000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000001','11000000-0000-4000-8000-000000000002','FAC-DEMO-002','WHOLESALE_DESKTOP','CONFIRMED',4050,0,4050,0,now()-interval '1 day'),
 ('40000000-0000-4000-8000-000000000003','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000001','11000000-0000-4000-8000-000000000003','WEB-DEMO-001','RETAIL_WEB','ORDERED',158,35,193,0,now()-interval '4 hours')
 ON CONFLICT (id) DO NOTHING;
 
@@ -172,3 +172,9 @@ INSERT INTO expenses (id,organization_id,location_id,category,name,amount,notes,
 ON CONFLICT (id) DO NOTHING;
 
 COMMIT;
+
+-- Seed payments use the same explicit document links as live payment entry.
+UPDATE payments p SET sales_order_id=s.id FROM sales_orders s
+WHERE p.organization_id=s.organization_id AND p.reference=s.order_number AND p.direction='IN' AND p.sales_order_id IS NULL;
+UPDATE payments p SET purchase_order_id=s.id FROM purchase_orders s
+WHERE p.organization_id=s.organization_id AND p.reference=s.order_number AND p.direction='OUT' AND p.purchase_order_id IS NULL;

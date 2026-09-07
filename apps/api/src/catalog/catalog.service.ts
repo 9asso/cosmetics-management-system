@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import sharp from 'sharp';
 import type {
   CreateProductInput,
+  ProductMediaInput,
   Paginated,
   ProductListItem,
   ProductListQuery,
@@ -27,6 +28,43 @@ type ProductRow = Omit<
 @Injectable()
 export class CatalogService {
   constructor(private readonly db: DatabaseService) {}
+
+  async uploadMedia(bytes: Buffer) {
+    if (!Buffer.isBuffer(bytes) || !bytes.length || bytes.length > 30 * 1024 * 1024) throw new BadRequestException('Fichier vide ou supérieur à 30 Mo.');
+    let data = bytes;
+    let mime = '';
+    if (bytes.length >= 12 && bytes.toString('ascii', 4, 8) === 'ftyp' && ['isom','iso2','mp41','mp42','avc1','M4V '].includes(bytes.toString('ascii', 8, 12))) mime = 'video/mp4';
+    else if (bytes.subarray(0, 4).equals(Buffer.from([0x1a, 0x45, 0xdf, 0xa3])) && bytes.subarray(0, 4096).includes(Buffer.from('webm'))) mime = 'video/webm';
+    else {
+      if (bytes.length > 5 * 1024 * 1024) throw new BadRequestException('Images limitées à 5 Mo. Vidéos : MP4 ou WebM, 30 Mo maximum.');
+      try {
+        const source = sharp(bytes, { limitInputPixels: 25_000_000 });
+        const metadata = await source.metadata();
+        if (!['jpeg', 'png', 'webp'].includes(metadata.format ?? '')) throw new Error('format');
+        data = await source.rotate().resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }).webp({ quality: 85 }).toBuffer();
+        mime = 'image/webp';
+      } catch { throw new BadRequestException('Format non reconnu. Utilisez JPG, PNG, WebP, MP4 ou WebM.'); }
+    }
+    const saved = await this.db.query<{ id: string }>('INSERT INTO product_media_assets (organization_id, mime_type, data) VALUES ($1, $2, $3) RETURNING id', [DEFAULT_ORGANIZATION_ID, mime, data]);
+    const base = (process.env.PUBLIC_API_URL ?? process.env.API_URL ?? 'http://localhost:4000/api/v1').replace(/\/$/, '');
+    return { url: `${base}/media/assets/${saved.rows[0]!.id}`, type: mime.startsWith('video/') ? 'video' : 'image' };
+  }
+
+  async mediaAsset(id: string) {
+    const result = await this.db.query<{ data: Buffer; mime: string }>('SELECT data, mime_type AS mime FROM product_media_assets WHERE id = $1 AND organization_id = $2', [id, DEFAULT_ORGANIZATION_ID]);
+    if (!result.rows[0]) throw new NotFoundException('Média introuvable.');
+    return result.rows[0];
+  }
+
+  async updateMedia(id: string, input: ProductMediaInput) {
+    await this.db.withTransaction(async client => {
+      const before = await client.query('SELECT images, video_url FROM products WHERE id = $1 AND organization_id = $2 AND active = true FOR UPDATE', [id, DEFAULT_ORGANIZATION_ID]);
+      if (!before.rowCount) throw new NotFoundException('Produit introuvable.');
+      await client.query('UPDATE products SET images = $1::jsonb, image_url = $2, video_url = $3, updated_at = now() WHERE id = $4', [JSON.stringify(input.images), input.images[0] ?? '', input.videoUrl, id]);
+      await client.query(`INSERT INTO audit_logs (organization_id, action, entity_type, entity_id, before_data, after_data) VALUES ($1, 'PRODUCT_MEDIA_UPDATED', 'product', $2, $3::jsonb, $4::jsonb)`, [DEFAULT_ORGANIZATION_ID, id, JSON.stringify(before.rows[0]), JSON.stringify(input)]);
+    });
+    return input;
+  }
 
   async image(id: string) {
     const result = await this.db.query<{ data: Buffer }>('SELECT data FROM product_images WHERE id = $1 AND organization_id = $2', [id, DEFAULT_ORGANIZATION_ID]);
@@ -56,9 +94,9 @@ export class CatalogService {
       filters.push(`p.category = $${values.length}`);
     }
     if (query.stock === 'low') {
-      filters.push('COALESCE(b.on_hand, 0) > 0 AND COALESCE(b.on_hand, 0) <= v.low_stock_threshold');
+      filters.push('(COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0)) > 0 AND (COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0)) <= v.low_stock_threshold');
     } else if (query.stock === 'out') {
-      filters.push('COALESCE(b.on_hand, 0) = 0');
+      filters.push('(COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0)) = 0');
     }
 
     values.push(query.pageSize, (query.page - 1) * query.pageSize);
@@ -73,6 +111,8 @@ export class CatalogService {
         p.category,
         p.description,
         p.image_url AS "imageUrl",
+        p.images,
+        p.video_url AS "videoUrl",
         p.source_url AS "sourceUrl",
         v.sku,
         COALESCE(v.barcode, '') AS barcode,
@@ -94,7 +134,7 @@ export class CatalogService {
       LEFT JOIN product_supplier_links psl ON psl.variant_id = v.id AND psl.preferred = true
       LEFT JOIN suppliers s ON s.id = psl.supplier_id
       WHERE ${filters.join(' AND ')}
-      ORDER BY ${retailOnly ? "(p.image_url <> '') DESC, p.updated_at DESC" : 'COALESCE(b.on_hand, 0) ASC, p.brand ASC, p.name ASC'}
+      ORDER BY ${retailOnly ? "(p.image_url <> '') DESC, p.updated_at DESC" : '(COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0)) ASC, p.brand ASC, p.name ASC, v.id'}
       LIMIT $${limitIndex} OFFSET $${offsetIndex}`,
       values,
     );
@@ -157,6 +197,8 @@ export class CatalogService {
           ],
         );
         const productId = product.rows[0]!.id;
+        const media = input.media ?? { images: imageUrl ? [imageUrl] : [], videoUrl: '' };
+        await client.query('UPDATE products SET images = $1::jsonb, image_url = $2, video_url = $3 WHERE id = $4', [JSON.stringify(media.images), media.images[0] ?? '', media.videoUrl, productId]);
 
         const variant = await client.query<{ id: string }>(
           `INSERT INTO product_variants

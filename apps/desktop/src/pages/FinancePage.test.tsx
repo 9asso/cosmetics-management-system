@@ -1,0 +1,145 @@
+// @vitest-environment jsdom
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { FinancePage } from "./FinancePage";
+import { api } from "../lib/api";
+vi.mock("../lib/api", () => ({
+  ApiRequestError: class extends Error {},
+  api: {
+    financeSummary: vi.fn(),
+    financeBalances: vi.fn(),
+    financeChecks: vi.fn(),
+    expenses: vi.fn(),
+    recordPayment: vi.fn(),
+    createExpense: vi.fn(),
+  },
+}));
+afterEach(() => {
+  cleanup();
+  vi.resetAllMocks();
+});
+function mount(tab: "receivables" | "checks" | "expenses" = "receivables") {
+  vi.mocked(api.financeSummary).mockResolvedValue({
+    receivables: 100,
+    payables: 0,
+    pendingChecks: 1,
+    pendingCheckAmount: 40,
+    dueChecks: 0,
+    monthExpenses: 0,
+    monthIncoming: 0,
+    monthOutgoing: 0,
+  });
+  vi.mocked(api.financeBalances).mockResolvedValue({
+    items: [
+      {
+        id: "sale",
+        kind: "sale",
+        documentNumber: "FAC-QA",
+        partnerName: "QA customer",
+        phone: "",
+        total: 100,
+        amountPaid: 0,
+        pendingAmount: 40,
+        balance: 100,
+        availableToPay: 60,
+        issuedAt: "2026-09-01",
+        ageDays: 4,
+      },
+    ],
+    total: 1,
+    page: 1,
+    pageSize: 25,
+  });
+  vi.mocked(api.expenses).mockResolvedValue({
+    items: [],
+    total: 0,
+    page: 1,
+    pageSize: 25,
+  });
+  vi.mocked(api.financeChecks).mockResolvedValue({
+    items: [],
+    total: 0,
+    page: 1,
+    pageSize: 25,
+  });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <FinancePage initialTab={tab} />
+    </QueryClientProvider>,
+  );
+  return client;
+}
+describe("finance workflows", () => {
+  it("prefills the payable amount excluding pending checks and sends the settlement", async () => {
+    const client = mount();
+    vi.mocked(api.recordPayment).mockResolvedValue({ id: "payment" });
+    fireEvent.click(await screen.findByRole("button", { name: "Encaisser" }));
+    expect(
+      (screen.getByLabelText("Montant du règlement (MAD)") as HTMLInputElement)
+        .value,
+    ).toBe("60");
+    fireEvent.change(screen.getByLabelText("Montant du règlement (MAD)"), {
+      target: { value: "20" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Enregistrer le règlement" }),
+    );
+    await waitFor(() =>
+      expect(api.recordPayment).toHaveBeenCalledWith(
+        "sale",
+        "sale",
+        expect.objectContaining({
+          amount: 20,
+          method: "CASH",
+          requestId: expect.any(String),
+        }),
+      ),
+    );
+    expect(await screen.findByRole("status")).toBeTruthy();
+    client.clear();
+  });
+  it("collects expense fields, then returns to history after saving", async () => {
+    const client = mount("expenses");
+    vi.mocked(api.createExpense).mockResolvedValue({ id: "expense" });
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Nouvelle dépense" }),
+    );
+    fireEvent.change(screen.getByLabelText("Libellé"), {
+      target: { value: "Livraison locale" },
+    });
+    fireEvent.change(screen.getByLabelText("Montant de la dépense (MAD)"), {
+      target: { value: "50" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Enregistrer la dépense" }),
+    );
+    await waitFor(() =>
+      expect(api.createExpense).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "Livraison locale", amount: 50 }),
+      ),
+    );
+    expect(
+      await screen.findByText("La dépense a été enregistrée."),
+    ).toBeTruthy();
+    client.clear();
+  });
+  it("opens the check filter directly and never fetches balances on that screen", async () => {
+    const client = mount("checks");
+    expect(await screen.findByText("Aucun chèque à afficher.")).toBeTruthy();
+    expect(api.financeChecks).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "pending" }),
+    );
+    expect(api.financeBalances).not.toHaveBeenCalled();
+    client.clear();
+  });
+});

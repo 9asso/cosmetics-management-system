@@ -1,4 +1,5 @@
 import type {
+  ProductMediaInput, FinanceSummary, FinanceBalance, FinanceCheck, FinanceQuery, ExpenseItem, RecordPaymentInput, UpdateCheckInput, CreateExpenseInput,
   AdjustInventoryInput,
   AuthUser,
   BusinessPartner,
@@ -50,7 +51,7 @@ export class ApiRequestError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  if (init?.method && !['GET', 'HEAD'].includes(init.method) && path !== '/auth/login') {
+  if (init?.method && !['GET', 'HEAD'].includes(init.method) && path !== '/auth/login' && path !== '/products/media') {
     const confirmed = await confirmChange(mutationConfirmation(path, init.method, typeof init.body === 'string' ? init.body : undefined));
     if (!confirmed) throw new ApiRequestError('', 499);
   }
@@ -85,6 +86,16 @@ function queryString(values: Record<string, unknown>) {
 }
 
 export const api = {
+  uploadProductMedia: (file: File) => request<{url:string;type:'image'|'video'}>('/products/media', {method:'POST', body:file, headers:{'Content-Type':'application/octet-stream'}}),
+  updateProductMedia: (id: string, media: ProductMediaInput) => request<ProductMediaInput>(`/products/${id}/media`, {method:'PATCH', body:JSON.stringify(media)}),
+  financeSummary: () => request<FinanceSummary>('/finance/summary'),
+  financeBalances: (query: Partial<FinanceQuery> = {}) => request<Paginated<FinanceBalance>>(`/finance/balances?${queryString(query)}`),
+  financeChecks: (query: Partial<FinanceQuery> = {}) => request<Paginated<FinanceCheck>>(`/finance/checks?${queryString(query)}`),
+  expenses: (query: Partial<FinanceQuery> = {}) => request<Paginated<ExpenseItem>>(`/finance/expenses?${queryString(query)}`),
+  recordPayment: (kind: 'sale' | 'purchase', id: string, input: RecordPaymentInput) => request<{id:string}>(`/finance/payments/${kind}/${id}`, {method:'POST',body:JSON.stringify(input)}),
+  updateCheck: (id: string, input: UpdateCheckInput) => request<{id:string}>(`/finance/checks/${id}`, {method:'PATCH',body:JSON.stringify(input)}),
+  createExpense: (input: CreateExpenseInput) => request<{id:string}>('/finance/expenses', {method:'POST',body:JSON.stringify(input)}),
+  voidExpense: (id: string, reason: string) => request<{id:string}>(`/finance/expenses/${id}/void`, {method:'PATCH',body:JSON.stringify({reason})}),
   health: () => request<{ status: string }>('/health'),
   login: (input: LoginInput) =>
     request<LoginResult>('/auth/login', { method: 'POST', body: JSON.stringify(input) }),

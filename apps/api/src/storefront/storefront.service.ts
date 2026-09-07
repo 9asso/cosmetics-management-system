@@ -33,7 +33,7 @@ export class StorefrontService {
          JOIN inventory_balances b ON b.variant_id = v.id AND b.location_id = $2
          WHERE p.organization_id = $1 AND p.retail_visible = true
            AND p.active = true AND v.active = true AND v.id = ANY($3::uuid[])
-         FOR UPDATE OF b`,
+         ORDER BY v.id FOR UPDATE OF b`,
         [DEFAULT_ORGANIZATION_ID, DEFAULT_LOCATION_ID, variantIds],
       );
       if (variants.rowCount !== variantIds.length) {
@@ -111,9 +111,9 @@ export class StorefrontService {
 
       await client.query(
         `INSERT INTO payments
-          (organization_id, customer_id, direction, method, status, amount, reference)
-         VALUES ($1, $2, 'IN', 'COD', 'PENDING', $3, $4)`,
-        [DEFAULT_ORGANIZATION_ID, customer.rows[0]!.id, grandTotal, orderNumber],
+          (organization_id, customer_id, direction, method, status, amount, reference, sales_order_id)
+         VALUES ($1, $2, 'IN', 'COD', 'PENDING', $3, $4, $5)`,
+        [DEFAULT_ORGANIZATION_ID, customer.rows[0]!.id, grandTotal, orderNumber, orderId],
       );
       await client.query(
         `INSERT INTO audit_logs (organization_id, action, entity_type, entity_id, after_data)

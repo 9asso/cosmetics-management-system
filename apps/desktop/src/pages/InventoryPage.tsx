@@ -11,8 +11,10 @@ import {
 import { ErrorState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { StatusPill } from "../components/StatusPill";
+import { ProductMediaEditor } from '../components/ProductMediaEditor';
 import { ProductDetailModal } from '../components/ProductDetailModal';
 import { api, ApiRequestError } from "../lib/api";
+import { allPages, downloadCsv } from "../lib/csv";
 import { integer, money } from "../lib/format";
 
 const emptyProduct: CreateProductInput = {
@@ -21,6 +23,7 @@ const emptyProduct: CreateProductInput = {
   category: "OTHER",
   description: "",
   imageUrl: "",
+  media: { images: [], videoUrl: "" },
   sourceUrl: "",
   sku: "",
   barcode: "",
@@ -45,25 +48,24 @@ const categoryLabels: Record<string, string> = {
 };
 
 function StockStatus({ product }: { product: ProductListItem }) {
-  if (product.onHand === 0) return <StatusPill tone="bad">Rupture</StatusPill>;
-  if (product.onHand <= product.lowStockThreshold)
+  if (product.onHand - product.reserved === 0) return <StatusPill tone="bad">Rupture</StatusPill>;
+  if (product.onHand - product.reserved <= product.lowStockThreshold)
     return <StatusPill tone="warn">Stock faible</StatusPill>;
   return <StatusPill tone="good">Disponible</StatusPill>;
 }
 
-export function InventoryPage({ canManage = true }: { canManage?: boolean }) {
+export function InventoryPage({ canManage = true, initialStock = "all", initialCreate = false }: { canManage?: boolean; initialStock?: "all"|"low"|"out"; initialCreate?: boolean }) {
   const client = useQueryClient();
   const [search, setSearch] = useState("");
-  const [stock, setStock] = useState<"all" | "low" | "out">("all");
+  const [stock, setStock] = useState<"all" | "low" | "out">(initialStock);
   const [category, setCategory] = useState<CreateProductInput["category"] | "">(
     "",
   );
-  const [showCreate, setShowCreate] = useState(false);
+  const [showCreate, setShowCreate] = useState(initialCreate && canManage);
+  const [exporting,setExporting] = useState(false);
+  const [exportError,setExportError] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<ProductListItem | null>(null);
   const [page, setPage] = useState(1);
-  const [imageError, setImageError] = useState('');
-  const [imageName, setImageName] = useState('');
-  const [imageMime, setImageMime] = useState('image/png');
   const [imageReading, setImageReading] = useState(false);
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: api.suppliers });
   const [adjustProduct, setAdjustProduct] = useState<ProductListItem | null>(
@@ -114,8 +116,6 @@ export function InventoryPage({ canManage = true }: { canManage?: boolean }) {
       ]);
       setShowCreate(false);
       setDraft(emptyProduct);
-      setImageName('');
-      setImageError('');
     },
   });
 
@@ -138,59 +138,16 @@ export function InventoryPage({ canManage = true }: { canManage?: boolean }) {
     create.mutate(draft);
   };
 
-  async function selectImage(file?: File) {
-    if (!file) return;
-    setImageError('');
-    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
-      setImageError('Choisissez une image JPG, PNG ou WebP de 5 Mo maximum.'); return;
-    }
-    setImageReading(true);
+  const exportProducts = async () => {
+    setExporting(true); setExportError('');
     try {
-      const data = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1]!); reader.onerror = reject; reader.readAsDataURL(file); });
-      setDraft(current => ({ ...current, imageUrl: '', imageUpload: { data } }));
-      setImageName(file.name);
-      setImageMime(file.type);
-    } catch { setImageError('Impossible de lire cette image.'); }
-    finally { setImageReading(false); }
-  }
-
-  const exportProducts = () => {
-    const rows = products.data?.items ?? [];
-    const csv = [
-      [
-        "Produit",
-        "Marque",
-        "SKU",
-        "Catégorie",
-        "Stock",
-        "Réservé",
-        "Prix achat",
-        "Prix grossiste",
-        "Prix retail",
-      ],
-      ...rows.map((product) => [
-        product.name,
-        product.brand,
-        product.sku,
-        product.category,
-        product.onHand,
-        product.reserved,
-        product.purchasePrice,
-        product.wholesalePrice,
-        product.retailPrice,
-      ]),
-    ]
-      .map((row) =>
-        row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","),
-      )
-      .join("\n");
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(
-      new Blob([csv], { type: "text/csv;charset=utf-8" }),
-    );
-    link.download = `inventaire-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
+      const rows = await allPages(page => api.products({search, stock, category: category || undefined, page, pageSize:100}));
+      downloadCsv(`inventaire-${new Date().toISOString().slice(0,10)}.csv`, [
+        ['Produit','Marque','SKU','Catégorie','Stock','Réservé','Disponible','Seuil alerte','Prix achat','Prix grossiste','Prix retail','Fournisseur'],
+        ...rows.map(product => [product.name,product.brand,product.sku,categoryLabels[product.category]??product.category,product.onHand,product.reserved,product.onHand-product.reserved,product.lowStockThreshold,product.purchasePrice,product.wholesalePrice,product.retailPrice,product.supplierName])
+      ]);
+    } catch (error) { setExportError(error instanceof ApiRequestError ? error.message : 'Export impossible. Réessayez.'); }
+    finally { setExporting(false); }
   };
 
   if (products.isError) {
@@ -241,18 +198,21 @@ export function InventoryPage({ canManage = true }: { canManage?: boolean }) {
           <div className={ui("segmented")} aria-label="Filtrer par stock">
             <button
               className={ui(stock === "all" ? "active" : "")}
+              aria-pressed={stock === "all"}
               onClick={() => { setStock('all'); setPage(1); }}
             >
               Tous
             </button>
             <button
               className={ui(stock === "low" ? "active" : "")}
+              aria-pressed={stock === "low"}
               onClick={() => { setStock('low'); setPage(1); }}
             >
               Faible
             </button>
             <button
               className={ui(stock === "out" ? "active" : "")}
+              aria-pressed={stock === "out"}
               onClick={() => { setStock('out'); setPage(1); }}
             >
               Rupture
@@ -272,11 +232,12 @@ export function InventoryPage({ canManage = true }: { canManage?: boolean }) {
               ))}
             </select>
           </label>
-          <button className={ui("secondary-button")} onClick={exportProducts}>
-            <ArrowDownToLine size={16} /> Exporter
+          <button className={ui("secondary-button")} disabled={exporting || products.isLoading} onClick={() => void exportProducts()}>
+            <ArrowDownToLine size={16} /> {exporting ? "Export…" : "Exporter les résultats"}
           </button>
         </div>
 
+        {exportError && <p role="alert" className={ui("form-error")}>{exportError}</p>}
         <div className={ui("table-wrap")}>
           <table>
             <thead>
@@ -328,7 +289,7 @@ export function InventoryPage({ canManage = true }: { canManage?: boolean }) {
                   <td>
                     <strong>{integer.format(product.onHand)}</strong>
                     <small className={ui("sub-cell")}>
-                      {product.reserved} réservé
+                      {product.reserved} réservé · {product.onHand - product.reserved} disponible
                     </small>
                   </td>
                   <td>{money.format(product.purchasePrice)}</td>
@@ -367,7 +328,7 @@ export function InventoryPage({ canManage = true }: { canManage?: boolean }) {
           <div className="flex items-center gap-2"><span>Page {page}</span><button className={ui('secondary-button compact')} disabled={page === 1} onClick={() => setPage(page - 1)}>Précédent</button><button className={ui('secondary-button compact')} disabled={page * 50 >= counts.total} onClick={() => setPage(page + 1)}>Suivant</button></div>
         </footer>
       </section>
-      {selectedProduct && <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />}
+      {selectedProduct && <ProductDetailModal canManage={canManage} product={selectedProduct} onClose={() => setSelectedProduct(null)} />}
 
       {showCreate && (
         <Modal
@@ -442,7 +403,7 @@ export function InventoryPage({ canManage = true }: { canManage?: boolean }) {
                   <option value="">Aucun fournisseur affecté</option>
                   {suppliers.data?.map(supplier => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
                 </select>
-                <small className="text-muted">Liste de Clients & fournisseurs. Ajoutez-y vos fournisseurs d’abord.</small>
+                {/* <small className="text-muted">Liste de Clients & fournisseurs. Ajoutez-y vos fournisseurs d’abord.</small> */}
                 {suppliers.isError && <button type="button" className="text-brand" onClick={() => void suppliers.refetch()}>Réessayer de charger les fournisseurs</button>}
               </label>
               <label>
@@ -523,26 +484,8 @@ export function InventoryPage({ canManage = true }: { canManage?: boolean }) {
                   }
                 />
               </label>
-              <label>
-                <span>URL de l’image</span>
-                <input
-                  type="url"
-                  value={draft.imageUrl}
-                  onChange={(e) =>
-                    { setDraft({ ...draft, imageUrl: e.target.value, imageUpload: undefined }); setImageName(''); setImageError(''); }
-                  }
-                  placeholder="https://…"
-                />
-              </label>
             </div>
-            <div onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); if (!imageReading && !create.isPending) void selectImage(event.dataTransfer.files[0]); }} className="my-4 rounded-xl border-2 border-dashed border-brand-secondary/50 bg-brand-soft/40 p-4">
-              <label className="cursor-pointer"><span className="font-semibold">Glissez une image ici ou choisissez un fichier</span><small className="my-2 block text-muted">JPG, PNG, WebP · 5 Mo maximum · envoi après confirmation du produit</small>
-                <input aria-label="Choisir une image du produit" type="file" accept="image/png,image/jpeg,image/webp" disabled={imageReading || create.isPending} onChange={event => { void selectImage(event.target.files?.[0]); event.target.value = ''; }} className="text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-brand-soft file:px-3 file:py-2 file:text-ink" />
-              </label>
-              {imageReading && <p className="mt-2 text-xs">Lecture de l’image…</p>}
-              {(draft.imageUpload || draft.imageUrl) && <div className="mt-3 flex items-center gap-3"><img src={draft.imageUpload ? `data:${imageMime};base64,${draft.imageUpload.data}` : draft.imageUrl} alt="Aperçu du produit" className="size-20 rounded-lg border border-line bg-white object-contain dark:bg-[#302b2f]" /><span className="min-w-0 break-all text-xs">{imageName || 'Image depuis une URL'}</span><button type="button" className={ui('secondary-button compact')} onClick={() => { setDraft({ ...draft, imageUrl: '', imageUpload: undefined }); setImageName(''); }}>Retirer</button></div>}
-              {imageError && <p role="alert" className={ui('form-error')}>{imageError}</p>}
-            </div>
+            <ProductMediaEditor value={draft.media ?? {images: [], videoUrl: ''}} onChange={media => setDraft(current => ({...current, media}))} disabled={create.isPending} onBusyChange={setImageReading} />
             <label className={ui("full-field")}>
               <span>Description</span>
               <textarea

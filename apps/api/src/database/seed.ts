@@ -5,7 +5,7 @@ import { DEFAULT_ORGANIZATION_ID } from '../constants.js';
 import { runSqlDirectory } from './migration-runner.js';
 
 await runSqlDirectory(resolve(process.cwd(), '../../database/seeds'), false, 'dev.sql');
-await runSqlDirectory(resolve(process.cwd(), '../../database/seeds'), false, 'zwine-demo.sql');
+await runSqlDirectory(resolve(process.cwd(), '../../database/seeds'), false, 'catalog-demo.sql');
 
 const adminEmail = process.env.ADMIN_EMAIL ?? 'owner@onight.local';
 const adminPassword = process.env.ADMIN_PASSWORD ?? 'ChangeMe123!';

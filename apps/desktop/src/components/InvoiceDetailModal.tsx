@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Building2, CalendarDays, CheckCircle2, CreditCard, Mail, MapPin, PackageOpen, Phone, ReceiptText, UserRound } from 'lucide-react';
+import { useState } from 'react';
 import { Modal } from './Modal';
 import { ErrorState } from './EmptyState';
 import { api } from '../lib/api';
@@ -12,13 +13,22 @@ const paymentMethods: Record<string, string> = { CASH: 'Espèces', CHECK: 'Chèq
 const paymentStatuses: Record<string, string> = { COMPLETED: 'Encaissé', PENDING: 'En attente', CANCELLED: 'Annulé', FAILED: 'Échoué' };
 
 function statusStyle(status: string) {
-  if (['PAID', 'DELIVERED', 'FULFILLED', 'RECEIVED'].includes(status)) return 'bg-emerald-50 text-emerald-700';
-  if (['CANCELED', 'CANCELLED', 'REFUNDED'].includes(status)) return 'bg-rose-50 text-rose-700';
-  if (['CONFIRMED'].includes(status)) return 'bg-sky-50 text-sky-700';
-  return 'bg-amber-50 text-amber-700';
+  if (['PAID', 'DELIVERED', 'FULFILLED', 'RECEIVED'].includes(status)) return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300';
+  if (['CANCELED', 'CANCELLED', 'REFUNDED'].includes(status)) return 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300';
+  if (['CONFIRMED'].includes(status)) return 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300';
+  return 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300';
 }
 
 export function InvoiceDetailModal({ kind, id, onClose, surface = 'invoice' }: { kind: 'sale' | 'purchase'; id: string; onClose: () => void; surface?: 'order' | 'invoice' }) {
+  const [downloading,setDownloading] = useState(false);
+  const [downloadError,setDownloadError] = useState('');
+  async function downloadPdf() {
+    if(!detail.data)return;
+    setDownloading(true);setDownloadError('');
+    try { const {downloadInvoicePdf} = await import('../lib/invoice-pdf'); await downloadInvoicePdf(detail.data); }
+    catch(error) {setDownloadError(error instanceof Error ? error.message : 'Téléchargement impossible.');}
+    finally {setDownloading(false);}
+  }
   const detail = useQuery({ queryKey: ['invoice-detail', kind, id], queryFn: () => api.invoice(kind, id) });
   const value = detail.data;
   const isCancelled = value ? ['CANCELED', 'CANCELLED', 'REFUNDED'].includes(value.status) : false;
@@ -29,7 +39,7 @@ export function InvoiceDetailModal({ kind, id, onClose, surface = 'invoice' }: {
     {detail.isError && <ErrorState message="Document indisponible." retry={() => void detail.refetch()} />}
     {value && <div className="space-y-5 p-5 sm:p-6">
       <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-[#282428]">
-        <div className="flex flex-wrap items-start justify-between gap-4 bg-linear-to-r from-brand-soft/80 via-white to-pink-50 px-5 py-5 sm:px-6">
+        <div className="flex flex-wrap items-start justify-between gap-4 bg-linear-to-r from-brand-soft/80 via-white to-pink-50 dark:from-[#392830] dark:via-[#282428] dark:to-[#302630] px-5 py-5 sm:px-6">
           <div className="flex items-center gap-3">
             <span className="grid size-11 place-items-center rounded-xl bg-linear-to-br from-brand to-brand-secondary text-white shadow-sm"><ReceiptText size={21} /></span>
             <div><p className="text-[9px] font-bold uppercase tracking-[.18em] text-brand">{kind === 'sale' ? surface === 'order' ? 'Commande client' : 'Facture de vente' : 'Facture fournisseur'}</p><h2 className="mt-1 text-xl font-bold tracking-tight text-ink">{value.documentNumber}</h2></div>
@@ -80,15 +90,15 @@ export function InvoiceDetailModal({ kind, id, onClose, surface = 'invoice' }: {
 
       <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-[#282428]">
         <div className="flex items-center justify-between border-b border-line px-4 py-3"><div><p className="text-[9px] font-bold uppercase tracking-widest text-brand">Règlements</p><h3 className="mt-1 text-sm font-bold">Historique des paiements</h3></div><CreditCard size={19} className="text-brand" /></div>
-        {value.payments.length === 0 ? <div className="flex items-center gap-3 p-5 text-xs text-muted"><span className="grid size-9 place-items-center rounded-xl bg-stone-100"><CreditCard size={16} /></span>Aucun paiement enregistré.</div> : <div className="divide-y divide-line">{value.payments.map(payment => <div key={payment.id} className="grid items-center gap-3 px-4 py-3 text-xs sm:grid-cols-[1fr_1fr_1fr_auto]">
+        {value.payments.length === 0 ? <div className="flex items-center gap-3 p-5 text-xs text-muted"><span className="grid size-9 place-items-center rounded-xl bg-stone-100 dark:bg-[#302b2f]"><CreditCard size={16} /></span>Aucun paiement enregistré.</div> : <div className="divide-y divide-line">{value.payments.map(payment => <div key={payment.id} className="grid items-center gap-3 px-4 py-3 text-xs sm:grid-cols-[1fr_1fr_1fr_auto]">
           <span className="flex items-center gap-2 text-ink"><CalendarDays size={14} className="text-brand" />{new Date(payment.paidAt).toLocaleDateString('fr-FR')}</span>
           <span>{paymentMethods[payment.method] ?? payment.method}</span>
-          <span className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-bold ${payment.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700' : payment.status === 'PENDING' ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}`}><CheckCircle2 size={11} />{paymentStatuses[payment.status] ?? payment.status}</span>
+          <span className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-bold ${payment.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' : payment.status === 'PENDING' ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' : 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300'}`}><CheckCircle2 size={11} />{paymentStatuses[payment.status] ?? payment.status}</span>
           <strong className="text-right text-ink">{money.format(payment.amount)}</strong>
         </div>)}</div>}
       </section>
 
-      <footer className="flex justify-end border-t border-line pt-5"><button type="button" className="rounded-lg bg-linear-to-r from-brand to-brand-secondary px-5 py-2 text-xs font-bold text-white shadow-sm" onClick={onClose}>Fermer</button></footer>
+      <footer className="flex flex-wrap justify-end gap-2 border-t border-line pt-5">{downloadError && <p role="alert" className="w-full text-xs text-rose-700">{downloadError}</p>}<button type="button" className={ui("secondary-button")} disabled={downloading} onClick={() => void downloadPdf()}>{downloading ? "Création du PDF…" : "Télécharger le PDF"}</button><button type="button" className="rounded-lg bg-linear-to-r from-brand to-brand-secondary px-5 py-2 text-xs font-bold text-white shadow-sm" onClick={onClose}>Fermer</button></footer>
     </div>}
   </Modal>;
 }

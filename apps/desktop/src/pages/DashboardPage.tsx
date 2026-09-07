@@ -1,7 +1,7 @@
 import { ui } from "../lib/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import type { DashboardAnalyticsRange } from '@cosmetics/contracts';
+import type { DashboardAnalyticsRange, UserRole } from '@cosmetics/contracts';
 import { CartesianGrid, XAxis, YAxis, Tooltip, Line, LineChart, ResponsiveContainer, ReferenceArea, ReferenceDot } from 'recharts';
 import {
   AlertTriangle,
@@ -17,13 +17,19 @@ import {
 } from "lucide-react";
 import { ErrorState } from "../components/EmptyState";
 import { api, ApiRequestError } from "../lib/api";
+import type { Section, NavigationOptions } from "../lib/navigation";
 import { integer, money } from "../lib/format";
 
 export function DashboardPage({
-  onNavigate,
+  onNavigate, role,
 }: {
-  onNavigate: (section: "inventory" | "sales" | "purchases" | "orders") => void;
+  role: UserRole;
+  onNavigate: (section: Section, options?: NavigationOptions) => void;
 }) {
+  const canFinance = ['OWNER','MANAGER','ACCOUNTANT'].includes(role);
+  const canStock = ['OWNER','MANAGER','WAREHOUSE'].includes(role);
+  const canSell = ['OWNER','MANAGER','CASHIER'].includes(role);
+  const canPurchase = ['OWNER','MANAGER','WAREHOUSE','ACCOUNTANT'].includes(role);
   const [range, setRange] = useState<DashboardAnalyticsRange>('year');
   const analytics = useQuery({ queryKey: ['dashboard-analytics', range], queryFn: () => api.analytics(range), refetchInterval: 30_000 });
   const summary = useQuery({
@@ -189,7 +195,7 @@ export function DashboardPage({
           </div>
           <button
             className={ui("alert-row")}
-            onClick={() => onNavigate("inventory")}
+            onClick={() => onNavigate("inventory", {stock:"low"})}
           >
             <span className={ui("alert-icon warning")}>
               <AlertTriangle size={18} />
@@ -197,14 +203,14 @@ export function DashboardPage({
             <div>
               <strong>Stock faible</strong>
               <small>
-                {value?.lowStockCount ?? "—"} références sous le seuil
+                {value?.lowStockCount ?? "—"} références disponibles sous le seuil
               </small>
             </div>
             <ArrowRight size={17} />
           </button>
           <button
             className={ui("alert-row")}
-            onClick={() => onNavigate("inventory")}
+            onClick={() => onNavigate("inventory", {stock:"out"})}
           >
             <span className={ui("alert-icon danger")}>
               <PackageX size={18} />
@@ -217,9 +223,9 @@ export function DashboardPage({
             </div>
             <ArrowRight size={17} />
           </button>
-          <button
+          {canFinance && <button
             className={ui("alert-row")}
-            onClick={() => onNavigate("orders")}
+            onClick={() => onNavigate("finance", {financeTab:"checks"})}
           >
             <span className={ui("alert-icon blue")}>
               <Banknote size={18} />
@@ -229,12 +235,14 @@ export function DashboardPage({
               <small>{value?.pendingChecks ?? "—"} chèques à suivre</small>
             </div>
             <ArrowRight size={17} />
-          </button>
+          </button>}
+          {canFinance && <button className={ui("alert-row")} onClick={() => onNavigate("finance", {financeTab:"receivables"})}><span className={ui("alert-icon warning")}><WalletCards size={18}/></span><div><strong>Factures à encaisser</strong><small>{value ? money.format(value.customerReceivables) : "—"} · solde clients</small></div><ArrowRight size={17}/></button>}
+          {canFinance && <button className={ui("alert-row")} onClick={() => onNavigate("finance", {financeTab:"payables"})}><span className={ui("alert-icon blue")}><Banknote size={18}/></span><div><strong>Fournisseurs à régler</strong><small>{value ? money.format(value.supplierPayables) : "—"} · solde fournisseurs</small></div><ArrowRight size={17}/></button>}
           <button
             className={ui("text-button")}
             onClick={() => onNavigate("inventory")}
           >
-            Voir toutes les alertes <ArrowRight size={15} />
+            Voir le stock <ArrowRight size={15} />
           </button>
         </article>
       </section>
@@ -248,27 +256,29 @@ export function DashboardPage({
             </div>
           </div>
           <div className={ui("quick-actions")}>
-            <button onClick={() => onNavigate("sales")}>
+            {canSell && <button onClick={() => onNavigate("sales")}>
               <span>
                 <ShoppingCart size={20} />
               </span>
               <strong>Nouvelle vente</strong>
               <small>Créer une facture grossiste</small>
-            </button>
-            <button onClick={() => onNavigate("inventory")}>
+            </button>}
+            {canStock && <button onClick={() => onNavigate("inventory", {createProduct:true})}>
               <span>
                 <Boxes size={20} />
               </span>
               <strong>Ajouter un produit</strong>
               <small>Enrichir le catalogue</small>
-            </button>
-            <button onClick={() => onNavigate("purchases")}>
+            </button>}
+            {canPurchase && <button onClick={() => onNavigate("purchases")}>
               <span>
                 <PackagePlus size={20} />
               </span>
               <strong>Nouvel achat</strong>
               <small>Réceptionner du stock</small>
-            </button>
+            </button>}
+            {canFinance && <button onClick={() => onNavigate("finance", {financeTab:"expenses"})}><span><Banknote size={20}/></span><strong>Gérer les dépenses</strong><small>Suivre les frais de fonctionnement</small></button>}
+            {!canSell && !canStock && !canPurchase && !canFinance && <button onClick={() => onNavigate("orders")}><span><ShoppingCart size={20}/></span><strong>Suivre les commandes</strong><small>Consulter les ventes et livraisons</small></button>}
           </div>
         </article>
         <article className={ui("panel activity-panel")}>

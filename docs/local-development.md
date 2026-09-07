@@ -21,7 +21,7 @@ Then run `pnpm install` and `pnpm dev:local` from the repository root.
 
 PostgreSQL binaries are a development-only dependency; no Docker or system service
 is required. The first run applies migrations and imports the existing demo seed,
-including the Zwine products/images. Later runs preserve edits and run migrations
+including the demo products/images. Later runs preserve edits and run migrations
 only. Data lives in ignored `.local/postgres`; stopping the command does not erase it.
 Keep the local password stable after initialization: it also authenticates the
 local database. Never reuse production credentials.

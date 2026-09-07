@@ -24,6 +24,7 @@ services:
     environment:
       NODE_ENV: production
       API_PORT: 4000
+      PUBLIC_API_URL: ${PUBLIC_ORIGIN}/api/v1
       DATABASE_URL: postgresql://cosmetics:${POSTGRES_PASSWORD}@postgres:5432/cosmetics
       CORS_ORIGINS: ${PUBLIC_ORIGIN}
       AUTH_SECRET: ${AUTH_SECRET}

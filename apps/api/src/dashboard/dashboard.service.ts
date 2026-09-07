@@ -57,26 +57,26 @@ export class DashboardService {
         COALESCE((SELECT SUM(soi.line_total - (soi.unit_cost_snapshot * soi.quantity * soi.unit_multiplier))
           FROM sales_order_items soi JOIN sales_orders so ON so.id = soi.sales_order_id
           WHERE so.organization_id = $1 AND so.status IN ('CONFIRMED', 'PARTIALLY_PAID', 'PAID', 'DELIVERED', 'FULFILLED')), 0)::text AS "grossMargin",
-        COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id = $1), 0)::text AS expenses,
+        COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id = $1 AND voided_at IS NULL), 0)::text AS expenses,
         (COALESCE((SELECT SUM(soi.line_total - (soi.unit_cost_snapshot * soi.quantity * soi.unit_multiplier))
           FROM sales_order_items soi JOIN sales_orders so ON so.id = soi.sales_order_id
           WHERE so.organization_id = $1 AND so.status IN ('CONFIRMED', 'PARTIALLY_PAID', 'PAID', 'DELIVERED', 'FULFILLED')), 0)
-          - COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id = $1), 0))::text AS "netProfit",
+          - COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id = $1 AND voided_at IS NULL), 0))::text AS "netProfit",
         COALESCE((SELECT SUM(b.on_hand * v.purchase_price)
           FROM inventory_balances b JOIN product_variants v ON v.id = b.variant_id
           WHERE b.location_id = $2), 0)::text AS "inventoryValue",
         COALESCE((SELECT SUM(on_hand) FROM inventory_balances WHERE location_id = $2), 0)::text AS "unitsInStock",
-        COALESCE((SELECT COUNT(*) FROM inventory_balances b
-          JOIN product_variants v ON v.id = b.variant_id
-          WHERE b.location_id = $2 AND b.on_hand > 0 AND b.on_hand <= v.low_stock_threshold), 0)::text AS "lowStockCount",
-        COALESCE((SELECT COUNT(*) FROM inventory_balances
-          WHERE location_id = $2 AND on_hand = 0), 0)::text AS "outOfStockCount",
+        COALESCE((SELECT COUNT(*) FROM product_variants v JOIN products p ON p.id=v.product_id
+          LEFT JOIN inventory_balances b ON b.variant_id=v.id AND b.location_id=$2
+          WHERE p.organization_id=$1 AND p.active=true AND v.active=true AND COALESCE(b.on_hand,0)-COALESCE(b.reserved,0) > 0 AND COALESCE(b.on_hand,0)-COALESCE(b.reserved,0) <= v.low_stock_threshold),0)::text AS "lowStockCount",
+        COALESCE((SELECT COUNT(*) FROM product_variants v JOIN products p ON p.id=v.product_id
+          LEFT JOIN inventory_balances b ON b.variant_id=v.id AND b.location_id=$2
+          WHERE p.organization_id=$1 AND p.active=true AND v.active=true AND COALESCE(b.on_hand,0)-COALESCE(b.reserved,0)=0),0)::text AS "outOfStockCount",
         COALESCE((SELECT SUM(grand_total - amount_paid) FROM sales_orders
           WHERE organization_id = $1 AND status IN ('CONFIRMED', 'PARTIALLY_PAID', 'DELIVERED', 'FULFILLED')), 0)::text AS "customerReceivables",
         COALESCE((SELECT SUM(total - amount_paid) FROM purchase_orders
-          WHERE organization_id = $1 AND status NOT IN ('CANCELLED', 'CANCELED')), 0)::text AS "supplierPayables",
-        COALESCE((SELECT COUNT(*) FROM checks c JOIN payments p ON p.id = c.payment_id
-          WHERE p.organization_id = $1 AND c.status IN ('PENDING', 'DEPOSITED')), 0)::text AS "pendingChecks"`,
+          WHERE organization_id = $1 AND status IN ('RECEIVED', 'PARTIALLY_RECEIVED')), 0)::text AS "supplierPayables",
+        COALESCE((SELECT COUNT(*) FROM payments p WHERE p.organization_id = $1 AND p.method = 'CHECK' AND p.status = 'PENDING'), 0)::text AS "pendingChecks"`,
       [DEFAULT_ORGANIZATION_ID, DEFAULT_LOCATION_ID],
     );
     const row = result.rows[0]!;

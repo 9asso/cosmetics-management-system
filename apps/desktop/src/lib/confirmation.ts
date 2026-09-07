@@ -15,6 +15,13 @@ export function confirmChange(value: Confirmation): Promise<boolean> {
 
 export function mutationConfirmation(path: string, method: string, body?: string): Confirmation {
   const value = body ? JSON.parse(body) as Record<string, unknown> : {};
+  if (path.startsWith('/finance/payments/')) return {title: 'Enregistrer ce règlement ?', detail: `${value.amount} MAD · ${value.method}. ${value.method === 'CHECK' ? 'Le chèque restera en attente jusqu’à son règlement bancaire.' : 'Le solde de la facture sera réduit immédiatement.'}`};
+  if (path.startsWith('/finance/checks/')) {
+    const labels: Record<string,string> = {DEPOSITED:'déposé',CLEARED:'réglé par la banque',BOUNCED:'rejeté',CANCELLED:'annulé'};
+    return {title: `Marquer ce chèque comme ${labels[String(value.status)]} ?`, detail: value.status === 'CLEARED' ? 'Confirmez uniquement après vérification du règlement bancaire. Le solde de la facture sera réduit.' : 'Le solde de la facture ne sera pas réduit. Le changement sera conservé dans le journal.', destructive: ['BOUNCED','CANCELLED'].includes(String(value.status))};
+  }
+  if (path.endsWith('/void')) return {title:'Annuler cette dépense ?',detail:`Motif : ${value.reason}. Elle sera exclue des totaux et conservée dans l’historique.`,destructive:true};
+  if (path === '/finance/expenses') return {title:'Enregistrer cette dépense ?',detail:`${value.name} · ${value.amount} MAD · ${value.incurredOn}.`};
   const entity = path.startsWith('/products') ? 'le produit' : path.startsWith('/suppliers') ? 'le fournisseur' : path.startsWith('/customers') ? 'le client' : path.startsWith('/users') ? 'le compte' : 'cette opération';
   if (method === 'DELETE') return { title: `Supprimer ${entity} ?`, detail: 'Ce contact sera retiré des listes actives. Ses factures, paiements et coordonnées historiques seront conservés.', destructive: true };
   if (path.includes('/status')) {

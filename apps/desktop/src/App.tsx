@@ -19,6 +19,7 @@ import {
   Pencil,
   Moon,
   Sun,
+  Wallet,
 } from "lucide-react";
 import { DashboardPage } from "./pages/DashboardPage";
 import { InventoryPage } from "./pages/InventoryPage";
@@ -35,15 +36,8 @@ import { EditNameModal } from "./components/EditNameModal";
 import { ErrorState } from "./components/EmptyState";
 import { api, ApiRequestError, hasAccessToken, setAccessToken } from "./lib/api";
 
-type Section =
-  | "dashboard"
-  | "inventory"
-  | "purchases"
-  | "sales"
-  | "orders"
-  | "invoices"
-  | "partners"
-  | "team";
+import { FinancePage } from './pages/FinancePage';
+import type { Section, NavigationOptions } from './lib/navigation';
 
 const navigation: Array<{
   group: string;
@@ -83,6 +77,7 @@ const navigation: Array<{
   {
     group: "Gestion",
     items: [
+      { id: "finance", label: "Finances & dépenses", icon: Wallet, roles: ["OWNER", "MANAGER", "ACCOUNTANT"] },
       { id: "partners", label: "Clients & fournisseurs", icon: Building2 },
       {
         id: "team",
@@ -98,6 +93,7 @@ const pageTitles: Record<
   Section,
   { eyebrow: string; title: string; description: string }
 > = {
+  finance: { eyebrow: "Suivi financier", title: "Finances & dépenses", description: "Encaissez vos factures, suivez vos chèques et maîtrisez vos dépenses." },
   dashboard: {
     eyebrow: "Centre de pilotage",
     title: "Vue d’ensemble",
@@ -170,6 +166,8 @@ export function App() {
   const [authenticated, setAuthenticated] = useState(hasAccessToken());
   const [user, setUser] = useState<AuthUser | null>(null);
   const [active, setActive] = useState<Section>("dashboard");
+  const [navigationOptions, setNavigationOptions] = useState<NavigationOptions>({});
+  const [navigationVersion, setNavigationVersion] = useState(0);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [editProfile, setEditProfile] = useState(false);
@@ -188,10 +186,10 @@ export function App() {
   });
 
   useLayoutEffect(() => {
-    document.documentElement.classList.toggle("dark", darkMode);
+    document.documentElement.classList.toggle("dark", authenticated && darkMode);
     themeStorage()?.setItem(themeStorageKey, darkMode ? "dark" : "light");
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", darkMode ? "#181619" : "#ff848f");
-  }, [darkMode]);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", authenticated && darkMode ? "#181619" : "#ff848f");
+  }, [darkMode, authenticated]);
 
   useEffect(() => {
     if (me.data) setUser(me.data);
@@ -215,7 +213,10 @@ export function App() {
     [user],
   );
 
-  const navigate = (section: Section) => {
+  const navigate = (section: Section, options: NavigationOptions = {}) => {
+    if (!visibleNavigation.some(group => group.items.some(item => item.id === section))) return;
+    setNavigationOptions(options);
+    setNavigationVersion(version => version + 1);
     setActive(section);
     setMobileMenu(false);
   };
@@ -223,6 +224,8 @@ export function App() {
     setAccessToken("");
     setAuthenticated(false);
     setUser(null);
+    setActive("dashboard");
+    setNavigationOptions({});
     cache.clear();
   };
   const openStore = () => {
@@ -416,10 +419,11 @@ export function App() {
                   : "Connexion…"}
             </span>
           </header>
-          {active === "dashboard" && <DashboardPage onNavigate={navigate} />}
+          {active === "dashboard" && <DashboardPage onNavigate={navigate} role={user.role} />}
           {active === "inventory" && (
-            <InventoryPage canManage={canManageStock} />
+            <InventoryPage key={navigationVersion} canManage={canManageStock} initialStock={navigationOptions.stock} initialCreate={navigationOptions.createProduct} />
           )}
+          {active === "finance" && ["OWNER", "MANAGER", "ACCOUNTANT"].includes(user.role) && <FinancePage key={navigationVersion} initialTab={navigationOptions.financeTab} />}
           {active === "purchases" && <PurchasesPage />}
           {active === "sales" && <WholesaleSalesPage />}
           {active === 'invoices' && <InvoicesPage />}

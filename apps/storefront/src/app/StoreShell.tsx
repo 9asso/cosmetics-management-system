@@ -1,5 +1,6 @@
 "use client";
 
+import { ProductGallery } from "./ProductGallery";
 import {
   useEffect,
   useMemo,
@@ -999,18 +1000,7 @@ export function StoreShell({ products }: { products: ProductListItem[] }) {
             >
               <X size={20} />
             </button>
-            <div className="product-modal-image">
-              {selectedProduct.imageUrl ? (
-                <img
-                  src={selectedProduct.imageUrl}
-                  alt={selectedProduct.name}
-                />
-              ) : (
-                <span className="cosmetic-shape">
-                  <i>{selectedProduct.brand.slice(0, 1)}</i>
-                </span>
-              )}
-            </div>
+            <ProductGallery key={selectedProduct.id} product={selectedProduct} />
             <div className="product-modal-copy">
               <p>{selectedProduct.brand}</p>
               <h2>{selectedProduct.name}</h2>

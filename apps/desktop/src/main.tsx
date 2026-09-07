@@ -7,7 +7,7 @@ import { ConfirmationHost } from './components/ConfirmationHost';
 
 const queryClient: QueryClient = new QueryClient({
   mutationCache: new MutationCache({ onSuccess: () => {
-    for (const key of ['dashboard-summary', 'dashboard-analytics', 'invoices', 'invoice-detail', 'products', 'suppliers', 'customers']) {
+    for (const key of ['finance', 'orders', 'dashboard-summary', 'dashboard-analytics', 'invoices', 'invoice-detail', 'products', 'suppliers', 'customers']) {
       void queryClient.invalidateQueries({ queryKey: [key] });
     }
   } }),

@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Patch, Param, ParseUUIDPipe } from '@nestjs/common';
 import {
   createProductSchema,
+  productMediaSchema,
+  type ProductMediaInput,
   productListQuerySchema,
   type CreateProductInput,
   type ProductListQuery,
@@ -18,6 +20,16 @@ export class CatalogController {
     @Query(new ZodValidationPipe(productListQuerySchema)) query: ProductListQuery,
   ) {
     return this.catalog.list(query);
+  }
+
+  @Post('media')
+  @Roles('OWNER', 'MANAGER', 'WAREHOUSE')
+  upload(@Body() bytes: Buffer) { return this.catalog.uploadMedia(bytes); }
+
+  @Patch(':id/media')
+  @Roles('OWNER', 'MANAGER', 'WAREHOUSE')
+  updateMedia(@Param('id', new ParseUUIDPipe()) id: string, @Body(new ZodValidationPipe(productMediaSchema)) input: ProductMediaInput) {
+    return this.catalog.updateMedia(id, input);
   }
 
   @Post()

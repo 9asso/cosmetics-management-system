@@ -35,7 +35,7 @@ export const recipes: Record<string, string> = {
     "px-2.5 pb-2 text-[10px] font-medium text-muted md:group-[.sidebar-collapsed]/shell:hidden",
   "nav-item":
     "my-0.5 flex min-h-9 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-ink transition-colors hover:bg-white/70 dark:hover:bg-white/8 [&_svg]:shrink-0 [&_svg]:stroke-[1.8] [&_span]:flex-1 [&_span]:text-[11px] [&_span]:font-semibold md:group-[.sidebar-collapsed]/shell:justify-center md:group-[.sidebar-collapsed]/shell:px-0 md:group-[.sidebar-collapsed]/shell:[&_span]:hidden",
-  active: "bg-brand text-white shadow-sm hover:bg-brand/90 md:group-[.sidebar-collapsed]/shell:bg-brand/90",
+  active: "bg-brand text-white dark:text-[#321d24] shadow-sm hover:bg-brand/90 md:group-[.sidebar-collapsed]/shell:bg-brand/90",
   "nav-chevron": "rotate-180 md:group-[.sidebar-collapsed]/shell:hidden",
   "sidebar-footer": "mt-auto p-3 bg-brand md:group-[.sidebar-collapsed]/shell:hidden rounded-2xl ",
   "store-link":
@@ -132,7 +132,7 @@ export const recipes: Record<string, string> = {
   "table-search":
     "flex h-8 w-full items-center gap-2 rounded-lg border border-line bg-surface px-3 text-muted focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/15 lg:w-[min(360px,30vw)] [&_svg]:shrink-0 [&_input]:min-w-0 [&_input]:w-full [&_input]:bg-transparent [&_input]:text-[11px] [&_input]:text-ink [&_input]:outline-none",
   segmented:
-    "flex gap-1 rounded-lg bg-stone-100 p-1 [&_button]:inline-flex [&_button]:items-center [&_button]:gap-1.5 [&_button]:rounded-md [&_button]:px-2.5 [&_button]:py-1 [&_button]:text-[11px] [&_button]:font-semibold",
+    "flex gap-1 rounded-lg bg-stone-100 text-ink dark:bg-[#302b2f] p-1 [&_button]:inline-flex [&_button]:items-center [&_button]:gap-1.5 [&_button]:rounded-md [&_button]:px-2.5 [&_button]:py-1 [&_button]:text-[11px] [&_button]:font-semibold",
   "category-filter":
     "flex h-8 items-center gap-1.5 rounded-lg border border-line bg-surface px-2 text-[11px] text-muted [&_select]:min-w-0 [&_select]:bg-transparent [&_select]:outline-none",
   "table-wrap":
@@ -195,11 +195,11 @@ export const recipes: Record<string, string> = {
   "empty-icon":
     "grid size-12 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand",
   "login-page":
-    "grid min-h-screen grid-cols-1 bg-white transition-colors dark:bg-[#181619] md:grid-cols-[1.4fr_0.6fr]",
+    "grid min-h-screen grid-cols-1 bg-white md:grid-cols-[1.4fr_0.6fr]",
   "login-story":
     "relative hidden flex-col justify-between gap-12 m-3 rounded-4xl isolate overflow-hidden bg-brand-soft [&>div:not(.absolute)]:relative [&>span]:relative p-[clamp(12px,3vw,50px)] text-ink md:flex [&_h1]:my-4 [&_h1]:max-w-[620px] [&_h1]:text-[clamp(35px,4vw,57px)] [&_h1]:leading-[1.08] [&_h1]:font-bold [&_h1]:tracking-[-0.055em] [&_.eyebrow]:text-brand [&>div>p:not(.eyebrow)]:max-w-lg [&>div>p:not(.eyebrow)]:text-sm [&>div>p:not(.eyebrow)]:leading-relaxed",
   "login-brand":
-    "flex items-center gap-3 text-lg font-bold [&_img]:size-11 [&_img]:rounded-xl [&_img]:ring-1 [&_img]:ring-white/30",
+    "flex items-center gap-3 text-lg font-semibold [&_img]:size-11 [&_img]:rounded-xl [&_img]:ring-1 [&_img]:ring-white/30",
   "login-benefits":
     "mt-7 flex flex-wrap gap-2.5 [&_span]:flex [&_span]:items-center [&_span]:gap-2 [&_span]:rounded-lg [&_span]:border [&_span]:border-white/70 [&_span]:bg-white/65 [&_span]:px-3 [&_span]:py-2.5 [&_span]:text-[11px]",
   "login-panel": "grid place-items-center px-6 py-12 sm:p-9",

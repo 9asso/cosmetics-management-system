@@ -5,6 +5,7 @@ import { AppModule } from "./app.module.js";
 import type { NestExpressApplication } from '@nestjs/platform-express';
 
 const app = await NestFactory.create<NestExpressApplication>(AppModule);
+app.useBodyParser('raw', { type: 'application/octet-stream', limit: '30mb' });
 app.useBodyParser('json', { limit: '8mb' });
 const origins = (
   process.env.CORS_ORIGINS ?? "http://localhost:1420,http://localhost:5173"

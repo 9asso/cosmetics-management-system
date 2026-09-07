@@ -10,7 +10,7 @@ export default defineConfig({
     port: 1420,
     strictPort: true,
     // Demo images are shared with the store, just as they are under one origin in production.
-    proxy: { '/products/zwine': 'http://127.0.0.1:3000' },
+    proxy: { '/products/catalog': 'http://127.0.0.1:3000' },
   },
   envPrefix: ["VITE_", "TAURI_ENV_"],
   build: {

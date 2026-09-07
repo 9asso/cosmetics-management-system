@@ -6,25 +6,23 @@ application with an API-first TypeScript platform.
 
 ## What is implemented
 
-- Production-oriented pnpm/Turborepo monorepo.
-- PostgreSQL schema for organizations, locations, users, customers, suppliers,
-  products, SKUs, packaging units, lots/expiry dates, stock movements, wholesale
-  and retail orders, payments, checks, purchases, returns, expenses, audit logs,
-  and transactional outbox events.
-- NestJS API with health, dashboard, product creation/search, public-store catalog,
-  and audited inventory-adjustment endpoints.
-- React/Vite desktop interface with dashboard, stock alerts, inventory search and
-  filters, and a working product-creation form.
-- Tauri 2 desktop packaging scaffold.
-- Next.js retail storefront with a cart and cash-on-delivery checkout. Retail
-  prices and totals are always recalculated by the API, and submitted orders
-  reserve stock without recording a payment as collected.
-- Shared Zod contracts used by the API and frontends.
-- Idempotent demonstration data covering products, stock states, wholesale and
-  retail orders, cash/check/COD payments, a purchase, and expenses.
+- PostgreSQL-backed NestJS API with staff authentication and role permissions.
+- React/Vite desktop workspace with sales charts, stock alerts, team management,
+  product creation, image galleries with a featured photo and preview video,
+  inventory adjustments, customers and suppliers.
+- Multi-product wholesale sales and supplier receipts with shared inventory,
+  full-catalog search, configurable line quantities/prices, and invoice history.
+- Finance workspace for customer collections, supplier settlements, check
+  lifecycle tracking, and expenses with audited cancellation.
+- Payment retry protection, overpayment checks, and correct pending-check balances.
+- Filtered CSV exports across every page and downloadable multi-page invoice PDFs.
+- Next.js storefront with shared stock reservations and COD order handling.
+- Tauri desktop packaging scaffold and idempotent demonstration seeds.
 
-The remaining sidebar modules are intentionally visible as planned modules. They
-will be implemented as vertical slices rather than as disconnected CRUD screens.
+See [the desktop review and client-readiness checklist](docs/client-readiness.md)
+for the financial rules, validation commands, and the remaining workflows. Lot
+expiry operations, partial returns/refunds, cash reconciliation, and operator
+backup/restore are not yet complete.
 
 ## Repository layout
 
@@ -98,23 +96,37 @@ docs/
 ```bash
 pnpm typecheck
 pnpm test
+pnpm test:local # optional: running, migrated localhost database required
 pnpm build
 ```
 
-## Current API surface
+## API surface
+
+Authenticated management routes include `/dashboard`, `/products`,
+`/inventory/adjustments`, `/customers`, `/suppliers`, `/purchases`,
+`/wholesale-sales`, `/orders`, `/invoices`, and `/users`.
+
+Product media routes are `POST /api/v1/products/media` (raw file upload),
+`PATCH /api/v1/products/:id/media` (gallery/featured image/video), and public
+`GET /api/v1/media/assets/:id` (including byte-range video playback). Images are
+limited to 5 MB, previews to 30 MB, and galleries to 10 photos. The first photo
+is the featured image. The gateway configuration includes the preview upload limit.
+
+Finance adds:
 
 ```text
-GET  /api/v1/health
-GET  /api/v1/dashboard/summary
-GET  /api/v1/products
-POST /api/v1/products
-POST /api/v1/inventory/adjustments
-GET  /api/v1/store/products
-POST /api/v1/store/orders
+GET   /api/v1/finance/summary
+GET   /api/v1/finance/balances
+GET   /api/v1/finance/checks
+GET   /api/v1/finance/expenses
+POST  /api/v1/finance/payments/:kind/:id
+PATCH /api/v1/finance/checks/:id
+POST  /api/v1/finance/expenses
+PATCH /api/v1/finance/expenses/:id/void
 ```
 
-`POST /api/v1/store/orders` accepts only `paymentMethod: "COD"`. No payment
-gateway or card data is used.
+Public storefront routes remain `/store/products` and `/store/orders`.
+Retail checkout accepts only COD; no payment gateway or card data is used.
 
 ## VPS deployment
 
@@ -127,25 +139,18 @@ pnpm deploy:vps
 ```
 
 The deploy script installs Docker when necessary, adds swap on small servers,
-keeps database and administration secrets across releases, applies migrations,
-loads the idempotent demonstration seed, and verifies the live services. It writes
+deploys the committed Git tree, keeps database and administration secrets across
+releases, builds the images, backs up an existing database before migrations, and
+verifies the live services. Demo seeds run only on the first deployment. It writes
 the generated temporary administration login to the ignored local file
 `.deployment-credentials`.
 
 The storefront and COD order endpoint are public. The administrative UI,
-management APIs, and Swagger are protected with HTTP Basic Auth until native
-staff authentication is implemented. A domain and TLS are required before real
+management APIs, and Swagger retain the deployment gateway protection. Staff
+sign-in and API role checks are implemented in the application. A domain and TLS are required before real
 production use.
 
-## Next vertical slices
+## Further development
 
-1. Staff authentication, sessions, and role permissions.
-2. Wholesale POS: draft cart, price overrides, invoice confirmation, credit, and checks.
-3. Purchases: supplier orders, receipts, lots, and supplier payments.
-4. Returns/refunds and immutable document reversals.
-5. PDF invoices, Excel exports, scheduled reports, backups, and updater delivery.
-6. Retail order fulfillment, delivery tracking, COD collection, and cancellation
-   workflows.
-
-See [ADR 0001](docs/architecture/0001-platform-architecture.md) for the architectural
-rules behind the implementation.
+See [the prioritized client-readiness checklist](docs/client-readiness.md) and
+[ADR 0001](docs/architecture/0001-platform-architecture.md).

@@ -13,3 +13,7 @@ coverage/
 .local/
 apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/gen/
+
+# Local legacy database archive and duplicate seed copy
+old/
+database/seeds/dev 2.sql

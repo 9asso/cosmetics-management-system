@@ -13,6 +13,7 @@ for (const name of ["VPS_HOST", "VPS_USER", "VPS_PASSWORD"]) {
 }
 
 const host = process.env.VPS_HOST;
+const commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim();
 const releaseId = new Date().toISOString().replace(/[^0-9]/g, "").slice(0, 14);
 const remoteRoot = "/opt/cosmetics-management";
 const remoteRelease = `${remoteRoot}/releases/${releaseId}`;
@@ -61,13 +62,8 @@ function upsertEnvironment(source, additions) {
 }
 
 function createArchive() {
-  execFileSync("tar", [
-    "-czf", localArchive, "--no-xattrs", "--no-mac-metadata", "--exclude=.git",
-    "--exclude=.env", "--exclude=.deployment-credentials", "--exclude=node_modules",
-    "--exclude=.env.local", "--exclude=.local", "--exclude=old",
-    "--exclude=database/seeds/dev 2.sql", "--exclude=.turbo", "--exclude=dist",
-    "--exclude=.next", "--exclude=target", ".",
-  ], { cwd: repoRoot, stdio: "inherit", env: { ...process.env, COPYFILE_DISABLE: "1" } });
+  // Deploy the exact committed tree that was pushed, never local secrets or scratch files.
+  execFileSync("git", ["archive", "--format=tar.gz", `--output=${localArchive}`, "HEAD"], { cwd: repoRoot, stdio: "inherit" });
 }
 
 async function installSecretFiles(connection, environment, display) {
@@ -134,9 +130,14 @@ mkdir -p ${shellQuote(`${remoteRoot}/releases`)} ${shellQuote(`${remoteRoot}/sha
 tar -xzf ${shellQuote(remoteArchive)} -C ${shellQuote(remoteRelease)}
 rm -f ${shellQuote(remoteArchive)}
 cd ${shellQuote(remoteRelease)}
-COMPOSE_PARALLEL_LIMIT=1 docker compose --env-file ${shellQuote(`${remoteRoot}/shared/.env`)} -p cosmetics-management -f compose.production.yml up -d --build
-docker compose --env-file ${shellQuote(`${remoteRoot}/shared/.env`)} -p cosmetics-management -f compose.production.yml exec -T api node dist/database/seed.js
-ln -sfn ${shellQuote(remoteRelease)} ${shellQuote(`${remoteRoot}/current`)}
+COMPOSE_PARALLEL_LIMIT=1 docker compose --env-file ${shellQuote(`${remoteRoot}/shared/.env`)} -p cosmetics-management -f compose.production.yml build
+${hasSecrets ? `umask 077
+mkdir -p ${shellQuote(`${remoteRoot}/shared/backups`)}
+docker compose --env-file ${shellQuote(`${remoteRoot}/shared/.env`)} -p cosmetics-management -f compose.production.yml exec -T postgres pg_dump -Fc -U cosmetics cosmetics > ${shellQuote(`${remoteRoot}/shared/backups/before-${releaseId}.dump`)}
+test -s ${shellQuote(`${remoteRoot}/shared/backups/before-${releaseId}.dump`)}` : ''}
+docker compose --env-file ${shellQuote(`${remoteRoot}/shared/.env`)} -p cosmetics-management -f compose.production.yml up -d --no-build
+${!hasSecrets ? `docker compose --env-file ${shellQuote(`${remoteRoot}/shared/.env`)} -p cosmetics-management -f compose.production.yml exec -T api node dist/database/seed.js` : ''}
+printf '%s\n' ${shellQuote(commit)} > REVISION
 curl --retry 10 --retry-delay 3 --retry-connrefused -fsS http://127.0.0.1/api/v1/health
 curl --retry 10 --retry-delay 3 --retry-connrefused -fsS http://127.0.0.1/ >/dev/null
 test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/admin/)" = 200
@@ -145,6 +146,7 @@ set -a
 . ${shellQuote(`${remoteRoot}/shared/.env`)}
 set +a
 curl -fsS -H 'Content-Type: application/json' --data "$(printf '{\"email\":\"%s\",\"password\":\"%s\"}' "$ADMIN_EMAIL" "$ADMIN_PASSWORD")" http://127.0.0.1/api/v1/auth/login >/dev/null
+ln -sfn ${shellQuote(remoteRelease)} ${shellQuote(`${remoteRoot}/current`)}
 docker compose --env-file ${shellQuote(`${remoteRoot}/shared/.env`)} -p cosmetics-management -f compose.production.yml ps`);
   console.log(`Deployment complete. Credentials were saved to ${localCredentialPath}`);
 } finally {

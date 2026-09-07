@@ -1,3 +1,4 @@
+import { FinanceModule } from './finance/finance.module.js';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module.js';
@@ -19,6 +20,7 @@ import { StorefrontModule } from './storefront/storefront.module.js';
     DashboardModule,
     StorefrontModule,
     ManagementModule,
+    FinanceModule,
   ],
   controllers: [HealthController],
 })

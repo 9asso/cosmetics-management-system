@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { checkDetailsSchema, financialAmountSchema } from './finance.js';
 import { moneySchema, uuidSchema } from './shared.js';
 
 export const orderStatuses = ['ORDERED', 'CONFIRMED', 'DELIVERED', 'CANCELED'] as const;
@@ -22,19 +23,25 @@ const operationItemSchema = z.object({
 
 export const createPurchaseSchema = z.object({
   supplierId: uuidSchema,
-  items: z.array(operationItemSchema.extend({ unitCost: moneySchema })).min(1).max(100),
-  paidAmount: moneySchema.default(0),
+  items: z.array(operationItemSchema.extend({ unitCost: financialAmountSchema })).min(1).max(100),
+  paidAmount: financialAmountSchema.default(0),
+  check: checkDetailsSchema.optional(),
   paymentMethod: z.enum(['CASH', 'CHECK', 'TRANSFER', 'CREDIT']).default('CREDIT'),
   notes: z.string().trim().max(500).default(''),
-});
+}).refine(value => value.paymentMethod !== 'CREDIT' || value.paidAmount === 0, 'Un achat ou une vente à crédit ne constitue pas un paiement.')
+  .refine(value => value.paymentMethod !== 'CHECK' || value.paidAmount === 0 || Boolean(value.check), 'Renseignez les informations du chèque.')
+  .refine(value => new Set(value.items.map(item => item.variantId)).size === value.items.length, 'Regroupez les quantités du même produit sur une seule ligne.');
 
 export const createWholesaleSaleSchema = z.object({
   customerId: uuidSchema,
-  items: z.array(operationItemSchema.extend({ unitPrice: moneySchema.optional() })).min(1).max(100),
-  paidAmount: moneySchema.default(0),
+  items: z.array(operationItemSchema.extend({ unitPrice: financialAmountSchema.optional() })).min(1).max(100),
+  paidAmount: financialAmountSchema.default(0),
+  check: checkDetailsSchema.optional(),
   paymentMethod: z.enum(['CASH', 'CHECK', 'TRANSFER', 'CREDIT']).default('CASH'),
   notes: z.string().trim().max(500).default(''),
-});
+}).refine(value => value.paymentMethod !== 'CREDIT' || value.paidAmount === 0, 'Un achat ou une vente à crédit ne constitue pas un paiement.')
+  .refine(value => value.paymentMethod !== 'CHECK' || value.paidAmount === 0 || Boolean(value.check), 'Renseignez les informations du chèque.')
+  .refine(value => new Set(value.items.map(item => item.variantId)).size === value.items.length, 'Regroupez les quantités du même produit sur une seule ligne.');
 
 export const orderListQuerySchema = z.object({
   search: z.string().trim().max(160).default(''),

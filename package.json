@@ -8,10 +8,11 @@
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
+    "test:local": "node scripts/test-local.mjs",
     "lint": "turbo lint",
     "format": "prettier --write .",
     "db:migrate": "pnpm --filter @cosmetics/api db:migrate",
-    "import:zwine-demo": "node scripts/import-zwine-demo.mjs",
+    "import:catalog-demo": "node scripts/import-catalog-demo.mjs",
     "deploy:vps": "node scripts/deploy-vps.mjs"
   },
   "devDependencies": {

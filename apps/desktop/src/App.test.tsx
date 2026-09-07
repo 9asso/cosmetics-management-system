@@ -60,6 +60,26 @@ describe('local session recovery', () => {
     expect(client.getQueryData(['me'])).toEqual(user);
     client.clear();
   });
+  it('keeps login light while restoring the saved dashboard theme after login', async () => {
+    window.localStorage.setItem('onight-dashboard-theme', 'dark');
+    vi.mocked(hasAccessToken).mockReturnValue(false);
+    vi.mocked(api.health).mockResolvedValue({status:'ok'});
+    vi.mocked(api.login).mockResolvedValue({user, accessToken:'local-test-token', expiresIn:100});
+    const client = new QueryClient({defaultOptions:{queries:{retry:false}}});
+    render(<QueryClientProvider client={client}><App /></QueryClientProvider>);
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(window.localStorage.getItem('onight-dashboard-theme')).toBe('dark');
+    fireEvent.change(screen.getByLabelText('Adresse email'), {target:{value:user.email}});
+    fireEvent.change(screen.getByLabelText('Mot de passe'), {target:{value:'LocalPassword123'}});
+    fireEvent.click(screen.getByRole('button',{name:'Se connecter'}));
+    await screen.findByText('Dashboard ready');
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    fireEvent.click(screen.getByRole('button',{name:'Se déconnecter'}));
+    await screen.findByRole('button',{name:'Se connecter'});
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(window.localStorage.getItem('onight-dashboard-theme')).toBe('dark');
+    client.clear();
+  });
   it('persists and applies the dashboard dark mode', async () => {
     vi.mocked(hasAccessToken).mockReturnValue(true);
     vi.mocked(api.me).mockResolvedValue(user);
