@@ -21,6 +21,7 @@ import { api, ApiRequestError } from "../lib/api";
 import { money } from "../lib/format";
 import { ui } from "../lib/ui";
 import { allPages, downloadCsv } from "../lib/csv";
+import { createRequestId } from "../lib/request-id";
 import { ErrorState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { StatusPill } from "../components/StatusPill";
@@ -757,7 +758,7 @@ function PaymentModal({
   onSaved: () => void;
 }) {
   const [draft, setDraft] = useState<RecordPaymentInput>({
-    requestId: crypto.randomUUID(),
+    requestId: createRequestId(),
     amount: value.availableToPay,
     method: "CASH",
     check: emptyCheck,
@@ -868,7 +869,7 @@ function ExpenseModal({
   onSaved: () => void;
 }) {
   const [draft, setDraft] = useState<CreateExpenseInput>({
-    requestId: crypto.randomUUID(),
+    requestId: createRequestId(),
     name: "",
     category: "OTHER",
     amount: 0,

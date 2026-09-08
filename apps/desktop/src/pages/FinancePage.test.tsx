@@ -8,7 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { FinancePage } from "./FinancePage";
+import { FinancePage, type FinanceTab } from "./FinancePage";
 import { api } from "../lib/api";
 vi.mock("../lib/api", () => ({
   ApiRequestError: class extends Error {},
@@ -24,8 +24,10 @@ vi.mock("../lib/api", () => ({
 afterEach(() => {
   cleanup();
   vi.resetAllMocks();
+  vi.unstubAllGlobals();
 });
-function mount(tab: "receivables" | "checks" | "expenses" = "receivables") {
+function mount(tab: FinanceTab = "receivables") {
+  const payable = tab === "payables";
   vi.mocked(api.financeSummary).mockResolvedValue({
     receivables: 100,
     payables: 0,
@@ -39,10 +41,10 @@ function mount(tab: "receivables" | "checks" | "expenses" = "receivables") {
   vi.mocked(api.financeBalances).mockResolvedValue({
     items: [
       {
-        id: "sale",
-        kind: "sale",
-        documentNumber: "FAC-QA",
-        partnerName: "QA customer",
+        id: payable ? "purchase" : "sale",
+        kind: payable ? "purchase" : "sale",
+        documentNumber: payable ? "ACH-QA" : "FAC-QA",
+        partnerName: payable ? "QA supplier" : "QA customer",
         phone: "",
         total: 100,
         amountPaid: 0,
@@ -131,6 +133,39 @@ describe("finance workflows", () => {
     expect(
       await screen.findByText("La dépense a été enregistrée."),
     ).toBeTruthy();
+    client.clear();
+  });
+  it("opens the expense form when randomUUID is unavailable in the WebView", async () => {
+    const originalCrypto = globalThis.crypto;
+    vi.stubGlobal("crypto", {
+      getRandomValues: (bytes: Uint8Array) =>
+        originalCrypto.getRandomValues(bytes),
+    });
+    const client = mount("expenses");
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Nouvelle dépense" }),
+    );
+
+    expect(
+      screen.getByRole("dialog", { name: "Nouvelle dépense" }),
+    ).toBeTruthy();
+    client.clear();
+  });
+  it("opens the supplier settlement form when randomUUID is unavailable in the WebView", async () => {
+    const originalCrypto = globalThis.crypto;
+    vi.stubGlobal("crypto", {
+      getRandomValues: (bytes: Uint8Array) =>
+        originalCrypto.getRandomValues(bytes),
+    });
+    const client = mount("payables");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Régler" }));
+
+    expect(
+      screen.getByRole("dialog", { name: "Régler un fournisseur" }),
+    ).toBeTruthy();
+    expect(screen.getByText("ACH-QA · QA supplier")).toBeTruthy();
     client.clear();
   });
   it("opens the check filter directly and never fetches balances on that screen", async () => {
