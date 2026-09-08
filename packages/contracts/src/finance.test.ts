@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createExpenseSchema,
   createPurchaseSchema,
+  createInvoiceReturnSchema,
   createWholesaleSaleSchema,
   recordPaymentSchema,
 } from "./index.js";
@@ -66,6 +67,68 @@ describe("finance validation", () => {
         category: "RENT",
         amount: 100,
         incurredOn: "2026-13-01",
+      }).success,
+    ).toBe(false);
+  });
+  it("requires salaries and fixed expenses to have a monthly day", () => {
+    const base = {
+      requestId: id,
+      name: "Salaires",
+      category: "SALARIES",
+      amount: 100,
+      incurredOn: "2026-09-01",
+      paymentMethod: "CREDIT",
+    };
+    expect(createExpenseSchema.safeParse(base).success).toBe(false);
+    expect(
+      createExpenseSchema.safeParse({
+        ...base,
+        expenseType: "FIXED",
+        recurringDay: 25,
+      }).success,
+    ).toBe(true);
+  });
+  it("supports invoice totals and rejects transfers on wholesale creation", () => {
+    const base = {
+      customerId: id,
+      items: [{ variantId: id, quantity: 2, unitPrice: 100 }],
+      paidAmount: 0,
+      discountTotal: 10,
+      shippingTotal: 20,
+      taxTotal: 5,
+    };
+    expect(createWholesaleSaleSchema.parse(base)).toMatchObject({
+      discountTotal: 10,
+      shippingTotal: 20,
+      taxTotal: 5,
+    });
+    expect(
+      createWholesaleSaleSchema.safeParse({
+        ...base,
+        paymentMethod: "TRANSFER",
+      }).success,
+    ).toBe(false);
+  });
+  it("validates unique return lines and supported refund methods", () => {
+    const line = {
+      invoiceItemId: id,
+      quantity: 1,
+      disposition: "RESTOCK",
+    };
+    expect(
+      createInvoiceReturnSchema.safeParse({
+        items: [line],
+        refundAmount: 10,
+        refundMethod: "CASH",
+        reason: "Retour client",
+      }).success,
+    ).toBe(true);
+    expect(
+      createInvoiceReturnSchema.safeParse({
+        items: [line, line],
+        refundAmount: 10,
+        refundMethod: "CHECK",
+        reason: "Retour client",
       }).success,
     ).toBe(false);
   });

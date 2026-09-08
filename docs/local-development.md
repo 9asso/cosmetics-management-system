@@ -19,6 +19,11 @@ Then run `pnpm install` and `pnpm dev:local` from the repository root.
 - API: http://localhost:4000/api/v1
 - PostgreSQL: 127.0.0.1:54329, database/user `onight`
 
+To run only PostgreSQL and the API, use `pnpm dev:api`. This is the supported
+API-only command because it starts the embedded database and injects its
+`DATABASE_URL`; the deployment-oriented root `.env` is not used for local
+database credentials.
+
 PostgreSQL binaries are a development-only dependency; no Docker or system service
 is required. The first run applies migrations and imports the existing demo seed,
 including the demo products/images. Later runs preserve edits and run migrations

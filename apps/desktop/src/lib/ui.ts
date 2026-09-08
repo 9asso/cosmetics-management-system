@@ -3,7 +3,8 @@ import { twMerge } from "tailwind-merge";
 // Shared Tailwind recipes. Keep complete utility names here so Vite can discover
 // them statically. Semantic markers are only hooks for parent/child variants;
 // there are no corresponding CSS rules or runtime-generated utility names.
-const card = "rounded-xl border border-line bg-white shadow-sm transition-colors dark:bg-[#282428] dark:shadow-none";
+const card =
+  "rounded-xl border border-line bg-white shadow-sm transition-colors dark:bg-[#282428] dark:shadow-none";
 const button =
   "inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-50";
 const form =
@@ -35,9 +36,11 @@ export const recipes: Record<string, string> = {
     "px-2.5 pb-2 text-[10px] font-medium text-muted md:group-[.sidebar-collapsed]/shell:hidden",
   "nav-item":
     "my-0.5 flex min-h-9 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-ink transition-colors hover:bg-white/70 dark:hover:bg-white/8 [&_svg]:shrink-0 [&_svg]:stroke-[1.8] [&_span]:flex-1 [&_span]:text-[11px] [&_span]:font-semibold md:group-[.sidebar-collapsed]/shell:justify-center md:group-[.sidebar-collapsed]/shell:px-0 md:group-[.sidebar-collapsed]/shell:[&_span]:hidden",
-  active: "bg-brand text-white dark:text-[#321d24] shadow-sm hover:bg-brand/90 md:group-[.sidebar-collapsed]/shell:bg-brand/90",
+  active:
+    "bg-brand text-white dark:text-[#321d24] shadow-sm hover:bg-brand/90 md:group-[.sidebar-collapsed]/shell:bg-brand/90",
   "nav-chevron": "rotate-180 md:group-[.sidebar-collapsed]/shell:hidden",
-  "sidebar-footer": "mt-auto p-3 bg-brand md:group-[.sidebar-collapsed]/shell:hidden rounded-2xl ",
+  "sidebar-footer":
+    "mt-auto p-3 bg-brand md:group-[.sidebar-collapsed]/shell:hidden rounded-2xl ",
   "store-link":
     "flex w-full hover:scale-[1.025] transition-all delay-75 items-center gap-2.5 rounded-2xl  border-brand/15 bg-white -mt-9 shadow-[0px_0px_20px_rgba(60,28,41,0.1)] p-2.5 text-left text-brand hover:bg-white dark:bg-[#2d282c] dark:hover:bg-[#342e33] [&_svg]:shrink-0 [&_span]:flex [&_span]:flex-col [&_strong]:text-[11px] [&_small]:mt-0.5 [&_small]:text-[9px] [&_small]:text-muted md:group-[.sidebar-collapsed]/shell:justify-center md:group-[.sidebar-collapsed]/shell:px-0 md:group-[.sidebar-collapsed]/shell:[&_span]:hidden",
   "sidebar-account-label":
@@ -76,14 +79,17 @@ export const recipes: Record<string, string> = {
   "inventory-stack": "flex flex-col gap-3.5",
   "page-stack": "flex flex-col gap-3.5",
   "metric-grid":
-    "grid grid-cols-1 gap-3 min-[30rem]:grid-cols-2 min-[68.75rem]:grid-cols-4",
+    "grid grid-cols-1 gap-3 min-[30rem]:grid-cols-2 min-[68.75rem]:grid-cols-5",
   "metric-card": `${card} relative overflow-hidden px-4 py-3.5 [&>strong]:my-1.5 [&>strong]:block [&>strong]:text-[22px] [&>strong]:font-bold [&>strong]:tracking-tight [&>small]:text-[10px] [&>small]:text-muted`,
   "metric-top":
     "flex items-center justify-between gap-2 text-[11px] text-muted [&_i]:grid [&_i]:size-8 [&_i]:shrink-0 [&_i]:place-items-center [&_i]:rounded-lg",
   "metric-ink": "[&_i]:bg-brand-soft [&_i]:text-brand",
-  "metric-green": "[&_i]:bg-emerald-50 [&_i]:text-emerald-700 dark:[&_i]:bg-emerald-950/55 dark:[&_i]:text-emerald-300",
-  "metric-gold": "[&_i]:bg-amber-50 [&_i]:text-amber-700 dark:[&_i]:bg-amber-950/55 dark:[&_i]:text-amber-300",
-  "metric-rose": "[&_i]:bg-rose-50 [&_i]:text-rose-700 dark:[&_i]:bg-rose-950/55 dark:[&_i]:text-rose-300",
+  "metric-green":
+    "[&_i]:bg-emerald-50 [&_i]:text-emerald-700 dark:[&_i]:bg-emerald-950/55 dark:[&_i]:text-emerald-300",
+  "metric-gold":
+    "[&_i]:bg-amber-50 [&_i]:text-amber-700 dark:[&_i]:bg-amber-950/55 dark:[&_i]:text-amber-300",
+  "metric-rose":
+    "[&_i]:bg-rose-50 [&_i]:text-rose-700 dark:[&_i]:bg-rose-950/55 dark:[&_i]:text-rose-300",
   "dashboard-grid":
     "grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.65fr)_minmax(280px,0.8fr)]",
   "lower-grid": "lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,1fr)]",
@@ -161,8 +167,10 @@ export const recipes: Record<string, string> = {
   "full-field": "mt-3.5 [&_textarea]:min-h-22 [&_textarea]:resize-y",
   checkbox:
     "mt-4 flex-row! items-center [&_input]:w-auto! [&_input]:accent-brand",
-  "form-error": "my-3 rounded-lg bg-rose-50 px-3 py-2.5 text-xs text-rose-700 dark:bg-rose-950/55 dark:text-rose-300",
-  "inline-error": "bg-rose-50 px-4 py-3 text-xs text-rose-700 dark:bg-rose-950/55 dark:text-rose-300",
+  "form-error":
+    "my-3 rounded-lg bg-rose-50 px-3 py-2.5 text-xs text-rose-700 dark:bg-rose-950/55 dark:text-rose-300",
+  "inline-error":
+    "bg-rose-50 px-4 py-3 text-xs text-rose-700 dark:bg-rose-950/55 dark:text-rose-300",
   "form-success":
     "my-3 flex items-center gap-2 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-700 dark:bg-emerald-950/55 dark:text-emerald-300",
   "form-hint": "my-3 text-xs text-muted",
@@ -209,7 +217,13 @@ export const recipes: Record<string, string> = {
   "login-submit": "mt-1 min-h-11",
 };
 
-const variantHooks = new Set(['sidebar-collapsed', 'primary-button', 'secondary-button', 'eyebrow', 'form-error']);
+const variantHooks = new Set([
+  "sidebar-collapsed",
+  "primary-button",
+  "secondary-button",
+  "eyebrow",
+  "form-error",
+]);
 
 export function ui(...values: Array<string | false | null | undefined>) {
   return twMerge(
@@ -217,7 +231,9 @@ export function ui(...values: Array<string | false | null | undefined>) {
       .filter(Boolean)
       .flatMap((value) => String(value).split(/\s+/))
       .flatMap((token) =>
-        token in recipes ? [variantHooks.has(token) ? token : '', recipes[token]!] : [token],
+        token in recipes
+          ? [variantHooks.has(token) ? token : "", recipes[token]!]
+          : [token],
       )
       .join(" "),
   );

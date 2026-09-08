@@ -15,36 +15,59 @@ import { ui } from "../lib/ui";
 import { ErrorState } from "../components/EmptyState";
 import { CheckFields, emptyCheck } from "../components/CheckFields";
 import { InvoiceDetailModal } from "../components/InvoiceDetailModal";
+import { SearchablePopup } from "../components/SearchablePopup";
 
-type CartLine = { product: ProductListItem; quantity: number; price: number };
+type CartLine = {
+  product: ProductListItem;
+  quantity: number;
+  price: number;
+  wholesalePrice: number;
+  retailPrice: number;
+};
 export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
   const purchase = kind === "purchase";
   const cache = useQueryClient();
   const [partnerId, setPartnerId] = useState("");
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
   const [productId, setProductId] = useState("");
   const [lines, setLines] = useState<CartLine[]>([]);
   const [paidAmount, setPaidAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<
-    "CASH" | "TRANSFER" | "CHECK" | "CREDIT"
+    "CASH" | "CHECK" | "CREDIT"
   >(purchase ? "CREDIT" : "CASH");
   const [check, setCheck] = useState(emptyCheck);
   const [notes, setNotes] = useState("");
+  const [deliveryEnabled, setDeliveryEnabled] = useState(false);
+  const [shippingTotal, setShippingTotal] = useState(0);
+  const [discountTotal, setDiscountTotal] = useState(0);
+  const [taxTotal, setTaxTotal] = useState(0);
   const [showInvoice, setShowInvoice] = useState(false);
   const partners = useQuery({
     queryKey: [purchase ? "suppliers" : "customers"],
     queryFn: purchase ? api.suppliers : api.customers,
   });
   const products = useQuery({
-    queryKey: ["products", "entry", search, page],
-    queryFn: () => api.products({ search, page, pageSize: 25, stock: "all" }),
+    queryKey: ["products", "entry", search],
+    queryFn: () =>
+      api.products({ search, page: 1, pageSize: 100, stock: "all" }),
   });
-  const total =
+  const subtotal =
     lines.reduce(
       (sum, line) => sum + Math.round(line.price * 100) * line.quantity,
       0,
     ) / 100;
+  const total = purchase
+    ? subtotal
+    : Math.max(
+        0,
+        Math.round(
+          (subtotal -
+            discountTotal +
+            (deliveryEnabled ? shippingTotal : 0) +
+            taxTotal) *
+            100,
+        ) / 100,
+      );
   const quantity = lines.reduce((sum, line) => sum + line.quantity, 0);
   const chosen = products.data?.items.find(
     (product) => product.variantId === productId,
@@ -64,6 +87,8 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
               variantId: line.product.variantId,
               quantity: line.quantity,
               unitCost: line.price,
+              wholesalePrice: line.wholesalePrice,
+              retailPrice: line.retailPrice,
             })),
             ...payment,
           })
@@ -74,7 +99,13 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
               quantity: line.quantity,
               unitPrice: line.price,
             })),
-            ...payment,
+            discountTotal,
+            shippingTotal: deliveryEnabled ? shippingTotal : 0,
+            taxTotal,
+            paymentMethod,
+            paidAmount: payment.paidAmount,
+            check: payment.check,
+            notes: payment.notes,
           });
     },
     onSuccess: async () => {
@@ -83,6 +114,10 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
       setNotes("");
       setCheck(emptyCheck);
       setProductId("");
+      setDiscountTotal(0);
+      setShippingTotal(0);
+      setTaxTotal(0);
+      setDeliveryEnabled(false);
       await Promise.all(
         [
           "products",
@@ -122,6 +157,8 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
           product: chosen,
           quantity: 1,
           price: purchase ? chosen.purchasePrice : chosen.wholesalePrice,
+          wholesalePrice: chosen.wholesalePrice,
+          retailPrice: chosen.retailPrice,
         },
       ]);
     setProductId("");
@@ -181,23 +218,19 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
           </div>
         )}
         <fieldset disabled={mutation.isPending} className="min-w-0 space-y-5">
-          <label>
-            <span>{purchase ? "Fournisseur" : "Client grossiste"}</span>
-            <select
-              required
-              value={partnerId}
-              onChange={(e) => setPartnerId(e.target.value)}
-            >
-              <option value="">
-                Choisir un {purchase ? "fournisseur" : "client"}
-              </option>
-              {partners.data?.map((partner) => (
-                <option key={partner.id} value={partner.id}>
-                  {partner.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <SearchablePopup
+            label={purchase ? "Fournisseur" : "Client grossiste"}
+            placeholder={`Rechercher un ${purchase ? "fournisseur" : "client"}`}
+            items={partners.data ?? []}
+            value={partnerId}
+            onChange={setPartnerId}
+            getId={(partner) => partner.id}
+            getLabel={(partner) => partner.name}
+            getDetail={(partner) =>
+              partner.phone || partner.email || partner.address
+            }
+            disabled={partners.isLoading}
+          />
           {partners.data?.length === 0 && (
             <p className="text-xs text-muted">
               Ajoutez d’abord un contact dans Clients &amp; fournisseurs.
@@ -208,21 +241,6 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
               <Search size={15} />
               Ajouter des produits · catalogue complet
             </div>
-            <label>
-              <span>Rechercher un produit</span>
-              <input
-                value={search}
-                placeholder="Nom, marque, SKU ou code-barres"
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") event.preventDefault();
-                }}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                  setProductId("");
-                }}
-              />
-            </label>
             {products.isError ? (
               <ErrorState
                 message="Catalogue indisponible. Votre panier est conservé."
@@ -231,30 +249,28 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
             ) : (
               <>
                 <div className="flex items-end gap-2">
-                  <label className="flex-1">
-                    <span>Produit à ajouter</span>
-                    <select
+                  <div className="min-w-0 flex-1">
+                    <SearchablePopup
+                      label="Produit à ajouter"
+                      placeholder="Nom, marque, SKU ou code-barres"
+                      items={products.data?.items ?? []}
                       value={productId}
+                      onChange={setProductId}
+                      getId={(product) => product.variantId}
+                      getLabel={(product) => product.name}
+                      getDetail={(product) =>
+                        `${product.sku} · ${product.available} disponible(s)`
+                      }
+                      getImage={(product) => product.imageUrl}
+                      query={search}
+                      onQueryChange={(value) => {
+                        setSearch(value);
+                        setProductId("");
+                      }}
                       disabled={products.isLoading}
-                      onChange={(e) => setProductId(e.target.value)}
-                    >
-                      <option value="">
-                        {products.isLoading
-                          ? "Chargement…"
-                          : "Choisir un produit"}
-                      </option>
-                      {products.data?.items.map((product) => (
-                        <option
-                          key={product.variantId}
-                          value={product.variantId}
-                          disabled={!purchase && product.available <= 0}
-                        >
-                          {product.name} · {product.sku} · {product.available}{" "}
-                          disponible(s)
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                      emptyLabel="Aucun produit trouvé."
+                    />
+                  </div>
                   <button
                     type="button"
                     className={ui("secondary-button")}
@@ -269,38 +285,10 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
                     Ajouter la ligne
                   </button>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
-                  <span>
-                    {products.data?.total ?? 0} produit(s) · page {page}
-                  </span>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      className={ui("secondary-button compact")}
-                      disabled={page === 1 || products.isFetching}
-                      onClick={() => {
-                        setPage(page - 1);
-                        setProductId("");
-                      }}
-                    >
-                      Précédent
-                    </button>
-                    <button
-                      type="button"
-                      className={ui("secondary-button compact")}
-                      disabled={
-                        page * 25 >= (products.data?.total ?? 0) ||
-                        products.isFetching
-                      }
-                      onClick={() => {
-                        setPage(page + 1);
-                        setProductId("");
-                      }}
-                    >
-                      Suivant
-                    </button>
-                  </div>
-                </div>
+                <p className="text-xs text-muted">
+                  {products.data?.total ?? 0} produit(s) correspondant à la
+                  recherche
+                </p>
               </>
             )}
           </section>
@@ -311,6 +299,8 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
                   <th>Article</th>
                   <th>Quantité</th>
                   <th>{purchase ? "Coût unitaire" : "Prix unitaire"}</th>
+                  {purchase && <th>Prix grossiste</th>}
+                  {purchase && <th>Prix boutique</th>}
                   <th>Total</th>
                   <th />
                 </tr>
@@ -361,6 +351,42 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
                         }
                       />
                     </td>
+                    {purchase && (
+                      <td>
+                        <input
+                          aria-label={`Prix grossiste · ${line.product.sku}`}
+                          className="min-w-24"
+                          required
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={line.wholesalePrice}
+                          onChange={(event) =>
+                            changeLine(line.product.variantId, {
+                              wholesalePrice: Number(event.target.value),
+                            })
+                          }
+                        />
+                      </td>
+                    )}
+                    {purchase && (
+                      <td>
+                        <input
+                          aria-label={`Prix boutique · ${line.product.sku}`}
+                          className="min-w-24"
+                          required
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={line.retailPrice}
+                          onChange={(event) =>
+                            changeLine(line.product.variantId, {
+                              retailPrice: Number(event.target.value),
+                            })
+                          }
+                        />
+                      </td>
+                    )}
                     <td>
                       {money.format(
                         (Math.round(line.price * 100) * line.quantity) / 100,
@@ -388,6 +414,62 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
               </p>
             )}
           </div>
+          {!purchase && (
+            <section className="space-y-3 rounded-xl border border-line bg-surface p-3">
+              <div className={ui("form-grid")}>
+                <label>
+                  <span>Remise (MAD)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max={subtotal}
+                    step="0.01"
+                    value={discountTotal}
+                    onChange={(event) =>
+                      setDiscountTotal(Number(event.target.value))
+                    }
+                  />
+                </label>
+                <label>
+                  <span>Taxes (MAD)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={taxTotal}
+                    onChange={(event) =>
+                      setTaxTotal(Number(event.target.value))
+                    }
+                  />
+                </label>
+              </div>
+              <label className="flex items-center gap-2 text-xs font-semibold">
+                <input
+                  type="checkbox"
+                  checked={deliveryEnabled}
+                  onChange={(event) => {
+                    setDeliveryEnabled(event.target.checked);
+                    if (!event.target.checked) setShippingTotal(0);
+                  }}
+                />
+                Inclure des frais de livraison
+              </label>
+              {deliveryEnabled && (
+                <label>
+                  <span>Frais de livraison (MAD)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={shippingTotal}
+                    onChange={(event) =>
+                      setShippingTotal(Number(event.target.value))
+                    }
+                  />
+                </label>
+              )}
+            </section>
+          )}
           <div className={ui("form-grid")}>
             <label>
               <span>Mode de paiement</span>
@@ -399,9 +481,8 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
                 }}
               >
                 <option value="CASH">Espèces</option>
-                <option value="TRANSFER">Virement</option>
                 <option value="CHECK">Chèque</option>
-                <option value="CREDIT">À crédit</option>
+                <option value="CREDIT">Simple (à crédit)</option>
               </select>
             </label>
             <label>
@@ -448,7 +529,12 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
           )}
         <button
           className={ui("primary-button")}
-          disabled={!lines.length || mutation.isPending || partners.isLoading}
+          disabled={
+            !partnerId ||
+            !lines.length ||
+            mutation.isPending ||
+            partners.isLoading
+          }
         >
           {mutation.isPending
             ? "Validation…"
@@ -469,6 +555,18 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
             <span>{purchase ? "Total achat" : "Total vente"}</span>
             <strong>{money.format(total)}</strong>
           </div>
+          {!purchase && (
+            <>
+              <small>Sous-total : {money.format(subtotal)}</small>
+              {discountTotal > 0 && (
+                <small>Remise : - {money.format(discountTotal)}</small>
+              )}
+              {deliveryEnabled && (
+                <small>Livraison : {money.format(shippingTotal)}</small>
+              )}
+              {taxTotal > 0 && <small>Taxes : {money.format(taxTotal)}</small>}
+            </>
+          )}
           <small>
             {purchase ? "Solde fournisseur" : "Créance client"} :{" "}
             {money.format(

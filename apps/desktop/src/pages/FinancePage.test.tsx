@@ -135,6 +135,55 @@ describe("finance workflows", () => {
     ).toBeTruthy();
     client.clear();
   });
+  it("configures salaries as a monthly fixed expense", async () => {
+    const client = mount("expenses");
+    vi.mocked(api.createExpense).mockResolvedValue({ id: "salary" });
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Nouvelle dépense" }),
+    );
+    fireEvent.change(screen.getByLabelText("Libellé"), {
+      target: { value: "Salaires équipe" },
+    });
+    fireEvent.change(screen.getByLabelText("Catégorie"), {
+      target: { value: "SALARIES" },
+    });
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Type de dépense") as HTMLSelectElement).value,
+      ).toBe("FIXED"),
+    );
+    fireEvent.change(screen.getByLabelText("Montant de la dépense (MAD)"), {
+      target: { value: "5000" },
+    });
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Type de dépense") as HTMLSelectElement).value,
+      ).toBe("FIXED"),
+    );
+    fireEvent.change(
+      await screen.findByLabelText("Jour automatique chaque mois"),
+      {
+        target: { value: "25" },
+      },
+    );
+    fireEvent.change(screen.getByLabelText("Mode de paiement"), {
+      target: { value: "CREDIT" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Enregistrer la dépense" }),
+    );
+    await waitFor(() =>
+      expect(api.createExpense).toHaveBeenCalledWith(
+        expect.objectContaining({
+          category: "SALARIES",
+          expenseType: "FIXED",
+          recurringDay: 25,
+          paymentMethod: "CREDIT",
+        }),
+      ),
+    );
+    client.clear();
+  });
   it("opens the expense form when randomUUID is unavailable in the WebView", async () => {
     const originalCrypto = globalThis.crypto;
     vi.stubGlobal("crypto", {

@@ -46,6 +46,11 @@ const categories: Record<string, string> = {
 };
 const categoryLabel = (category: string) =>
   category === "DELIVERY" ? "Livraison" : (categories[category] ?? category);
+const paymentLabels: Record<string, string> = {
+  CASH: "Espèces",
+  CHECK: "Chèque",
+  CREDIT: "Simple (à crédit)",
+};
 const checkLabels: Record<string, string> = {
   PENDING: "En attente",
   DEPOSITED: "Déposé",
@@ -617,6 +622,12 @@ export function FinancePage({
                         <StatusPill tone={row.voidedAt ? "bad" : "good"}>
                           {row.voidedAt ? "Annulée" : "Enregistrée"}
                         </StatusPill>
+                        <small className={ui("sub-cell")}>
+                          {row.expenseType === "FIXED"
+                            ? `Fixe · mensuelle le ${row.recurringDay}`
+                            : "Variable"}{" "}
+                          · {paymentLabels[row.paymentMethod]}
+                        </small>
                       </td>
                       <td>
                         {!row.voidedAt && (
@@ -624,7 +635,9 @@ export function FinancePage({
                             className={ui("secondary-button compact")}
                             onClick={() => setVoiding(row)}
                           >
-                            Annuler
+                            {row.expenseType === "FIXED"
+                              ? "Annuler et arrêter"
+                              : "Annuler"}
                           </button>
                         )}
                       </td>
@@ -822,7 +835,6 @@ function PaymentModal({
                 }
               >
                 <option value="CASH">Espèces</option>
-                <option value="TRANSFER">Virement</option>
                 <option value="CHECK">Chèque</option>
               </select>
             </label>
@@ -874,6 +886,9 @@ function ExpenseModal({
     category: "OTHER",
     amount: 0,
     incurredOn: today(),
+    expenseType: "VARIABLE",
+    paymentMethod: "CASH",
+    recurringDay: undefined,
     notes: "",
   });
   const mutation = useMutation({
@@ -903,19 +918,30 @@ function ExpenseModal({
               minLength={2}
               maxLength={160}
               value={draft.name}
-              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+              onChange={(e) =>
+                setDraft((current) => ({ ...current, name: e.target.value }))
+              }
             />
           </label>
           <label>
             <span>Catégorie</span>
             <select
               value={draft.category}
-              onChange={(e) =>
-                setDraft({
-                  ...draft,
-                  category: e.target.value as CreateExpenseInput["category"],
-                })
-              }
+              onChange={(e) => {
+                const category = e.target
+                  .value as CreateExpenseInput["category"];
+                setDraft((current) => ({
+                  ...current,
+                  category,
+                  expenseType:
+                    category === "SALARIES" ? "FIXED" : current.expenseType,
+                  recurringDay:
+                    category === "SALARIES"
+                      ? (current.recurringDay ??
+                        Number(current.incurredOn.slice(8, 10)))
+                      : current.recurringDay,
+                }));
+              }}
             >
               {Object.entries(categories).map(([key, label]) => (
                 <option key={key} value={key}>
@@ -924,6 +950,68 @@ function ExpenseModal({
               ))}
             </select>
           </label>
+          <label>
+            <span>Type de dépense</span>
+            <select
+              value={draft.expenseType}
+              onChange={(event) => {
+                const expenseType = event.target
+                  .value as CreateExpenseInput["expenseType"];
+                setDraft((current) => ({
+                  ...current,
+                  expenseType,
+                  recurringDay:
+                    expenseType === "FIXED"
+                      ? (current.recurringDay ??
+                        Number(current.incurredOn.slice(8, 10)))
+                      : undefined,
+                }));
+              }}
+            >
+              <option value="VARIABLE">Variable</option>
+              <option value="FIXED">Fixe · mensuelle</option>
+            </select>
+          </label>
+          <label>
+            <span>Mode de paiement</span>
+            <select
+              value={draft.paymentMethod}
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  paymentMethod: event.target
+                    .value as CreateExpenseInput["paymentMethod"],
+                }))
+              }
+            >
+              <option value="CASH">Espèces</option>
+              <option value="CHECK">Chèque</option>
+              <option value="CREDIT">Simple (à crédit)</option>
+            </select>
+          </label>
+          {draft.expenseType === "FIXED" && (
+            <label>
+              <span>Jour automatique chaque mois</span>
+              <input
+                aria-label="Jour automatique chaque mois"
+                required
+                type="number"
+                min="1"
+                max="31"
+                step="1"
+                value={draft.recurringDay ?? ""}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    recurringDay: Number(event.target.value),
+                  }))
+                }
+              />
+              <small className="text-muted">
+                Pour les mois plus courts, le dernier jour sera utilisé.
+              </small>
+            </label>
+          )}
           <label>
             <span>Montant de la dépense (MAD)</span>
             <input
@@ -934,7 +1022,10 @@ function ExpenseModal({
               step="0.01"
               value={draft.amount}
               onChange={(e) =>
-                setDraft({ ...draft, amount: Number(e.target.value) })
+                setDraft((current) => ({
+                  ...current,
+                  amount: Number(e.target.value),
+                }))
               }
             />
           </label>
@@ -945,7 +1036,10 @@ function ExpenseModal({
               type="date"
               value={draft.incurredOn}
               onChange={(e) =>
-                setDraft({ ...draft, incurredOn: e.target.value })
+                setDraft((current) => ({
+                  ...current,
+                  incurredOn: e.target.value,
+                }))
               }
             />
           </label>
@@ -954,7 +1048,9 @@ function ExpenseModal({
             <textarea
               maxLength={1000}
               value={draft.notes}
-              onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
+              onChange={(e) =>
+                setDraft((current) => ({ ...current, notes: e.target.value }))
+              }
             />
           </label>
         </fieldset>

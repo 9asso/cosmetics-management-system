@@ -25,7 +25,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { LoginPage } from "./pages/LoginPage";
 import { OrdersPage } from "./pages/OrdersPage";
-import { InvoicesPage } from './pages/InvoicesPage';
+import { InvoicesPage } from "./pages/InvoicesPage";
 import {
   PartnersPage,
   PurchasesPage,
@@ -34,10 +34,20 @@ import {
 import { TeamPage } from "./pages/TeamPage";
 import { EditNameModal } from "./components/EditNameModal";
 import { ErrorState } from "./components/EmptyState";
-import { api, ApiRequestError, hasAccessToken, setAccessToken } from "./lib/api";
+import {
+  api,
+  ApiRequestError,
+  hasAccessToken,
+  setAccessToken,
+} from "./lib/api";
 
-import { FinancePage } from './pages/FinancePage';
-import type { Section, NavigationOptions } from './lib/navigation';
+import { FinancePage } from "./pages/FinancePage";
+import {
+  sectionFromPath,
+  sectionPath,
+  type Section,
+  type NavigationOptions,
+} from "./lib/navigation";
 
 const navigation: Array<{
   group: string;
@@ -71,13 +81,18 @@ const navigation: Array<{
         roles: ["OWNER", "MANAGER", "CASHIER"],
       },
       { id: "orders", label: "Commandes & livraisons", icon: ReceiptText },
-      { id: 'invoices', label: 'Historique des factures', icon: ReceiptText },
+      { id: "invoices", label: "Historique des factures", icon: ReceiptText },
     ],
   },
   {
     group: "Gestion",
     items: [
-      { id: "finance", label: "Finances & dépenses", icon: Wallet, roles: ["OWNER", "MANAGER", "ACCOUNTANT"] },
+      {
+        id: "finance",
+        label: "Finances & dépenses",
+        icon: Wallet,
+        roles: ["OWNER", "MANAGER", "ACCOUNTANT"],
+      },
       { id: "partners", label: "Clients & fournisseurs", icon: Building2 },
       {
         id: "team",
@@ -93,7 +108,12 @@ const pageTitles: Record<
   Section,
   { eyebrow: string; title: string; description: string }
 > = {
-  finance: { eyebrow: "Suivi financier", title: "Finances & dépenses", description: "Encaissez vos factures, suivez vos chèques et maîtrisez vos dépenses." },
+  finance: {
+    eyebrow: "Suivi financier",
+    title: "Finances & dépenses",
+    description:
+      "Encaissez vos factures, suivez vos chèques et maîtrisez vos dépenses.",
+  },
   dashboard: {
     eyebrow: "Centre de pilotage",
     title: "Vue d’ensemble",
@@ -125,7 +145,11 @@ const pageTitles: Record<
     title: "Clients & fournisseurs",
     description: "Centralisez les partenaires de votre activité.",
   },
-  invoices: { eyebrow: 'Documents commerciaux', title: 'Historique des factures', description: 'Retrouvez les achats, ventes, coordonnées et paiements.' },
+  invoices: {
+    eyebrow: "Documents commerciaux",
+    title: "Historique des factures",
+    description: "Retrouvez les achats, ventes, coordonnées et paiements.",
+  },
   team: {
     eyebrow: "Sécurité",
     title: "Équipe & rôles",
@@ -165,8 +189,12 @@ export function App() {
   const cache = useQueryClient();
   const [authenticated, setAuthenticated] = useState(hasAccessToken());
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [active, setActive] = useState<Section>("dashboard");
-  const [navigationOptions, setNavigationOptions] = useState<NavigationOptions>({});
+  const [active, setActive] = useState<Section>(() =>
+    sectionFromPath(window.location.pathname),
+  );
+  const [navigationOptions, setNavigationOptions] = useState<NavigationOptions>(
+    {},
+  );
   const [navigationVersion, setNavigationVersion] = useState(0);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
@@ -186,9 +214,17 @@ export function App() {
   });
 
   useLayoutEffect(() => {
-    document.documentElement.classList.toggle("dark", authenticated && darkMode);
+    document.documentElement.classList.toggle(
+      "dark",
+      authenticated && darkMode,
+    );
     themeStorage()?.setItem(themeStorageKey, darkMode ? "dark" : "light");
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", authenticated && darkMode ? "#181619" : "#ff848f");
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute(
+        "content",
+        authenticated && darkMode ? "#181619" : "#ff848f",
+      );
   }, [darkMode, authenticated]);
 
   useEffect(() => {
@@ -199,6 +235,16 @@ export function App() {
       setUser(null);
     }
   }, [me.data, me.error]);
+
+  useEffect(() => {
+    const followBrowserHistory = () => {
+      setNavigationOptions({});
+      setNavigationVersion((version) => version + 1);
+      setActive(sectionFromPath(window.location.pathname));
+    };
+    window.addEventListener("popstate", followBrowserHistory);
+    return () => window.removeEventListener("popstate", followBrowserHistory);
+  }, []);
 
   const visibleNavigation = useMemo(
     () =>
@@ -213,11 +259,30 @@ export function App() {
     [user],
   );
 
+  useEffect(() => {
+    if (
+      user &&
+      !visibleNavigation.some((group) =>
+        group.items.some((item) => item.id === active),
+      )
+    ) {
+      setActive("dashboard");
+      setNavigationOptions({});
+      window.history.replaceState({}, "", sectionPath("dashboard"));
+    }
+  }, [active, user, visibleNavigation]);
+
   const navigate = (section: Section, options: NavigationOptions = {}) => {
-    if (!visibleNavigation.some(group => group.items.some(item => item.id === section))) return;
+    if (
+      !visibleNavigation.some((group) =>
+        group.items.some((item) => item.id === section),
+      )
+    )
+      return;
     setNavigationOptions(options);
-    setNavigationVersion(version => version + 1);
+    setNavigationVersion((version) => version + 1);
     setActive(section);
+    window.history.pushState({}, "", sectionPath(section));
     setMobileMenu(false);
   };
   const logout = () => {
@@ -240,14 +305,22 @@ export function App() {
       <LoginPage
         onLogin={(result) => {
           setAccessToken(result.accessToken);
-          cache.setQueryData(['me'], result.user);
+          cache.setQueryData(["me"], result.user);
           setUser(result.user);
           setAuthenticated(true);
         }}
       />
     );
   }
-  if (!user && me.isError) return <div className="grid min-h-screen place-items-center p-6"><ErrorState message="Le serveur est temporairement indisponible. Votre session est conservée." retry={() => void me.refetch()} /></div>;
+  if (!user && me.isError)
+    return (
+      <div className="grid min-h-screen place-items-center p-6">
+        <ErrorState
+          message="Le serveur est temporairement indisponible. Votre session est conservée."
+          retry={() => void me.refetch()}
+        />
+      </div>
+    );
   if (!user)
     return (
       <div className={ui("app-loading")}>
@@ -320,7 +393,11 @@ export function App() {
           ))}
         </nav>
         <div className={ui("sidebar-footer")}>
-          <button className={ui("store-link")} onClick={openStore} aria-label="Voir la boutique">
+          <button
+            className={ui("store-link")}
+            onClick={openStore}
+            aria-label="Voir la boutique"
+          >
             <Store size={18} />
             <span>
               <strong>Voir la boutique</strong>
@@ -338,8 +415,14 @@ export function App() {
                   title="Modifier mon nom"
                   aria-label="Modifier mon nom"
                 >
-                  <strong className="hover:text-white/80 text-white">{user.displayName}</strong>
-                  <Pencil size={11} color="white" className="shrink-0 text-white" />
+                  <strong className="hover:text-white/80 text-white">
+                    {user.displayName}
+                  </strong>
+                  <Pencil
+                    size={11}
+                    color="white"
+                    className="shrink-0 text-white"
+                  />
                 </button>
               ) : (
                 <strong className="text-white">{user.displayName}</strong>
@@ -347,7 +430,11 @@ export function App() {
               <small className="text-white!">{roleLabels[user.role]}</small>
             </div>
             <button onClick={logout} title="Se déconnecter">
-              <LogOut size={18} color="white" className="hover:scale-[1.1] transition-all delay-75" />
+              <LogOut
+                size={18}
+                color="white"
+                className="hover:scale-[1.1] transition-all delay-75"
+              />
             </button>
           </div>
         </div>
@@ -371,13 +458,17 @@ export function App() {
             <button
               className={ui("theme-toggle")}
               type="button"
-              aria-label={darkMode ? "Activer le mode clair" : "Activer le mode sombre"}
+              aria-label={
+                darkMode ? "Activer le mode clair" : "Activer le mode sombre"
+              }
               aria-pressed={darkMode}
               title={darkMode ? "Mode clair" : "Mode sombre"}
               onClick={() => setDarkMode((enabled) => !enabled)}
             >
               {darkMode ? <Sun size={16} /> : <Moon size={16} />}
-              <span className="max-lg:hidden">{darkMode ? "Mode clair" : "Mode sombre"}</span>
+              <span className="max-lg:hidden">
+                {darkMode ? "Mode clair" : "Mode sombre"}
+              </span>
             </button>
             <button className={ui("secondary-button")} onClick={openStore}>
               <Store size={16} /> Boutique
@@ -419,14 +510,27 @@ export function App() {
                   : "Connexion…"}
             </span>
           </header>
-          {active === "dashboard" && <DashboardPage onNavigate={navigate} role={user.role} />}
-          {active === "inventory" && (
-            <InventoryPage key={navigationVersion} canManage={canManageStock} initialStock={navigationOptions.stock} initialCreate={navigationOptions.createProduct} />
+          {active === "dashboard" && (
+            <DashboardPage onNavigate={navigate} role={user.role} />
           )}
-          {active === "finance" && ["OWNER", "MANAGER", "ACCOUNTANT"].includes(user.role) && <FinancePage key={navigationVersion} initialTab={navigationOptions.financeTab} />}
+          {active === "inventory" && (
+            <InventoryPage
+              key={navigationVersion}
+              canManage={canManageStock}
+              initialStock={navigationOptions.stock}
+              initialCreate={navigationOptions.createProduct}
+            />
+          )}
+          {active === "finance" &&
+            ["OWNER", "MANAGER", "ACCOUNTANT"].includes(user.role) && (
+              <FinancePage
+                key={navigationVersion}
+                initialTab={navigationOptions.financeTab}
+              />
+            )}
           {active === "purchases" && <PurchasesPage />}
           {active === "sales" && <WholesaleSalesPage />}
-          {active === 'invoices' && <InvoicesPage />}
+          {active === "invoices" && <InvoicesPage />}
           {active === "orders" && (
             <OrdersPage
               canUpdate={["OWNER", "MANAGER", "CASHIER", "WAREHOUSE"].includes(

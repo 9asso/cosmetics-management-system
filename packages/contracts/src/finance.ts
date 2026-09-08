@@ -17,7 +17,7 @@ export const recordPaymentSchema = z
       (value) => value > 0,
       "Le montant doit être positif.",
     ),
-    method: z.enum(["CASH", "TRANSFER", "CHECK"]),
+    method: z.enum(["CASH", "CHECK"]),
     check: checkDetailsSchema.optional(),
   })
   .refine(
@@ -36,17 +36,29 @@ export const expenseCategories = [
   "SUPPLIES",
   "OTHER",
 ] as const;
-export const createExpenseSchema = z.object({
-  requestId: uuidSchema,
-  name: z.string().trim().min(2).max(160),
-  category: z.enum(expenseCategories),
-  amount: financialAmountSchema.refine(
-    (value) => value > 0,
-    "Le montant doit être positif.",
-  ),
-  incurredOn: z.iso.date(),
-  notes: z.string().trim().max(1000).default(""),
-});
+export const createExpenseSchema = z
+  .object({
+    requestId: uuidSchema,
+    name: z.string().trim().min(2).max(160),
+    category: z.enum(expenseCategories),
+    amount: financialAmountSchema.refine(
+      (value) => value > 0,
+      "Le montant doit être positif.",
+    ),
+    incurredOn: z.iso.date(),
+    expenseType: z.enum(["FIXED", "VARIABLE"]).default("VARIABLE"),
+    paymentMethod: z.enum(["CASH", "CHECK", "CREDIT"]).default("CASH"),
+    recurringDay: z.coerce.number().int().min(1).max(31).optional(),
+    notes: z.string().trim().max(1000).default(""),
+  })
+  .refine(
+    (value) => value.expenseType !== "FIXED" || Boolean(value.recurringDay),
+    "Choisissez le jour mensuel de cette dépense fixe.",
+  )
+  .refine(
+    (value) => value.category !== "SALARIES" || value.expenseType === "FIXED",
+    "Une dépense de salaire doit être mensuelle.",
+  );
 export const voidExpenseSchema = z.object({
   reason: z.string().trim().min(3).max(500),
 });
@@ -95,6 +107,10 @@ export interface ExpenseItem {
   amount: number;
   incurredOn: string;
   notes: string;
+  expenseType: "FIXED" | "VARIABLE";
+  paymentMethod: "CASH" | "CHECK" | "CREDIT";
+  recurringDay: number | null;
+  recurringId: string | null;
   voidedAt: string | null;
   voidReason: string | null;
 }

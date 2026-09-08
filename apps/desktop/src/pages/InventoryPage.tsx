@@ -11,8 +11,9 @@ import {
 import { ErrorState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { StatusPill } from "../components/StatusPill";
-import { ProductMediaEditor } from '../components/ProductMediaEditor';
-import { ProductDetailModal } from '../components/ProductDetailModal';
+import { ProductMediaEditor } from "../components/ProductMediaEditor";
+import { ProductDetailModal } from "../components/ProductDetailModal";
+import { SearchablePopup } from "../components/SearchablePopup";
 import { api, ApiRequestError } from "../lib/api";
 import { allPages, downloadCsv } from "../lib/csv";
 import { integer, money } from "../lib/format";
@@ -48,13 +49,22 @@ const categoryLabels: Record<string, string> = {
 };
 
 function StockStatus({ product }: { product: ProductListItem }) {
-  if (product.onHand - product.reserved === 0) return <StatusPill tone="bad">Rupture</StatusPill>;
+  if (product.onHand - product.reserved === 0)
+    return <StatusPill tone="bad">Rupture</StatusPill>;
   if (product.onHand - product.reserved <= product.lowStockThreshold)
     return <StatusPill tone="warn">Stock faible</StatusPill>;
   return <StatusPill tone="good">Disponible</StatusPill>;
 }
 
-export function InventoryPage({ canManage = true, initialStock = "all", initialCreate = false }: { canManage?: boolean; initialStock?: "all"|"low"|"out"; initialCreate?: boolean }) {
+export function InventoryPage({
+  canManage = true,
+  initialStock = "all",
+  initialCreate = false,
+}: {
+  canManage?: boolean;
+  initialStock?: "all" | "low" | "out";
+  initialCreate?: boolean;
+}) {
   const client = useQueryClient();
   const [search, setSearch] = useState("");
   const [stock, setStock] = useState<"all" | "low" | "out">(initialStock);
@@ -62,12 +72,16 @@ export function InventoryPage({ canManage = true, initialStock = "all", initialC
     "",
   );
   const [showCreate, setShowCreate] = useState(initialCreate && canManage);
-  const [exporting,setExporting] = useState(false);
-  const [exportError,setExportError] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState<ProductListItem | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
+  const [selectedProduct, setSelectedProduct] =
+    useState<ProductListItem | null>(null);
   const [page, setPage] = useState(1);
   const [imageReading, setImageReading] = useState(false);
-  const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: api.suppliers });
+  const suppliers = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: api.suppliers,
+  });
   const [adjustProduct, setAdjustProduct] = useState<ProductListItem | null>(
     null,
   );
@@ -139,15 +153,57 @@ export function InventoryPage({ canManage = true, initialStock = "all", initialC
   };
 
   const exportProducts = async () => {
-    setExporting(true); setExportError('');
+    setExporting(true);
+    setExportError("");
     try {
-      const rows = await allPages(page => api.products({search, stock, category: category || undefined, page, pageSize:100}));
-      downloadCsv(`inventaire-${new Date().toISOString().slice(0,10)}.csv`, [
-        ['Produit','Marque','SKU','Catégorie','Stock','Réservé','Disponible','Seuil alerte','Prix achat','Prix grossiste','Prix retail','Fournisseur'],
-        ...rows.map(product => [product.name,product.brand,product.sku,categoryLabels[product.category]??product.category,product.onHand,product.reserved,product.onHand-product.reserved,product.lowStockThreshold,product.purchasePrice,product.wholesalePrice,product.retailPrice,product.supplierName])
+      const rows = await allPages((page) =>
+        api.products({
+          search,
+          stock,
+          category: category || undefined,
+          page,
+          pageSize: 100,
+        }),
+      );
+      downloadCsv(`inventaire-${new Date().toISOString().slice(0, 10)}.csv`, [
+        [
+          "Produit",
+          "Marque",
+          "SKU",
+          "Catégorie",
+          "Stock",
+          "Réservé",
+          "Disponible",
+          "Seuil alerte",
+          "Prix achat",
+          "Prix grossiste",
+          "Prix retail",
+          "Fournisseur",
+        ],
+        ...rows.map((product) => [
+          product.name,
+          product.brand,
+          product.sku,
+          categoryLabels[product.category] ?? product.category,
+          product.onHand,
+          product.reserved,
+          product.onHand - product.reserved,
+          product.lowStockThreshold,
+          product.purchasePrice,
+          product.wholesalePrice,
+          product.retailPrice,
+          product.supplierName,
+        ]),
       ]);
-    } catch (error) { setExportError(error instanceof ApiRequestError ? error.message : 'Export impossible. Réessayez.'); }
-    finally { setExporting(false); }
+    } catch (error) {
+      setExportError(
+        error instanceof ApiRequestError
+          ? error.message
+          : "Export impossible. Réessayez.",
+      );
+    } finally {
+      setExporting(false);
+    }
   };
 
   if (products.isError) {
@@ -191,7 +247,10 @@ export function InventoryPage({ canManage = true, initialStock = "all", initialC
             <Search size={17} />
             <input
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               placeholder="Nom, marque, SKU ou code-barres"
             />
           </div>
@@ -199,21 +258,30 @@ export function InventoryPage({ canManage = true, initialStock = "all", initialC
             <button
               className={ui(stock === "all" ? "active" : "")}
               aria-pressed={stock === "all"}
-              onClick={() => { setStock('all'); setPage(1); }}
+              onClick={() => {
+                setStock("all");
+                setPage(1);
+              }}
             >
               Tous
             </button>
             <button
               className={ui(stock === "low" ? "active" : "")}
               aria-pressed={stock === "low"}
-              onClick={() => { setStock('low'); setPage(1); }}
+              onClick={() => {
+                setStock("low");
+                setPage(1);
+              }}
             >
               Faible
             </button>
             <button
               className={ui(stock === "out" ? "active" : "")}
               aria-pressed={stock === "out"}
-              onClick={() => { setStock('out'); setPage(1); }}
+              onClick={() => {
+                setStock("out");
+                setPage(1);
+              }}
             >
               Rupture
             </button>
@@ -222,7 +290,10 @@ export function InventoryPage({ canManage = true, initialStock = "all", initialC
             <SlidersHorizontal size={15} />
             <select
               value={category}
-              onChange={(event) => { setCategory(event.target.value as typeof category); setPage(1); }}
+              onChange={(event) => {
+                setCategory(event.target.value as typeof category);
+                setPage(1);
+              }}
             >
               <option value="">Toutes catégories</option>
               {Object.entries(categoryLabels).map(([value, label]) => (
@@ -232,12 +303,21 @@ export function InventoryPage({ canManage = true, initialStock = "all", initialC
               ))}
             </select>
           </label>
-          <button className={ui("secondary-button")} disabled={exporting || products.isLoading} onClick={() => void exportProducts()}>
-            <ArrowDownToLine size={16} /> {exporting ? "Export…" : "Exporter les résultats"}
+          <button
+            className={ui("secondary-button")}
+            disabled={exporting || products.isLoading}
+            onClick={() => void exportProducts()}
+          >
+            <ArrowDownToLine size={16} />{" "}
+            {exporting ? "Export…" : "Exporter les résultats"}
           </button>
         </div>
 
-        {exportError && <p role="alert" className={ui("form-error")}>{exportError}</p>}
+        {exportError && (
+          <p role="alert" className={ui("form-error")}>
+            {exportError}
+          </p>
+        )}
         <div className={ui("table-wrap")}>
           <table>
             <thead>
@@ -261,7 +341,11 @@ export function InventoryPage({ canManage = true, initialStock = "all", initialC
                 </tr>
               )}
               {products.data?.items.map((product) => (
-                <tr key={product.variantId} className="cursor-pointer" onClick={() => setSelectedProduct(product)}>
+                <tr
+                  key={product.variantId}
+                  className="cursor-pointer"
+                  onClick={() => setSelectedProduct(product)}
+                >
                   <td>
                     <div className={ui("product-cell")}>
                       {product.imageUrl ? (
@@ -270,7 +354,15 @@ export function InventoryPage({ canManage = true, initialStock = "all", initialC
                         <span>{product.name.slice(0, 1)}</span>
                       )}
                       <div>
-                        <button className="text-left hover:underline" onClick={event => { event.stopPropagation(); setSelectedProduct(product); }}><strong title={product.name}>{product.name}</strong></button>
+                        <button
+                          className="text-left hover:underline"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedProduct(product);
+                          }}
+                        >
+                          <strong title={product.name}>{product.name}</strong>
+                        </button>
                         <small title={`${product.brand} · ${product.sku}`}>
                           {product.brand} · {product.sku}
                         </small>
@@ -289,7 +381,8 @@ export function InventoryPage({ canManage = true, initialStock = "all", initialC
                   <td>
                     <strong>{integer.format(product.onHand)}</strong>
                     <small className={ui("sub-cell")}>
-                      {product.reserved} réservé · {product.onHand - product.reserved} disponible
+                      {product.reserved} réservé ·{" "}
+                      {product.onHand - product.reserved} disponible
                     </small>
                   </td>
                   <td>{money.format(product.purchasePrice)}</td>
@@ -301,7 +394,10 @@ export function InventoryPage({ canManage = true, initialStock = "all", initialC
                     {canManage ? (
                       <button
                         className={ui("secondary-button compact")}
-                        onClick={(event) => { event.stopPropagation(); setAdjustProduct(product); }}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setAdjustProduct(product);
+                        }}
                       >
                         Ajuster
                       </button>
@@ -325,10 +421,32 @@ export function InventoryPage({ canManage = true, initialStock = "all", initialC
           <span>
             {counts.total} résultat{counts.total === 1 ? "" : "s"}
           </span>
-          <div className="flex items-center gap-2"><span>Page {page}</span><button className={ui('secondary-button compact')} disabled={page === 1} onClick={() => setPage(page - 1)}>Précédent</button><button className={ui('secondary-button compact')} disabled={page * 50 >= counts.total} onClick={() => setPage(page + 1)}>Suivant</button></div>
+          <div className="flex items-center gap-2">
+            <span>Page {page}</span>
+            <button
+              className={ui("secondary-button compact")}
+              disabled={page === 1}
+              onClick={() => setPage(page - 1)}
+            >
+              Précédent
+            </button>
+            <button
+              className={ui("secondary-button compact")}
+              disabled={page * 50 >= counts.total}
+              onClick={() => setPage(page + 1)}
+            >
+              Suivant
+            </button>
+          </div>
         </footer>
       </section>
-      {selectedProduct && <ProductDetailModal canManage={canManage} product={selectedProduct} onClose={() => setSelectedProduct(null)} />}
+      {selectedProduct && (
+        <ProductDetailModal
+          canManage={canManage}
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+        />
+      )}
 
       {showCreate && (
         <Modal
@@ -397,15 +515,37 @@ export function InventoryPage({ canManage = true, initialStock = "all", initialC
                   ))}
                 </select>
               </label>
-              <label>
-                <span>Fournisseur</span>
-                <select value={draft.supplierId ?? ''} disabled={suppliers.isLoading || suppliers.isError} onChange={event => setDraft({ ...draft, supplierId: event.target.value || undefined, supplierName: '' })}>
-                  <option value="">Aucun fournisseur affecté</option>
-                  {suppliers.data?.map(supplier => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
-                </select>
-                {/* <small className="text-muted">Liste de Clients & fournisseurs. Ajoutez-y vos fournisseurs d’abord.</small> */}
-                {suppliers.isError && <button type="button" className="text-brand" onClick={() => void suppliers.refetch()}>Réessayer de charger les fournisseurs</button>}
-              </label>
+              <div>
+                <SearchablePopup
+                  label="Fournisseur"
+                  placeholder="Rechercher un fournisseur"
+                  items={suppliers.data ?? []}
+                  value={draft.supplierId ?? ""}
+                  onChange={(supplierId) =>
+                    setDraft({
+                      ...draft,
+                      supplierId: supplierId || undefined,
+                      supplierName: "",
+                    })
+                  }
+                  getId={(supplier) => supplier.id}
+                  getLabel={(supplier) => supplier.name}
+                  getDetail={(supplier) =>
+                    supplier.phone || supplier.email || supplier.address
+                  }
+                  disabled={suppliers.isLoading || suppliers.isError}
+                  emptyLabel="Aucun fournisseur trouvé."
+                />
+                {suppliers.isError && (
+                  <button
+                    type="button"
+                    className="text-brand"
+                    onClick={() => void suppliers.refetch()}
+                  >
+                    Réessayer de charger les fournisseurs
+                  </button>
+                )}
+              </div>
               <label>
                 <span>Prix d’achat (MAD)</span>
                 <input
@@ -485,7 +625,14 @@ export function InventoryPage({ canManage = true, initialStock = "all", initialC
                 />
               </label>
             </div>
-            <ProductMediaEditor value={draft.media ?? {images: [], videoUrl: ''}} onChange={media => setDraft(current => ({...current, media}))} disabled={create.isPending} onBusyChange={setImageReading} />
+            <ProductMediaEditor
+              value={draft.media ?? { images: [], videoUrl: "" }}
+              onChange={(media) =>
+                setDraft((current) => ({ ...current, media }))
+              }
+              disabled={create.isPending}
+              onBusyChange={setImageReading}
+            />
             <label className={ui("full-field")}>
               <span>Description</span>
               <textarea
@@ -506,13 +653,15 @@ export function InventoryPage({ canManage = true, initialStock = "all", initialC
               />
               <span>Afficher immédiatement dans la boutique retail</span>
             </label>
-            {create.isError && (!(create.error instanceof ApiRequestError) || create.error.status !== 499) && (
-              <p className={ui("form-error")}>
-                {create.error instanceof ApiRequestError
-                  ? create.error.message
-                  : "Impossible d’ajouter ce produit."}
-              </p>
-            )}
+            {create.isError &&
+              (!(create.error instanceof ApiRequestError) ||
+                create.error.status !== 499) && (
+                <p className={ui("form-error")}>
+                  {create.error instanceof ApiRequestError
+                    ? create.error.message
+                    : "Impossible d’ajouter ce produit."}
+                </p>
+              )}
             <footer className={ui("modal-actions")}>
               <button
                 className={ui("secondary-button")}
@@ -577,13 +726,15 @@ export function InventoryPage({ canManage = true, initialStock = "all", initialC
               Utilisez une valeur positive pour ajouter du stock, négative pour
               le retirer.
             </p>
-            {adjust.isError && (!(adjust.error instanceof ApiRequestError) || adjust.error.status !== 499) && (
-              <p className={ui("form-error")}>
-                {adjust.error instanceof ApiRequestError
-                  ? adjust.error.message
-                  : "Ajustement impossible."}
-              </p>
-            )}
+            {adjust.isError &&
+              (!(adjust.error instanceof ApiRequestError) ||
+                adjust.error.status !== 499) && (
+                <p className={ui("form-error")}>
+                  {adjust.error instanceof ApiRequestError
+                    ? adjust.error.message
+                    : "Ajustement impossible."}
+                </p>
+              )}
             <footer className={ui("modal-actions")}>
               <button
                 className={ui("secondary-button")}

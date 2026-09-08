@@ -1,6 +1,6 @@
 import { PDFDocument, rgb, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
-import type { InvoiceDetail } from "@cosmetics/contracts";
+import type { InvoiceSnapshot } from "@cosmetics/contracts";
 
 const amount = (value: number) =>
   new Intl.NumberFormat("fr-FR", {
@@ -14,7 +14,7 @@ const clean = (value: string) =>
 
 /** Self-contained, downloadable A4 document; no print dialog or remote rendering service. */
 export async function makeInvoicePdf(
-  value: InvoiceDetail,
+  value: InvoiceSnapshot,
   fontBytes: Uint8Array | ArrayBuffer,
 ) {
   const pdf = await PDFDocument.create();
@@ -228,7 +228,7 @@ export async function makeInvoicePdf(
   return pdf.save();
 }
 
-export async function downloadInvoicePdf(value: InvoiceDetail) {
+export async function downloadInvoicePdf(value: InvoiceSnapshot) {
   const response = await fetch(
     `${import.meta.env.BASE_URL}fonts/Lato-Regular.ttf`,
   );

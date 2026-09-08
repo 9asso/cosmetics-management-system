@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { DashboardPage } from "./DashboardPage";
+import { api } from "../lib/api";
 vi.mock("../lib/api", () => ({
   ApiRequestError: class extends Error {},
   api: {
@@ -14,6 +15,7 @@ vi.mock("../lib/api", () => ({
       unitsInStock: 5,
       customerReceivables: 30,
       supplierPayables: 20,
+      incomeReceived: 90,
     }),
     analytics: async () => ({
       periods: [],
@@ -21,6 +23,20 @@ vi.mock("../lib/api", () => ({
       grain: "day",
       generatedAt: new Date().toISOString(),
     }),
+    dashboardReport: vi.fn(async (dateFrom: string, dateTo: string) => ({
+      dateFrom,
+      dateTo,
+      generatedAt: new Date().toISOString(),
+      salesRevenue: 100,
+      grossMargin: 40,
+      incomeReceived: 80,
+      customerRefunds: 5,
+      purchases: 25,
+      supplierPayments: 20,
+      expenses: 10,
+      netCash: 45,
+      documents: [],
+    })),
   },
 }));
 vi.mock("recharts", () => ({
@@ -75,6 +91,23 @@ describe("actionable dashboard navigation", () => {
         name: /Ajouter un produit|Nouvelle vente|Nouvel achat|Chèques en attente|Factures à encaisser/,
       }),
     ).toBeNull();
+    client.clear();
+  });
+  it("shows a printable report for a selected date range", async () => {
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <DashboardPage role="ACCOUNTANT" onNavigate={() => {}} />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: /Rapport complet par période/,
+      }),
+    );
+    expect(await screen.findByText("ONight · Rapport financier")).toBeTruthy();
+    expect(screen.getByText("Remboursements clients")).toBeTruthy();
+    expect(api.dashboardReport).toHaveBeenCalled();
     client.clear();
   });
 });

@@ -29,14 +29,20 @@ const sample: InvoiceDetail = {
   discountTotal: 0,
   items: [
     {
+      id: "item-qa",
+      variantId: "variant-qa",
       description: "Sérum éclat à la vitamine C · Édition été",
+      imageUrl: "",
       quantity: 2,
+      returnedQuantity: 0,
       unitMultiplier: 1,
       unitPrice: 123.4,
       lineTotal: 246.8,
     },
   ],
   payments: [],
+  returns: [],
+  history: [],
 };
 function saveSample(name: string, bytes: Uint8Array) {
   if (!process.env.PDF_QA_OUTPUT) return;

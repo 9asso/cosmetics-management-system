@@ -3,7 +3,10 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
+  type OnModuleDestroy,
+  type OnModuleInit,
 } from "@nestjs/common";
 import type {
   CreateExpenseInput,
@@ -22,16 +25,77 @@ import {
   DEFAULT_ORGANIZATION_ID as org,
 } from "../constants.js";
 import { DatabaseService } from "../database/database.service.js";
+import {
+  captureInvoiceHistory,
+  ensureInitialInvoiceHistory,
+} from "../management/invoice-data.js";
 
 const eligibleSales =
   "('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')";
 const cents = (value: number) => Math.round(value * 100);
 
 @Injectable()
-export class FinanceService {
+export class FinanceService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(FinanceService.name);
+  private recurringTimer?: ReturnType<typeof setInterval>;
+
   constructor(private readonly db: DatabaseService) {}
 
+  onModuleInit() {
+    void this.runRecurringGeneration();
+    this.recurringTimer = setInterval(
+      () => void this.runRecurringGeneration(),
+      60 * 60 * 1000,
+    );
+    this.recurringTimer.unref?.();
+  }
+
+  onModuleDestroy() {
+    if (this.recurringTimer) clearInterval(this.recurringTimer);
+  }
+
+  private async runRecurringGeneration() {
+    try {
+      await this.generateRecurringExpenses();
+    } catch (error) {
+      this.logger.error("Recurring expense generation failed", error);
+    }
+  }
+
+  private generateRecurringExpenses() {
+    return this.db.query(
+      `WITH due AS (
+        SELECT r.*,
+          make_date(
+            EXTRACT(YEAR FROM month_start)::int,
+            EXTRACT(MONTH FROM month_start)::int,
+            LEAST(r.day_of_month,
+              EXTRACT(DAY FROM (month_start + interval '1 month - 1 day'))::int)
+          ) AS due_on
+        FROM recurring_expenses r
+        CROSS JOIN LATERAL generate_series(
+          date_trunc('month', r.starts_on)::date,
+          date_trunc('month', now() AT TIME ZONE 'Africa/Casablanca')::date,
+          interval '1 month'
+        ) AS months(month_start)
+        WHERE r.organization_id=$1 AND r.active=true
+      )
+      INSERT INTO expenses
+        (organization_id,location_id,name,category,amount,incurred_on,notes,created_by,
+         expense_type,payment_method,recurring_expense_id)
+      SELECT organization_id,location_id,name,category,amount,due_on,notes,created_by,
+        'FIXED',payment_method,id
+      FROM due
+      WHERE due_on >= starts_on
+        AND due_on <= (now() AT TIME ZONE 'Africa/Casablanca')::date
+      ON CONFLICT (recurring_expense_id, incurred_on)
+        WHERE recurring_expense_id IS NOT NULL DO NOTHING`,
+      [org],
+    );
+  }
+
   async summary(): Promise<FinanceSummary> {
+    await this.generateRecurringExpenses();
     const result = await this.db.query<FinanceSummary>(
       `SELECT
       (SELECT COALESCE(SUM(GREATEST(0,grand_total-amount_paid)),0)::float FROM sales_orders WHERE organization_id=$1 AND status IN ${eligibleSales}) AS receivables,
@@ -103,10 +167,17 @@ export class FinanceService {
     );
   }
 
-  expenses(query: FinanceQuery) {
+  async expenses(query: FinanceQuery) {
+    await this.generateRecurringExpenses();
     return this.page<ExpenseItem>(
-      `SELECT id,name,category,amount::float,incurred_on::text AS "incurredOn",COALESCE(notes,'') AS notes,voided_at::text AS "voidedAt",void_reason AS "voidReason"
-      FROM expenses WHERE organization_id=$1 AND (name ILIKE $2 OR category ILIKE $2) ORDER BY incurred_on DESC,created_at DESC,id`,
+      `SELECT e.id,e.name,e.category,e.amount::float,e.incurred_on::text AS "incurredOn",
+        COALESCE(e.notes,'') AS notes,e.expense_type AS "expenseType",
+        e.payment_method AS "paymentMethod",r.day_of_month AS "recurringDay",
+        e.recurring_expense_id AS "recurringId",
+        e.voided_at::text AS "voidedAt",e.void_reason AS "voidReason"
+      FROM expenses e LEFT JOIN recurring_expenses r ON r.id=e.recurring_expense_id
+      WHERE e.organization_id=$1 AND (e.name ILIKE $2 OR e.category ILIKE $2)
+      ORDER BY e.incurred_on DESC,e.created_at DESC,e.id`,
       [org, `%${query.search}%`],
       query,
     );
@@ -216,6 +287,7 @@ export class FinanceService {
       }
       const doc = await this.document(client, kind, id);
       this.ensurePayable(doc);
+      await ensureInitialInvoiceHistory(client, kind, id, actorId);
       const pending = await client.query<{ amount: number }>(
         `SELECT COALESCE(SUM(amount),0)::float AS amount FROM payments WHERE ${kind === "sale" ? "sales_order_id" : "purchase_order_id"}=$1 AND method='CHECK' AND status='PENDING'`,
         [id],
@@ -267,6 +339,13 @@ export class FinanceService {
         paymentId,
         { ...input, kind, documentId: id },
       );
+      await captureInvoiceHistory(
+        client,
+        kind,
+        id,
+        "PAYMENT_RECORDED",
+        actorId,
+      );
       return { id: paymentId };
     });
   }
@@ -288,6 +367,8 @@ export class FinanceService {
       const doc = documentId
         ? await this.document(client, kind, documentId)
         : null;
+      if (doc && documentId)
+        await ensureInitialInvoiceHistory(client, kind, documentId, actorId);
       const result = await client.query<{
         amount: number;
         status: string;
@@ -335,6 +416,15 @@ export class FinanceService {
         from: payment.checkStatus ?? payment.status,
         to: input.status,
       });
+      if (doc && documentId) {
+        await captureInvoiceHistory(
+          client,
+          kind,
+          documentId,
+          "CHECK_STATUS_CHANGED",
+          actorId,
+        );
+      }
       return { id };
     });
   }
@@ -347,7 +437,10 @@ export class FinanceService {
         [`${org}:${input.requestId}`],
       );
       const existing = await client.query<ExpenseItem>(
-        `SELECT id,name,category,amount::float,incurred_on::text AS "incurredOn",COALESCE(notes,'') AS notes FROM expenses WHERE organization_id=$1 AND request_id=$2`,
+        `SELECT id,name,category,amount::float,incurred_on::text AS "incurredOn",
+          COALESCE(notes,'') AS notes,expense_type AS "expenseType",
+          payment_method AS "paymentMethod"
+         FROM expenses WHERE organization_id=$1 AND request_id=$2`,
         [org, input.requestId],
       );
       if (existing.rows[0]) {
@@ -357,15 +450,43 @@ export class FinanceService {
           row.category !== input.category ||
           row.amount !== input.amount ||
           row.incurredOn !== input.incurredOn ||
-          row.notes !== input.notes
+          row.notes !== input.notes ||
+          row.expenseType !== input.expenseType ||
+          row.paymentMethod !== input.paymentMethod
         )
           throw new ConflictException(
             "Cette demande a déjà été utilisée pour une autre dépense.",
           );
         return { id: row.id };
       }
+      const recurringId =
+        input.expenseType === "FIXED"
+          ? (
+              await client.query<{ id: string }>(
+                `INSERT INTO recurring_expenses
+                  (organization_id,location_id,name,category,amount,payment_method,
+                   day_of_month,starts_on,notes,created_by)
+                 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
+                [
+                  org,
+                  DEFAULT_LOCATION_ID,
+                  input.name,
+                  input.category,
+                  input.amount,
+                  input.paymentMethod,
+                  input.recurringDay,
+                  input.incurredOn,
+                  input.notes,
+                  actorId,
+                ],
+              )
+            ).rows[0]!.id
+          : null;
       const result = await client.query<{ id: string }>(
-        `INSERT INTO expenses(organization_id,location_id,name,category,amount,incurred_on,notes,created_by,request_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
+        `INSERT INTO expenses
+          (organization_id,location_id,name,category,amount,incurred_on,notes,
+           created_by,request_id,expense_type,payment_method,recurring_expense_id)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
         [
           org,
           DEFAULT_LOCATION_ID,
@@ -376,6 +497,9 @@ export class FinanceService {
           input.notes,
           actorId,
           input.requestId,
+          input.expenseType,
+          input.paymentMethod,
+          recurringId,
         ],
       );
       await this.audit(
@@ -392,12 +516,22 @@ export class FinanceService {
 
   async voidExpense(id: string, reason: string, actorId: string) {
     return this.db.withTransaction(async (client) => {
-      const result = await client.query(
-        `UPDATE expenses SET voided_at=now(),void_reason=$3 WHERE id=$1 AND organization_id=$2 AND voided_at IS NULL RETURNING id`,
+      const result = await client.query<{
+        id: string;
+        recurringId: string | null;
+      }>(
+        `UPDATE expenses SET voided_at=now(),void_reason=$3
+         WHERE id=$1 AND organization_id=$2 AND voided_at IS NULL
+         RETURNING id,recurring_expense_id AS "recurringId"`,
         [id, org, reason],
       );
       if (!result.rowCount)
         throw new BadRequestException("Dépense introuvable ou déjà annulée.");
+      if (result.rows[0]!.recurringId)
+        await client.query(
+          "UPDATE recurring_expenses SET active=false,updated_at=now() WHERE id=$1 AND organization_id=$2",
+          [result.rows[0]!.recurringId, org],
+        );
       await this.audit(client, actorId, "EXPENSE_VOIDED", "expense", id, {
         reason,
       });

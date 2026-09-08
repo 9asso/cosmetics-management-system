@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "turbo dev",
     "dev:local": "node scripts/dev-local.mjs",
+    "dev:api": "node scripts/dev-local.mjs --api-only",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "test": "turbo test",

@@ -3,10 +3,15 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
+import { createConnection } from "node:net";
 import { parse } from "dotenv";
 
 // An isolated, persistent local demo. Never read deployment credentials from .env.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const databaseOnly = process.argv.includes("--database-only");
+const apiOnly = process.argv.includes("--api-only");
+if (databaseOnly && apiOnly)
+  throw new Error("Use either --database-only or --api-only, not both.");
 const localFile = resolve(root, ".env.local");
 if (!existsSync(localFile))
   throw new Error(
@@ -42,6 +47,7 @@ const env = {
     "http://localhost:1420,http://127.0.0.1:1420,http://localhost:3000,http://127.0.0.1:3000",
 };
 const children = [];
+let ownsDatabase = false;
 function run(args, wait = true) {
   const child = spawn("pnpm", args, { cwd: root, env, stdio: "inherit" });
   children.push(child);
@@ -61,15 +67,50 @@ async function stop(code = 0) {
   stopping = true;
   for (const child of children)
     if (child.exitCode === null) child.kill("SIGTERM");
-  await database.stop();
+  if (ownsDatabase) await database.stop();
   process.exit(code);
+}
+async function canConnectToLocalDatabase() {
+  const client = database.getPgClient("postgres", "127.0.0.1");
+  try {
+    await client.connect();
+    await client.query("SELECT 1");
+    return true;
+  } catch {
+    return false;
+  } finally {
+    await client.end().catch(() => {});
+  }
+}
+function isLocalDatabasePortInUse() {
+  return new Promise((resolvePortCheck) => {
+    const socket = createConnection({ host: "127.0.0.1", port: 54329 });
+    socket.setTimeout(1_000);
+    socket.once("connect", () => {
+      socket.destroy();
+      resolvePortCheck(true);
+    });
+    socket.once("timeout", () => {
+      socket.destroy();
+      resolvePortCheck(false);
+    });
+    socket.once("error", () => resolvePortCheck(false));
+  });
 }
 process.on("SIGINT", () => void stop());
 process.on("SIGTERM", () => void stop());
 try {
-  if (!existsSync(resolve(databaseDir, "PG_VERSION")))
-    await database.initialise();
-  await database.start();
+  const reuseDatabase = await canConnectToLocalDatabase();
+  if (!reuseDatabase) {
+    if (await isLocalDatabasePortInUse())
+      throw new Error(
+        "Port 54329 is already used by a different database or the local ADMIN_PASSWORD changed. Stop that process or restore the password used to create .local/postgres.",
+      );
+    if (!existsSync(resolve(databaseDir, "PG_VERSION")))
+      await database.initialise();
+    await database.start();
+    ownsDatabase = true;
+  }
   const client = database.getPgClient("postgres", "127.0.0.1");
   await client.connect();
   const found = await client.query(
@@ -87,26 +128,37 @@ try {
   if (users.rowCount === 0 || process.argv.includes("--seed"))
     await run(["--filter", "@cosmetics/api", "db:seed"]);
   console.log(
-    "ONight local database ready at 127.0.0.1:54329. Data stays in .local/postgres.",
+    `ONight local database ${reuseDatabase ? "reused" : "ready"} at 127.0.0.1:54329. Data stays in .local/postgres.`,
   );
-  if (!process.argv.includes("--database-only")) {
+  if (!databaseOnly) {
     const api = run(["--filter", "@cosmetics/api", "dev"], false);
-    const store = run(
-      ["--filter", "@cosmetics/storefront", "dev", "--hostname", "127.0.0.1"],
-      false,
-    );
-    const dashboard = process.argv.includes("--reuse-dashboard")
+    const store = apiOnly
       ? null
       : run(
-          ["--filter", "@cosmetics/desktop", "dev", "--host", "127.0.0.1"],
+          [
+            "--filter",
+            "@cosmetics/storefront",
+            "dev",
+            "--hostname",
+            "127.0.0.1",
+          ],
           false,
         );
+    const dashboard =
+      apiOnly || process.argv.includes("--reuse-dashboard")
+        ? null
+        : run(
+            ["--filter", "@cosmetics/desktop", "dev", "--host", "127.0.0.1"],
+            false,
+          );
     for (const child of [api, store, dashboard].filter(Boolean))
       child.once("exit", (code) => {
         if (!stopping) void stop(code ?? 1);
       });
     console.log(
-      "Dashboard: http://localhost:1420 · Store: http://localhost:3000",
+      apiOnly
+        ? "API starting at http://localhost:4000/api/v1"
+        : "Dashboard: http://localhost:1420 · Store: http://localhost:3000",
     );
   }
   // Retain the database supervisor even in --database-only mode.

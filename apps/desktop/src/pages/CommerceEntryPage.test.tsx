@@ -33,6 +33,7 @@ const products = [
     available: 20,
     purchasePrice: 10,
     wholesalePrice: 20,
+    retailPrice: 30,
   },
   {
     variantId: "b",
@@ -41,6 +42,7 @@ const products = [
     available: 5,
     purchasePrice: 5,
     wholesalePrice: 15,
+    retailPrice: 25,
   },
 ] as ProductListItem[];
 function mount(kind: "sale" | "purchase") {
@@ -82,17 +84,20 @@ describe("multi-product commerce entry", () => {
     "submits all %s lines with quantities and prices, merging repeated selections",
     async (kind) => {
       const client = mount(kind);
-      await screen.findByRole("option", { name: "QA partner" });
-      fireEvent.change(
-        screen.getByLabelText(
-          kind === "sale" ? "Client grossiste" : "Fournisseur",
-        ),
-        { target: { value: "partner" } },
+      const partner = screen.getByLabelText(
+        kind === "sale" ? "Client grossiste" : "Fournisseur",
+      );
+      fireEvent.focus(partner);
+      fireEvent.click(
+        await screen.findByRole("option", { name: /QA partner/ }),
       );
       for (const id of ["a", "a", "b"]) {
-        fireEvent.change(screen.getByLabelText("Produit à ajouter"), {
-          target: { value: id },
-        });
+        fireEvent.focus(screen.getByLabelText("Produit à ajouter"));
+        fireEvent.click(
+          screen.getByRole("option", {
+            name: id === "a" ? /Serum/ : /Lipstick/,
+          }),
+        );
         fireEvent.click(
           screen.getByRole("button", { name: "Ajouter la ligne" }),
         );
@@ -116,12 +121,18 @@ describe("multi-product commerce entry", () => {
                 quantity: 2,
                 [kind === "sale" ? "unitPrice" : "unitCost"]:
                   kind === "sale" ? 20 : 10,
+                ...(kind === "purchase"
+                  ? { wholesalePrice: 20, retailPrice: 30 }
+                  : {}),
               },
               {
                 variantId: "b",
                 quantity: 1,
                 [kind === "sale" ? "unitPrice" : "unitCost"]:
                   kind === "sale" ? 15 : 5,
+                ...(kind === "purchase"
+                  ? { wholesalePrice: 15, retailPrice: 25 }
+                  : {}),
               },
             ],
           }),
@@ -134,20 +145,12 @@ describe("multi-product commerce entry", () => {
       client.clear();
     },
   );
-  it("searches beyond the first catalog page while preserving the cart", async () => {
+  it("searches the product popup while preserving the cart", async () => {
     const client = mount("sale");
-    await screen.findByRole("option", { name: "QA partner" });
-    fireEvent.change(screen.getByLabelText("Produit à ajouter"), {
-      target: { value: "a" },
-    });
+    fireEvent.focus(screen.getByLabelText("Produit à ajouter"));
+    fireEvent.click(await screen.findByRole("option", { name: /Serum/ }));
     fireEvent.click(screen.getByRole("button", { name: "Ajouter la ligne" }));
-    fireEvent.click(screen.getByRole("button", { name: "Suivant" }));
-    await waitFor(() =>
-      expect(api.products).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 2 }),
-      ),
-    );
-    fireEvent.change(screen.getByLabelText("Rechercher un produit"), {
+    fireEvent.change(screen.getByLabelText("Produit à ajouter"), {
       target: { value: "barcode-123" },
     });
     await waitFor(() =>

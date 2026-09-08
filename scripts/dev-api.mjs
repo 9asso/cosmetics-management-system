@@ -16,24 +16,54 @@ const compiler = spawn(
     "--watch",
     "--preserveWatchOutput",
   ],
-  { stdio: "inherit" },
+  { stdio: ["inherit", "pipe", "pipe"] },
 );
-const server = spawn(process.execPath, ["--watch", "dist/main.js"], {
-  stdio: "inherit",
-});
 let stopping = false;
+let restarting = false;
+let server;
+function launchServer() {
+  server = spawn(process.execPath, ["dist/main.js"], { stdio: "inherit" });
+  server.once("error", () => stop(1));
+  server.once("exit", (code) => {
+    if (!stopping && !restarting) stop(code ?? 1);
+  });
+}
+function restartServer() {
+  if (!server || restarting || stopping) return;
+  restarting = true;
+  const previous = server;
+  previous.once("exit", () => {
+    if (stopping) return;
+    restarting = false;
+    launchServer();
+  });
+  previous.kill("SIGTERM");
+}
+let compilerOutput = "";
+let initialWatchBuildFinished = false;
+compiler.stdout.on("data", (chunk) => {
+  process.stdout.write(chunk);
+  compilerOutput += chunk.toString();
+  const lines = compilerOutput.split(/\r?\n/);
+  compilerOutput = lines.pop() ?? "";
+  for (const line of lines) {
+    if (!line.includes("Found 0 errors.")) continue;
+    if (initialWatchBuildFinished) restartServer();
+    else initialWatchBuildFinished = true;
+  }
+});
+compiler.stderr.pipe(process.stderr);
+launchServer();
 function stop(code = 0) {
   if (stopping) return;
   stopping = true;
   compiler.kill("SIGTERM");
-  server.kill("SIGTERM");
+  server?.kill("SIGTERM");
   process.exit(code);
 }
 process.on("SIGINT", () => stop());
 process.on("SIGTERM", () => stop());
-for (const child of [compiler, server]) {
-  child.once("error", () => stop(1));
-  child.once("exit", (code) => {
-    if (!stopping) stop(code ?? 1);
-  });
-}
+compiler.once("error", () => stop(1));
+compiler.once("exit", (code) => {
+  if (!stopping) stop(code ?? 1);
+});
