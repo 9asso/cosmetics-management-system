@@ -6,6 +6,7 @@ import { runSqlDirectory } from './migration-runner.js';
 
 await runSqlDirectory(resolve(process.cwd(), '../../database/seeds'), false, 'dev.sql');
 await runSqlDirectory(resolve(process.cwd(), '../../database/seeds'), false, 'catalog-demo.sql');
+await runSqlDirectory(resolve(process.cwd(), '../../database/seeds'), false, 'dashboard-demo.sql');
 
 const adminEmail = process.env.ADMIN_EMAIL ?? 'owner@onight.local';
 const adminPassword = process.env.ADMIN_PASSWORD ?? 'ChangeMe123!';

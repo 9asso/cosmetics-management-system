@@ -6,6 +6,7 @@ import {
   Boxes,
   Building2,
   ChevronLeft,
+  FileBarChart,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -199,6 +200,7 @@ export function App() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [editProfile, setEditProfile] = useState(false);
+  const [dashboardReportOpen, setDashboardReportOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(initialDarkMode);
   const me = useQuery({
     queryKey: ["me"],
@@ -282,6 +284,7 @@ export function App() {
     setNavigationOptions(options);
     setNavigationVersion((version) => version + 1);
     setActive(section);
+    setDashboardReportOpen(false);
     window.history.pushState({}, "", sectionPath(section));
     setMobileMenu(false);
   };
@@ -475,12 +478,23 @@ export function App() {
             </button>
             {canManageStock && (
               <button
-                className={ui("secondary-button")}
+                className={`${ui("secondary-button")} max-lg:flex! max-md:w-8 max-md:gap-0! max-md:px-0! max-md:text-[0px]!`}
                 onClick={() => navigate("purchases")}
+                aria-label="Nouvel achat"
               >
                 <PackagePlus size={16} /> Nouvel achat
               </button>
             )}
+            {active === "dashboard" &&
+              ["OWNER", "MANAGER", "ACCOUNTANT"].includes(user.role) && (
+                <button
+                  className={`${ui("secondary-button")} max-lg:flex! max-md:w-8 max-md:gap-0! max-md:px-0! max-md:text-[0px]!`}
+                  onClick={() => setDashboardReportOpen(true)}
+                  aria-label="Rapport complet"
+                >
+                  <FileBarChart size={16} /> Rapport complet
+                </button>
+              )}
             {canSell && (
               <button
                 className={ui("primary-button")}
@@ -511,7 +525,12 @@ export function App() {
             </span>
           </header>
           {active === "dashboard" && (
-            <DashboardPage onNavigate={navigate} role={user.role} />
+            <DashboardPage
+              onNavigate={navigate}
+              role={user.role}
+              reportOpen={dashboardReportOpen}
+              onReportClose={() => setDashboardReportOpen(false)}
+            />
           )}
           {active === "inventory" && (
             <InventoryPage

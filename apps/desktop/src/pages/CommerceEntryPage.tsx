@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { api, ApiRequestError } from "../lib/api";
 import { money } from "../lib/format";
+import { resolveMediaUrl } from "../lib/media";
 import { ui } from "../lib/ui";
 import { ErrorState } from "../components/EmptyState";
 import { CheckFields, emptyCheck } from "../components/CheckFields";
@@ -261,7 +262,7 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
                       getDetail={(product) =>
                         `${product.sku} · ${product.available} disponible(s)`
                       }
-                      getImage={(product) => product.imageUrl}
+                      getImage={(product) => resolveMediaUrl(product.imageUrl)}
                       query={search}
                       onQueryChange={(value) => {
                         setSearch(value);

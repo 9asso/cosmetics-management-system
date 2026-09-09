@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Modal } from "./Modal";
 import { money } from "../lib/format";
+import { resolveMediaUrl } from "../lib/media";
 
 const categories: Record<ProductListItem["category"], string> = {
   MAKEUP: "Maquillage",
@@ -114,14 +115,14 @@ export function ProductDetailModal({
               {activeImage === images.length && product.videoUrl ? (
                 <video
                   key={product.videoUrl}
-                  src={product.videoUrl}
+                  src={resolveMediaUrl(product.videoUrl)}
                   controls
                   preload="metadata"
                   className="max-h-64 w-full rounded-xl bg-black"
                 />
               ) : images[activeImage] ? (
                 <img
-                  src={images[activeImage]}
+                  src={resolveMediaUrl(images[activeImage])}
                   alt={product.name}
                   className="h-56 w-full object-contain"
                 />
@@ -141,7 +142,7 @@ export function ProductDetailModal({
                     className={`size-12 overflow-hidden rounded-lg border-2 bg-white dark:bg-[#302b2f] ${activeImage === index ? "border-brand" : "border-line"}`}
                   >
                     <img
-                      src={url}
+                      src={resolveMediaUrl(url)}
                       alt=""
                       className="size-full object-contain"
                     />

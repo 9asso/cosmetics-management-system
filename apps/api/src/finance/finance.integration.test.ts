@@ -154,6 +154,14 @@ describe.skipIf(!url)(
         "UPDATE inventory_balances SET reserved=on_hand WHERE variant_id=$1",
         [product.variantId],
       );
+      const reservedQuantity = Number(
+        (
+          await client.query<{ reserved: string }>(
+            "SELECT reserved::text FROM inventory_balances WHERE variant_id=$1",
+            [product.variantId],
+          )
+        ).rows[0]!.reserved,
+      );
       const out = await catalog.list({
         page: 1,
         pageSize: 100,
@@ -163,6 +171,9 @@ describe.skipIf(!url)(
       expect(out.items[0]?.variantId).toBe(product.variantId);
       expect((await dashboard.summary()).outOfStockCount).toBe(
         before.outOfStockCount + 1,
+      );
+      expect((await dashboard.summary()).reservedUnits).toBe(
+        before.reservedUnits + reservedQuantity,
       );
       await client.query(
         "UPDATE product_variants SET active=false WHERE id=$1",
@@ -199,6 +210,17 @@ describe.skipIf(!url)(
         actor,
       );
       expect(purchase.total).toBe(35.11);
+      expect(
+        (await dashboard.analytics("month")).products.recentPurchases,
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            productId: product.id,
+            quantity: 2,
+            partnerName: supplier.name,
+          }),
+        ]),
+      );
       const before = await catalog.list({
         page: 1,
         pageSize: 100,
@@ -251,6 +273,27 @@ describe.skipIf(!url)(
       );
       expect(sale.total).toBe(69.99);
       expect((await management.invoice("sale", sale.id)).items).toHaveLength(2);
+      const dashboardAnalytics = await dashboard.analytics("month");
+      const productAnalytics = dashboardAnalytics.products;
+      expect(productAnalytics.recentSales).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            productId: product.id,
+            quantity: 2,
+            channel: "WHOLESALE",
+          }),
+        ]),
+      );
+      expect(productAnalytics.topWholesale.length).toBeGreaterThan(0);
+      expect(productAnalytics.topWholesale.length).toBeLessThanOrEqual(5);
+      expect(productAnalytics.topWholesale.map(({ unitsSold }) => unitsSold)).toEqual(
+        [...productAnalytics.topWholesale.map(({ unitsSold }) => unitsSold)].sort(
+          (left, right) => right - left,
+        ),
+      );
+      expect(dashboardAnalytics.customers.topWholesale.length).toBeGreaterThan(0);
+      expect(dashboardAnalytics.customers.topWholesale.length).toBeLessThanOrEqual(5);
+      expect(dashboardAnalytics.customers.topCities.length).toBeGreaterThan(0);
     });
     it("records partial cash and transfer settlements, rejects overpayment, and retries exactly once", async () => {
       const { customer, product } = await fixture();
@@ -484,6 +527,17 @@ describe.skipIf(!url)(
       expect(after.salesRevenue - before.salesRevenue).toBe(106);
       expect(after.grossMargin - before.grossMargin).toBe(38);
       expect(after.customerRefunds - before.customerRefunds).toBe(64);
+      expect(after.salesCount - before.salesCount).toBe(1);
+      expect(after.unitsSold).toBeGreaterThan(0);
+      expect(after.periods.length).toBeGreaterThan(0);
+      expect(after.documents).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: sale.id,
+            paidAmount: 106,
+          }),
+        ]),
+      );
     });
     it("keeps checks outstanding until clearance and reserves their face value against duplicate collection", async () => {
       const { customer, product } = await fixture();

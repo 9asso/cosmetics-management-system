@@ -1,4 +1,5 @@
 import { ui } from "../lib/ui";
+import { resolveMediaUrl } from "../lib/media";
 import { useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CreateProductInput, ProductListItem } from "@cosmetics/contracts";
@@ -349,7 +350,7 @@ export function InventoryPage({
                   <td>
                     <div className={ui("product-cell")}>
                       {product.imageUrl ? (
-                        <img src={product.imageUrl} alt="" />
+                        <img src={resolveMediaUrl(product.imageUrl)} alt="" />
                       ) : (
                         <span>{product.name.slice(0, 1)}</span>
                       )}

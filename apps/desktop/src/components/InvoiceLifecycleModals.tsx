@@ -10,6 +10,7 @@ import { api, ApiRequestError } from "../lib/api";
 import { money } from "../lib/format";
 import { createRequestId } from "../lib/request-id";
 import { ui } from "../lib/ui";
+import { resolveMediaUrl } from "../lib/media";
 import { CheckFields, emptyCheck } from "./CheckFields";
 import { Modal } from "./Modal";
 import { SearchablePopup } from "./SearchablePopup";
@@ -257,7 +258,7 @@ export function InvoiceEditModal({
                 getDetail={(product) =>
                   `${product.sku} · ${product.available} disponible(s)`
                 }
-                getImage={(product) => product.imageUrl}
+                getImage={(product) => resolveMediaUrl(product.imageUrl)}
                 query={productSearch}
                 onQueryChange={setProductSearch}
               />
