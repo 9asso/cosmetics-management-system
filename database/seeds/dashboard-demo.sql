@@ -183,4 +183,18 @@ VALUES
 ('65000000-0000-4000-8000-000000000003','00000000-0000-4000-8000-000000000001','sale','43000000-0000-4000-8000-000000000001','PRINTED','{"status":"PARTIALLY_PAID","amountPaid":3000,"remaining":2361.5}',now()-interval '3 hours')
 ON CONFLICT (id) DO UPDATE SET snapshot=EXCLUDED.snapshot, created_at=EXCLUDED.created_at;
 
+-- Keep the active catalog visual: records without usable product media remain
+-- archived for invoice and stock history, but no longer appear in the app.
+UPDATE products p
+SET active = false,
+    retail_visible = false,
+    updated_at = now()
+WHERE p.active = true
+  AND NULLIF(BTRIM(COALESCE(p.image_url, '')), '') IS NULL
+  AND NOT EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements_text(COALESCE(p.images, '[]'::jsonb)) AS media(url)
+    WHERE NULLIF(BTRIM(media.url), '') IS NOT NULL
+  );
+
 COMMIT;

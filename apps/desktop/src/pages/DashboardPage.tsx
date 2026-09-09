@@ -56,6 +56,24 @@ const dashboardToday = () =>
 
 type AnalyticsPeriod = DashboardAnalytics["periods"][number];
 
+type DashboardInsight =
+  | {
+      kind: "recent-product";
+      item: DashboardRecentProduct;
+      context: "purchase" | "sale";
+    }
+  | {
+      kind: "top-product";
+      item: DashboardTopProduct;
+      segment: "wholesale" | "retail";
+    }
+  | {
+      kind: "customer";
+      item: DashboardTopCustomer;
+      segment: "wholesale" | "retail";
+    }
+  | { kind: "city"; item: DashboardTopCity };
+
 function PerformanceTooltip({
   active,
   label,
@@ -141,12 +159,14 @@ function RecentProductsPanel({
   icon,
   items,
   empty,
+  onSelect,
 }: {
   eyebrow: string;
   title: string;
   icon: ReactNode;
   items: DashboardRecentProduct[];
   empty: string;
+  onSelect: (item: DashboardRecentProduct) => void;
 }) {
   return (
     <article className={`${ui("panel")} overflow-hidden p-0!`}>
@@ -162,9 +182,12 @@ function RecentProductsPanel({
       {items.length ? (
         <div className="grid auto-cols-[minmax(185px,1fr)] grid-flow-col gap-3 overflow-x-auto p-4 [scrollbar-width:thin]">
           {items.map((product) => (
-            <article
+            <button
+              type="button"
               key={product.id}
-              className="rounded-2xl border border-line bg-surface p-2.5 transition-transform hover:-translate-y-0.5"
+              aria-label={`Voir les détails de ${product.name}`}
+              onClick={() => onSelect(product)}
+              className="group rounded-2xl border border-line bg-surface p-2.5 text-left transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
             >
               <div className="relative">
                 <ProductImage product={product} />
@@ -192,7 +215,10 @@ function RecentProductsPanel({
                   })}
                 </time>
               </div>
-            </article>
+              <span className="mt-2 block text-[9px] font-semibold text-brand opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+                Voir les détails →
+              </span>
+            </button>
           ))}
         </div>
       ) : (
@@ -208,12 +234,14 @@ function TopProductsPanel({
   icon,
   items,
   empty,
+  onSelect,
 }: {
   eyebrow: string;
   title: string;
   icon: ReactNode;
   items: DashboardTopProduct[];
   empty: string;
+  onSelect: (item: DashboardTopProduct) => void;
 }) {
   const maximum = Math.max(...items.map((item) => item.unitsSold), 1);
   return (
@@ -229,9 +257,12 @@ function TopProductsPanel({
       </header>
       <div className="space-y-2.5 p-4">
         {items.map((product, index) => (
-          <article
+          <button
+            type="button"
             key={product.variantId}
-            className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-line dark:bg-black/10 bg-black/3 p-2.5"
+            aria-label={`Voir les détails de ${product.name}`}
+            onClick={() => onSelect(product)}
+            className="group relative flex w-full items-center gap-3 overflow-hidden rounded-xl border border-line bg-brand-soft/5 p-2.5 text-left transition hover:border-brand/40 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand dark:bg-black/10"
           >
             <span
               className="absolute inset-y-0 left-0 dark:bg-black/30 bg-brand-soft/70 transition-all rounded-md"
@@ -258,7 +289,7 @@ function TopProductsPanel({
                 {money.format(product.revenue)}
               </small>
             </div>
-          </article>
+          </button>
         ))}
         {!items.length && (
           <p className="py-8 text-center text-xs text-muted">{empty}</p>
@@ -274,12 +305,14 @@ function TopCustomersPanel({
   icon,
   items,
   empty,
+  onSelect,
 }: {
   eyebrow: string;
   title: string;
   icon: ReactNode;
   items: DashboardTopCustomer[];
   empty: string;
+  onSelect: (item: DashboardTopCustomer) => void;
 }) {
   const maximum = Math.max(...items.map((item) => item.revenue), 1);
   return (
@@ -295,9 +328,12 @@ function TopCustomersPanel({
       </header>
       <div className="space-y-2.5 p-4">
         {items.map((customer, index) => (
-          <article
+          <button
+            type="button"
             key={customer.customerId}
-            className="relative flex items-center gap-3 overflow-hidden rounded-xl border border-line bg-black/3 p-2.5 dark:bg-black/10"
+            aria-label={`Voir les détails de ${customer.name}`}
+            onClick={() => onSelect(customer)}
+            className="relative flex w-full items-center gap-3 overflow-hidden rounded-xl border border-line bg-brand-soft/5 p-2.5 text-left transition hover:border-brand/40 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand dark:bg-black/10"
           >
             <span
               className="absolute inset-y-0 left-0 rounded-md bg-brand-soft/70 dark:bg-black/30"
@@ -306,9 +342,9 @@ function TopCustomersPanel({
             <span className="relative grid size-7 shrink-0 place-items-center rounded-full bg-white text-[10px] font-bold text-brand shadow-sm dark:bg-[#302b2f]">
               {index + 1}
             </span>
-            <span className="relative grid size-10 shrink-0 place-items-center rounded-xl bg-linear-to-br from-brand/10 to-[#ff848f]/10 text-xs font-bold text-brand">
+            {/* <span className="relative grid size-10 shrink-0 place-items-center rounded-xl bg-linear-to-br from-brand/10 to-[#ff848f]/10 text-xs font-bold text-brand">
               {customer.name.slice(0, 1).toUpperCase()}
-            </span>
+            </span> */}
             <div className="relative min-w-0 flex-1">
               <strong className="block truncate text-xs">
                 {customer.name}
@@ -321,7 +357,7 @@ function TopCustomersPanel({
             <strong className="relative shrink-0 text-xs">
               {money.format(customer.revenue)}
             </strong>
-          </article>
+          </button>
         ))}
         {!items.length && (
           <p className="py-8 text-center text-xs text-muted">{empty}</p>
@@ -334,9 +370,11 @@ function TopCustomersPanel({
 function TopCitiesPanel({
   eyebrow,
   items,
+  onSelect,
 }: {
   eyebrow: string;
   items: DashboardTopCity[];
+  onSelect: (item: DashboardTopCity) => void;
 }) {
   const maximum = Math.max(...items.map((item) => item.revenue), 1);
   return (
@@ -352,9 +390,12 @@ function TopCitiesPanel({
       </header>
       <div className="space-y-2.5 p-4">
         {items.map((city, index) => (
-          <article
+          <button
+            type="button"
             key={city.city}
-            className="relative flex items-center gap-3 overflow-hidden rounded-xl border border-line bg-black/3 p-2.5 dark:bg-black/10"
+            aria-label={`Voir les détails de ${city.city}`}
+            onClick={() => onSelect(city)}
+            className="relative flex w-full items-center gap-3 overflow-hidden rounded-xl border border-line bg-brand-soft/5 p-2.5 text-left transition hover:border-brand/40 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand dark:bg-black/10"
           >
             <span
               className="absolute inset-y-0 left-0 rounded-md bg-brand-soft/70 dark:bg-black/30"
@@ -363,9 +404,9 @@ function TopCitiesPanel({
             <span className="relative grid size-7 shrink-0 place-items-center rounded-full bg-white text-[10px] font-bold text-brand shadow-sm dark:bg-[#302b2f]">
               {index + 1}
             </span>
-            <span className="relative grid size-10 shrink-0 place-items-center rounded-xl bg-linear-to-br from-brand/10 to-[#ff848f]/10 text-xs font-bold text-brand">
+            {/* <span className="relative grid size-10 shrink-0 place-items-center rounded-xl bg-linear-to-br from-brand/10 to-[#ff848f]/10 text-xs font-bold text-brand">
               <MapPinned size={17} />
-            </span>
+            </span> */}
             <div className="relative min-w-0 flex-1">
               <strong className="block truncate text-xs">{city.city}</strong>
               <small className="mt-0.5 block text-[9px] text-muted">
@@ -376,7 +417,7 @@ function TopCitiesPanel({
             <strong className="relative shrink-0 text-xs">
               {money.format(city.revenue)}
             </strong>
-          </article>
+          </button>
         ))}
         {!items.length && (
           <p className="py-8 text-center text-xs text-muted">
@@ -385,6 +426,179 @@ function TopCitiesPanel({
         )}
       </div>
     </article>
+  );
+}
+
+function InsightMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-line bg-surface px-3 py-3">
+      <small className="block text-[9px] font-semibold uppercase tracking-wider text-muted">
+        {label}
+      </small>
+      <strong className="mt-1.5 block text-sm">{value}</strong>
+    </div>
+  );
+}
+
+function DashboardInsightModal({
+  insight,
+  onClose,
+}: {
+  insight: DashboardInsight;
+  onClose: () => void;
+}) {
+  const isProduct =
+    insight.kind === "recent-product" || insight.kind === "top-product";
+  const title = isProduct
+    ? "Détails du produit"
+    : insight.kind === "customer"
+      ? "Détails du client"
+      : "Détails de la ville";
+  const subtitle =
+    insight.kind === "recent-product"
+      ? insight.context === "purchase"
+        ? "Dernière réception fournisseur"
+        : "Dernière vente enregistrée"
+      : insight.kind === "top-product"
+        ? `Performance ${insight.segment === "wholesale" ? "grossiste" : "boutique"}`
+        : insight.kind === "customer"
+          ? `Classement ${insight.segment === "wholesale" ? "grossiste" : "boutique"}`
+          : "Performance commerciale par zone";
+
+  let heading = "";
+  let supporting = "";
+  let metrics: Array<[string, string]> = [];
+  if (insight.kind === "recent-product") {
+    const { item } = insight;
+    heading = item.name;
+    supporting = `${item.brand} · ${item.sku}`;
+    metrics = [
+      ["Quantité", `${integer.format(item.quantity)} unité(s)`],
+      ["Montant", money.format(item.amount)],
+      [
+        insight.context === "purchase" ? "Fournisseur" : "Client",
+        item.partnerName,
+      ],
+      ["Document", item.documentNumber],
+      [
+        "Date",
+        new Date(item.occurredAt).toLocaleString("fr-FR", {
+          dateStyle: "long",
+          timeStyle: "short",
+        }),
+      ],
+      [
+        "Canal",
+        item.channel === "PURCHASE"
+          ? "Réception fournisseur"
+          : item.channel === "RETAIL"
+            ? "Boutique"
+            : "Vente en gros",
+      ],
+    ];
+  } else if (insight.kind === "top-product") {
+    const { item } = insight;
+    heading = item.name;
+    supporting = `${item.brand} · ${item.sku}`;
+    metrics = [
+      ["Unités vendues", integer.format(item.unitsSold)],
+      ["Chiffre d’affaires", money.format(item.revenue)],
+      ["Commandes", integer.format(item.orderCount)],
+      [
+        "Panier moyen",
+        money.format(item.orderCount ? item.revenue / item.orderCount : 0),
+      ],
+      [
+        "Revenu moyen / unité",
+        money.format(item.unitsSold ? item.revenue / item.unitsSold : 0),
+      ],
+      ["Segment", insight.segment === "wholesale" ? "Grossiste" : "Boutique"],
+    ];
+  } else if (insight.kind === "customer") {
+    const { item } = insight;
+    heading = item.name;
+    supporting = item.city;
+    metrics = [
+      ["Chiffre d’affaires", money.format(item.revenue)],
+      ["Commandes", integer.format(item.orderCount)],
+      ["Unités achetées", integer.format(item.unitsBought)],
+      [
+        "Panier moyen",
+        money.format(item.orderCount ? item.revenue / item.orderCount : 0),
+      ],
+      [
+        "Unités / commande",
+        (item.orderCount
+          ? item.unitsBought / item.orderCount
+          : 0
+        ).toLocaleString("fr-FR", { maximumFractionDigits: 1 }),
+      ],
+      ["Segment", insight.segment === "wholesale" ? "Grossiste" : "Boutique"],
+    ];
+  } else {
+    const { item } = insight;
+    heading = item.city;
+    supporting = "Zone de vente";
+    metrics = [
+      ["Chiffre d’affaires", money.format(item.revenue)],
+      ["Commandes", integer.format(item.orderCount)],
+      ["Clients", integer.format(item.customerCount)],
+      [
+        "Panier moyen",
+        money.format(item.orderCount ? item.revenue / item.orderCount : 0),
+      ],
+      [
+        "CA moyen / client",
+        money.format(
+          item.customerCount ? item.revenue / item.customerCount : 0,
+        ),
+      ],
+    ];
+  }
+
+  return (
+    <Modal title={title} subtitle={subtitle} onClose={onClose}>
+      <div className="space-y-5 p-5 sm:p-6">
+        <div className="flex items-center gap-4 rounded-2xl border border-line bg-linear-to-r from-brand-soft/70 via-surface to-amber-50/60 p-4 dark:via-[#282428] dark:to-[#332c27]">
+          {isProduct ? (
+            <div className="w-24 shrink-0">
+              <ProductImage product={insight.item} />
+            </div>
+          ) : (
+            <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-white text-brand shadow-sm dark:bg-[#352f34]">
+              {insight.kind === "customer" ? (
+                <UsersRound size={24} />
+              ) : (
+                <MapPinned size={24} />
+              )}
+            </span>
+          )}
+          <div className="min-w-0">
+            <p className={ui("overline")}>{supporting}</p>
+            <h3 className="mt-1 text-lg font-bold">{heading}</h3>
+            <p className="mt-1 text-[10px] text-muted">
+              {insight.kind === "recent-product"
+                ? "Données du mouvement enregistré dans le stock."
+                : "Résumé calculé sur la période active du tableau de bord."}
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {metrics.map(([label, metric]) => (
+            <InsightMetric key={label} label={label} value={metric} />
+          ))}
+        </div>
+        <div className={ui("modal-actions")}>
+          <button
+            type="button"
+            className={ui("secondary-button")}
+            onClick={onClose}
+          >
+            Fermer
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -401,6 +615,8 @@ export function DashboardPage({
 }) {
   const canFinance = ["OWNER", "MANAGER", "ACCOUNTANT"].includes(role);
   const [range, setRange] = useState<DashboardAnalyticsRange>("month");
+  const [selectedInsight, setSelectedInsight] =
+    useState<DashboardInsight | null>(null);
   const analytics = useQuery({
     queryKey: ["dashboard-analytics", range],
     queryFn: () => api.analytics(range),
@@ -646,7 +862,7 @@ export function DashboardPage({
                       name="Chiffre d’affaires"
                       fill="#ff848f"
                       maxBarSize={34}
-                      radius={[7, 7, 0, 0]}
+                      radius={[7, 7, 4, 4]}
                     />
                     <Line
                       type="monotone"
@@ -884,6 +1100,13 @@ export function DashboardPage({
             icon={<PackageOpen size={19} />}
             items={productInsights.recentPurchases}
             empty="Aucune réception fournisseur enregistrée."
+            onSelect={(item) =>
+              setSelectedInsight({
+                kind: "recent-product",
+                item,
+                context: "purchase",
+              })
+            }
           />
           <RecentProductsPanel
             eyebrow="Sorties de stock"
@@ -891,6 +1114,13 @@ export function DashboardPage({
             icon={<ReceiptText size={19} />}
             items={productInsights.recentSales}
             empty="Aucune vente confirmée enregistrée."
+            onSelect={(item) =>
+              setSelectedInsight({
+                kind: "recent-product",
+                item,
+                context: "sale",
+              })
+            }
           />
           <TopProductsPanel
             eyebrow={`Top ${rangeCopy[range].detail.toLowerCase()}`}
@@ -898,6 +1128,13 @@ export function DashboardPage({
             icon={<UsersRound size={19} />}
             items={productInsights.topWholesale}
             empty="Aucune vente grossiste sur cette période."
+            onSelect={(item) =>
+              setSelectedInsight({
+                kind: "top-product",
+                item,
+                segment: "wholesale",
+              })
+            }
           />
           <TopProductsPanel
             eyebrow={`Top ${rangeCopy[range].detail.toLowerCase()}`}
@@ -905,6 +1142,13 @@ export function DashboardPage({
             icon={<Store size={19} />}
             items={productInsights.topRetail}
             empty="Aucune vente boutique sur cette période."
+            onSelect={(item) =>
+              setSelectedInsight({
+                kind: "top-product",
+                item,
+                segment: "retail",
+              })
+            }
           />
         </div>
       </section>
@@ -929,6 +1173,13 @@ export function DashboardPage({
             icon={<UsersRound size={19} />}
             items={customerInsights.topWholesale}
             empty="Aucun client grossiste sur cette période."
+            onSelect={(item) =>
+              setSelectedInsight({
+                kind: "customer",
+                item,
+                segment: "wholesale",
+              })
+            }
           />
           <TopCustomersPanel
             eyebrow={`Top ${rangeCopy[range].detail.toLowerCase()}`}
@@ -936,16 +1187,26 @@ export function DashboardPage({
             icon={<Store size={19} />}
             items={customerInsights.topRetail}
             empty="Aucun client boutique sur cette période."
+            onSelect={(item) =>
+              setSelectedInsight({ kind: "customer", item, segment: "retail" })
+            }
           />
           <TopCitiesPanel
             eyebrow={`Top ${rangeCopy[range].detail.toLowerCase()}`}
             items={customerInsights.topCities}
+            onSelect={(item) => setSelectedInsight({ kind: "city", item })}
           />
         </div>
       </section>
 
       {reportOpen && canFinance && (
         <DashboardReportModal onClose={onReportClose} />
+      )}
+      {selectedInsight && (
+        <DashboardInsightModal
+          insight={selectedInsight}
+          onClose={() => setSelectedInsight(null)}
+        />
       )}
     </div>
   );
@@ -1426,17 +1687,36 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
               <h3 className="report-section-title text-sm font-bold">
                 Évolution de la période
               </h3>
-              <p className="report-copy mt-1 text-[10px] text-muted">
+              <p className="report-copy mt-1 mb-3 text-[10px] text-muted">
                 Les ventes et la marge suivent la date des factures ; les flux
                 suivent la date réelle des paiements et dépenses.
               </p>
               <div className="report-charts grid gap-3 xl:grid-cols-2">
-                <article className="report-chart rounded-xl border border-line p-3">
-                  <h4 className="text-xs font-bold">Ventes et marge brute</h4>
-                  <p className="mt-1 text-[9px] text-muted">
-                    Montants en MAD par période
-                  </p>
-                  <div className="h-52 min-w-0 text-[9px]">
+                <article className="report-chart overflow-hidden rounded-2xl border border-line bg-surface p-0">
+                  <header className="flex items-center justify-between gap-3 border-b border-line bg-linear-to-r from-brand-soft/80 via-white to-amber-50/60 p-3.5 dark:via-[#282428] dark:to-[#332c27]">
+                    <div className="flex items-center gap-3">
+                      <span className="grid size-9 place-items-center rounded-xl bg-white text-brand shadow-sm dark:bg-[#352f34]">
+                        <TrendingUp size={17} />
+                      </span>
+                      <div>
+                        <p className={ui("overline")}>Performance</p>
+                        <h4 className="mt-0.5 text-xs font-bold">
+                          Ventes et marge brute
+                        </h4>
+                      </div>
+                    </div>
+                    <div className="hidden items-center gap-3 text-[9px] text-muted sm:flex">
+                      <span className="flex items-center gap-1.5">
+                        <i className="size-2 rounded-[3px] bg-[#ff848f]" />
+                        Ventes
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <i className="h-0.5 w-3 bg-ink" />
+                        Marge
+                      </span>
+                    </div>
+                  </header>
+                  <div className="h-52 min-w-0 p-3 text-[9px] [&_.recharts-surface]:outline-none [&_.recharts-surface_*]:outline-none">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart
                         data={value.periods}
@@ -1444,6 +1724,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                       >
                         <CartesianGrid
                           stroke="var(--color-line)"
+                          strokeWidth={1}
                           vertical={false}
                         />
                         <XAxis
@@ -1452,6 +1733,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                           tickLine={false}
                           axisLine={false}
                           minTickGap={18}
+                          tick={{ fill: "var(--color-muted)", fontSize: 9 }}
                         />
                         <YAxis
                           tickFormatter={(number) =>
@@ -1461,36 +1743,79 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                           }
                           tickLine={false}
                           axisLine={false}
+                          width={42}
+                          tick={{ fill: "var(--color-muted)", fontSize: 9 }}
                         />
                         <Tooltip
                           formatter={(amount) => money.format(Number(amount))}
                           labelFormatter={(label) => chartDate(String(label))}
+                          cursor={{
+                            fill: "var(--color-brand-soft)",
+                            fillOpacity: 0.55,
+                          }}
+                          contentStyle={{
+                            background: "var(--color-surface)",
+                            border: "1px solid var(--color-line)",
+                            borderRadius: 12,
+                            boxShadow: "0 12px 30px rgba(48,43,47,.12)",
+                            color: "var(--color-ink)",
+                          }}
+                          labelStyle={{
+                            color: "var(--color-ink)",
+                            fontWeight: 700,
+                          }}
+                          itemStyle={{ color: "var(--color-muted)" }}
                         />
                         <Bar
                           dataKey="salesRevenue"
                           name="Ventes"
                           fill="#ff848f"
                           maxBarSize={28}
-                          radius={[6, 6, 0, 0]}
+                          radius={[7, 7, 4, 4]}
                         />
                         <Line
                           type="monotone"
                           dataKey="grossMargin"
                           name="Marge brute"
-                          stroke="#302b2f"
-                          strokeWidth={2.2}
-                          dot={{ r: 0 }}
+                          stroke="var(--color-ink)"
+                          strokeWidth={2.5}
+                          dot={{ r: 0, fill: "var(--color-ink)" }}
+                          activeDot={{
+                            r: 4,
+                            fill: "var(--color-ink)",
+                            stroke: "var(--color-surface)",
+                            strokeWidth: 2,
+                          }}
                         />
                       </ComposedChart>
                     </ResponsiveContainer>
                   </div>
                 </article>
-                <article className="report-chart rounded-xl border border-line p-3">
-                  <h4 className="text-xs font-bold">Flux de trésorerie</h4>
-                  <p className="mt-1 text-[9px] text-muted">
-                    Encaissements, sorties et solde net en MAD
-                  </p>
-                  <div className="h-52 min-w-0 text-[9px]">
+                <article className="report-chart overflow-hidden rounded-2xl border border-line bg-surface p-0">
+                  <header className="flex items-center justify-between gap-3 border-b border-line bg-linear-to-r from-brand-soft/80 via-white to-amber-50/60 p-3.5 dark:via-[#282428] dark:to-[#332c27]">
+                    <div className="flex items-center gap-3">
+                      <span className="grid size-9 place-items-center rounded-xl bg-white text-brand shadow-sm dark:bg-[#352f34]">
+                        <WalletCards size={17} />
+                      </span>
+                      <div>
+                        <p className={ui("overline")}>Trésorerie</p>
+                        <h4 className="mt-0.5 text-xs font-bold">
+                          Flux de trésorerie
+                        </h4>
+                      </div>
+                    </div>
+                    <div className="hidden items-center gap-3 text-[9px] text-muted sm:flex">
+                      <span className="flex items-center gap-1.5">
+                        <i className="size-2 rounded-[3px] bg-[#e3a733]" />
+                        Entrées
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <i className="size-2 rounded-[3px] bg-[#f66897]" />
+                        Sorties
+                      </span>
+                    </div>
+                  </header>
+                  <div className="h-52 min-w-0 p-3 text-[9px] [&_.recharts-surface]:outline-none [&_.recharts-surface_*]:outline-none">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart
                         data={cashPeriods}
@@ -1498,6 +1823,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                       >
                         <CartesianGrid
                           stroke="var(--color-line)"
+                          strokeWidth={1}
                           vertical={false}
                         />
                         <XAxis
@@ -1506,6 +1832,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                           tickLine={false}
                           axisLine={false}
                           minTickGap={18}
+                          tick={{ fill: "var(--color-muted)", fontSize: 9 }}
                         />
                         <YAxis
                           tickFormatter={(number) =>
@@ -1515,32 +1842,56 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                           }
                           tickLine={false}
                           axisLine={false}
+                          width={42}
+                          tick={{ fill: "var(--color-muted)", fontSize: 9 }}
                         />
                         <Tooltip
                           formatter={(amount) => money.format(Number(amount))}
                           labelFormatter={(label) => chartDate(String(label))}
+                          cursor={{
+                            fill: "var(--color-brand-soft)",
+                            fillOpacity: 0.55,
+                          }}
+                          contentStyle={{
+                            background: "var(--color-surface)",
+                            border: "1px solid var(--color-line)",
+                            borderRadius: 12,
+                            boxShadow: "0 12px 30px rgba(48,43,47,.12)",
+                            color: "var(--color-ink)",
+                          }}
+                          labelStyle={{
+                            color: "var(--color-ink)",
+                            fontWeight: 700,
+                          }}
+                          itemStyle={{ color: "var(--color-muted)" }}
                         />
                         <Bar
                           dataKey="incomeReceived"
                           name="Encaissements"
                           fill="#e3a733"
                           maxBarSize={20}
-                          radius={[5, 5, 0, 0]}
+                          radius={[7, 7, 4, 4]}
                         />
                         <Bar
                           dataKey="cashOut"
                           name="Sorties"
                           fill="#f66897"
                           maxBarSize={20}
-                          radius={[5, 5, 0, 0]}
+                          radius={[7, 7, 4, 4]}
                         />
                         <Line
                           type="monotone"
                           dataKey="netCash"
                           name="Flux net"
-                          stroke="#302b2f"
-                          strokeWidth={2.2}
-                          dot={{ r: 2 }}
+                          stroke="var(--color-ink)"
+                          strokeWidth={2.5}
+                          dot={{ r: 0, fill: "var(--color-ink)" }}
+                          activeDot={{
+                            r: 4,
+                            fill: "var(--color-ink)",
+                            stroke: "var(--color-surface)",
+                            strokeWidth: 2,
+                          }}
                         />
                       </ComposedChart>
                     </ResponsiveContainer>
@@ -1553,7 +1904,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
               <h3 className="report-section-title text-sm font-bold">
                 Détail des opérations
               </h3>
-              <p className="report-copy mt-1 text-[10px] text-muted">
+              <p className="report-copy mt-1 mb-3 text-[10px] text-muted">
                 Toutes les factures, réceptions fournisseurs et dépenses
                 enregistrées dans la période.
               </p>

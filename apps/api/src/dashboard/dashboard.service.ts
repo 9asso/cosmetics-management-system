@@ -112,6 +112,8 @@ export class DashboardService {
       JOIN products p ON p.id=v.product_id
       WHERE po.organization_id=$1 AND po.status IN ('RECEIVED','PARTIALLY_RECEIVED')
         AND poi.received_quantity > 0
+        AND p.active = true
+        AND COALESCE(NULLIF(BTRIM(p.image_url),''),NULLIF(BTRIM(p.images->>0),'')) IS NOT NULL
       ORDER BY COALESCE(po.ordered_at,po.created_at) DESC,poi.id DESC LIMIT 6`,
       [DEFAULT_ORGANIZATION_ID],
     );
@@ -134,6 +136,8 @@ export class DashboardService {
       WHERE so.organization_id=$1
         AND so.status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
         AND soi.quantity > soi.returned_quantity
+        AND p.active = true
+        AND COALESCE(NULLIF(BTRIM(p.image_url),''),NULLIF(BTRIM(p.images->>0),'')) IS NOT NULL
       ORDER BY COALESCE(so.placed_at,so.created_at) DESC,soi.id DESC LIMIT 6`,
       [DEFAULT_ORGANIZATION_ID],
     );
@@ -157,6 +161,8 @@ export class DashboardService {
         WHERE so.organization_id=$1
           AND so.status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
           AND soi.quantity > soi.returned_quantity
+          AND p.active = true
+          AND COALESCE(NULLIF(BTRIM(p.image_url),''),NULLIF(BTRIM(p.images->>0),'')) IS NOT NULL
           AND date_trunc('${config.grain}',COALESCE(so.placed_at,so.created_at) AT TIME ZONE 'Africa/Casablanca') >=
             date_trunc('${config.grain}',now() AT TIME ZONE 'Africa/Casablanca') - ($2::int - 1) * interval '${config.interval}'
         GROUP BY p.id,v.id,p.name,p.brand,v.sku,p.image_url,p.images,segment

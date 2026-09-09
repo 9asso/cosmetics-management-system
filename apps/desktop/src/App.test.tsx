@@ -79,6 +79,14 @@ describe("local session recovery", () => {
       </QueryClientProvider>,
     );
     await screen.findByText("Dashboard ready");
+    const ordersIcon = screen
+      .getByRole("button", { name: "Commandes & livraisons" })
+      .querySelector("svg");
+    const invoicesIcon = screen
+      .getByRole("button", { name: "Historique des factures" })
+      .querySelector("svg");
+    expect(ordersIcon?.getAttribute("class")).toContain("lucide-receipt-text");
+    expect(invoicesIcon?.getAttribute("class")).toContain("lucide-file-clock");
     const purchase = screen.getByRole("button", { name: "Nouvel achat" });
     const report = screen.getByRole("button", { name: "Rapport complet" });
     expect(

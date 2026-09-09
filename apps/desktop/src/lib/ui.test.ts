@@ -9,9 +9,9 @@ describe("Tailwind recipes", () => {
     expect(classes.split(" ")).toContain("p-0");
     expect(classes.split(" ")).not.toContain("p-4");
     expect(ui("primary-button")).toContain("bg-linear-to-r");
-    expect(ui('primary-button')).toContain('from-brand to-brand-secondary');
+    expect(ui("primary-button")).toContain("from-brand to-brand-secondary");
     expect(ui("avatar")).toContain("to-brand-secondary");
-    expect(ui("overline").split(' ')).not.toContain('overline');
+    expect(ui("overline").split(" ")).not.toContain("overline");
   });
   it("provides all dynamically selected tone recipes", () => {
     for (const tone of ["good", "warn", "bad", "neutral"])
@@ -19,14 +19,23 @@ describe("Tailwind recipes", () => {
     for (const tone of ["ink", "green", "gold", "rose"])
       expect(recipes[`metric-${tone}`]).toBeTruthy();
   });
+  it("keeps the active navigation item white with a stable dark hover", () => {
+    const active = ui("nav-item active");
+    expect(active).toContain("text-white");
+    expect(active).toContain("dark:text-white");
+    expect(active).toContain("dark:hover:bg-brand/90");
+    expect(active).not.toContain("dark:hover:bg-white/8");
+  });
   it("keeps the stylesheet limited to Tailwind imports and theme tokens", () => {
     const css = readFileSync(resolve("src/styles.css"), "utf8");
     expect(css).toContain('@import "tailwindcss"');
-    expect(css).toContain('@custom-variant dark');
-    expect(css.replace(/\.dark\s*\{[^}]*\}/s, '')).not.toMatch(/\.[a-z][\w-]*\s*\{/);
+    expect(css).toContain("@custom-variant dark");
+    expect(css.replace(/\.dark\s*\{[^}]*\}/s, "")).not.toMatch(
+      /\.[a-z][\w-]*\s*\{/,
+    );
     expect(css).not.toContain("@apply");
     expect(css).not.toMatch(/#677b74|#263b33/);
-    expect(css).toContain('--color-surface: #211e21');
+    expect(css).toContain("--color-surface: #211e21");
   });
   it("covers every semantic class passed to ui in the dashboard", () => {
     const files = [

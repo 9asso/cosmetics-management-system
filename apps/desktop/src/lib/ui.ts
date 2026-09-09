@@ -37,7 +37,7 @@ export const recipes: Record<string, string> = {
   "nav-item":
     "my-0.5 flex min-h-9 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-ink transition-colors hover:bg-white/70 dark:hover:bg-white/8 [&_svg]:shrink-0 [&_svg]:stroke-[1.8] [&_span]:flex-1 [&_span]:text-[11px] [&_span]:font-semibold md:group-[.sidebar-collapsed]/shell:justify-center md:group-[.sidebar-collapsed]/shell:px-0 md:group-[.sidebar-collapsed]/shell:[&_span]:hidden",
   active:
-    "bg-brand text-white dark:text-[#321d24] shadow-sm hover:bg-brand/90 md:group-[.sidebar-collapsed]/shell:bg-brand/90",
+    "bg-brand text-white shadow-sm hover:bg-brand/90 dark:text-white dark:hover:bg-brand/90 md:group-[.sidebar-collapsed]/shell:bg-brand/90",
   "nav-chevron": "rotate-180 md:group-[.sidebar-collapsed]/shell:hidden",
   "sidebar-footer":
     "mt-auto p-3 bg-brand md:group-[.sidebar-collapsed]/shell:hidden rounded-2xl ",
@@ -175,7 +175,7 @@ export const recipes: Record<string, string> = {
     "my-3 flex items-center gap-2 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-700 dark:bg-emerald-950/55 dark:text-emerald-300",
   "form-hint": "my-3 text-xs text-muted",
   "modal-actions":
-    "mt-5 flex flex-wrap justify-end gap-2 border-t border-line pt-4 pb-5",
+    "mt-5 flex flex-wrap justify-end gap-2 border-t border-line pt-4 pb-0",
   "summary-strip": `${card} flex flex-wrap items-center gap-3 px-3.5 py-3 [&>div]:grid [&>div]:min-w-[150px] [&>div]:grid-cols-[32px_auto] [&>div]:gap-x-2.5 [&>div]:border-r [&>div]:border-line [&>div]:pr-5 [&_small]:text-[10px] [&_small]:text-muted [&_strong]:text-base [&_strong]:font-bold`,
   "summary-icon":
     "row-span-2 grid size-8 shrink-0 place-items-center rounded-lg",

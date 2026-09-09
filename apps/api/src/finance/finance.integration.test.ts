@@ -185,6 +185,10 @@ describe.skipIf(!url)(
     });
     it("processes multi-product receipts and sales atomically with cent precision", async () => {
       const { customer, supplier, product } = await fixture();
+      await catalog.updateMedia(product.id, {
+        images: ["/products/catalog/finance-qa-product.webp"],
+        videoUrl: "",
+      });
       const second = await catalog.create(
         createProductSchema.parse({
           name: "QA second product",
@@ -286,13 +290,19 @@ describe.skipIf(!url)(
       );
       expect(productAnalytics.topWholesale.length).toBeGreaterThan(0);
       expect(productAnalytics.topWholesale.length).toBeLessThanOrEqual(5);
-      expect(productAnalytics.topWholesale.map(({ unitsSold }) => unitsSold)).toEqual(
-        [...productAnalytics.topWholesale.map(({ unitsSold }) => unitsSold)].sort(
-          (left, right) => right - left,
-        ),
+      expect(
+        productAnalytics.topWholesale.map(({ unitsSold }) => unitsSold),
+      ).toEqual(
+        [
+          ...productAnalytics.topWholesale.map(({ unitsSold }) => unitsSold),
+        ].sort((left, right) => right - left),
       );
-      expect(dashboardAnalytics.customers.topWholesale.length).toBeGreaterThan(0);
-      expect(dashboardAnalytics.customers.topWholesale.length).toBeLessThanOrEqual(5);
+      expect(dashboardAnalytics.customers.topWholesale.length).toBeGreaterThan(
+        0,
+      );
+      expect(
+        dashboardAnalytics.customers.topWholesale.length,
+      ).toBeLessThanOrEqual(5);
       expect(dashboardAnalytics.customers.topCities.length).toBeGreaterThan(0);
     });
     it("records partial cash and transfer settlements, rejects overpayment, and retries exactly once", async () => {

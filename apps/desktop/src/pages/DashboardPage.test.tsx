@@ -79,7 +79,7 @@ vi.mock("../lib/api", () => ({
             name: "Top crème boutique",
             brand: "ONight",
             sku: "CREME-2",
-            imageUrl: "",
+            imageUrl: "/cream-retail.webp",
             unitsSold: 8,
             revenue: 480,
             orderCount: 6,
@@ -153,8 +153,11 @@ vi.mock("recharts", () => ({
   ComposedChart: ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
   ),
-  Bar: ({ dataKey }: { dataKey: string }) => (
-    <span data-testid={`chart-bar-${dataKey}`} />
+  Bar: ({ dataKey, radius }: { dataKey: string; radius?: number[] }) => (
+    <span
+      data-testid={`chart-bar-${dataKey}`}
+      data-radius={JSON.stringify(radius)}
+    />
   ),
   CartesianGrid: () => null,
   XAxis: () => null,
@@ -238,6 +241,9 @@ describe("actionable dashboard navigation", () => {
     expect(screen.getByLabelText("Mois suivants")).toBeTruthy();
     expect(screen.getByText("Ventes et marge brute")).toBeTruthy();
     expect(screen.getByText("Flux de trésorerie")).toBeTruthy();
+    for (const bar of screen.getAllByTestId(/^chart-bar-/)) {
+      expect(bar.getAttribute("data-radius")).toBe("[7,7,4,4]");
+    }
     expect(api.dashboardReport).toHaveBeenCalled();
     client.clear();
   });
@@ -261,6 +267,35 @@ describe("actionable dashboard navigation", () => {
     expect(
       document.querySelector('img[src="http://localhost:3000/cream.webp"]'),
     ).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Voir les détails de Crème achetée récemment",
+      }),
+    );
+    expect(
+      screen.getByRole("dialog", { name: "Détails du produit" }),
+    ).toBeTruthy();
+    expect(screen.getByText("ACH-1")).toBeTruthy();
+    fireEvent.click(screen.getAllByRole("button", { name: "Fermer" })[0]!);
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Voir les détails de Grossiste numéro un",
+      }),
+    );
+    expect(
+      screen.getByRole("dialog", { name: "Détails du client" }),
+    ).toBeTruthy();
+    expect(screen.getByText("Unités achetées")).toBeTruthy();
+    fireEvent.click(screen.getAllByRole("button", { name: "Fermer" })[0]!);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Voir les détails de Casablanca" }),
+    );
+    expect(
+      screen.getByRole("dialog", { name: "Détails de la ville" }),
+    ).toBeTruthy();
+    expect(screen.getByText("CA moyen / client")).toBeTruthy();
     client.clear();
   });
 });

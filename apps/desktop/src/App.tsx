@@ -7,6 +7,7 @@ import {
   Building2,
   ChevronLeft,
   FileBarChart,
+  FileClock,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -82,7 +83,7 @@ const navigation: Array<{
         roles: ["OWNER", "MANAGER", "CASHIER"],
       },
       { id: "orders", label: "Commandes & livraisons", icon: ReceiptText },
-      { id: "invoices", label: "Historique des factures", icon: ReceiptText },
+      { id: "invoices", label: "Historique des factures", icon: FileClock },
     ],
   },
   {
