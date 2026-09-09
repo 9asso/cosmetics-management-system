@@ -3,6 +3,7 @@ import {
   createPurchaseSchema,
   createWholesaleSaleSchema,
   updateInvoiceSchema,
+  brandSettingsSchema,
 } from "@cosmetics/contracts";
 import {
   BadRequestException,
@@ -25,6 +26,7 @@ import type {
   InvoiceDetail,
   Paginated,
   UpdateInvoiceInput,
+  BrandSettings,
 } from "@cosmetics/contracts";
 import type { PoolClient } from "pg";
 import { DEFAULT_LOCATION_ID, DEFAULT_ORGANIZATION_ID } from "../constants.js";
@@ -57,6 +59,61 @@ type VariantRow = {
 @Injectable()
 export class ManagementService {
   constructor(private readonly db: DatabaseService) {}
+
+  async brandSettings(): Promise<BrandSettings> {
+    const result = await this.db.query<BrandSettings>(
+      `SELECT invoice_title AS title, invoice_subtitle AS subtitle,
+        invoice_phones AS phones, invoice_thank_you AS "thankYouText",
+        invoice_return_policy AS "returnPolicy"
+       FROM organizations WHERE id=$1`,
+      [DEFAULT_ORGANIZATION_ID],
+    );
+    if (!result.rows[0])
+      throw new NotFoundException("Organisation introuvable.");
+    return result.rows[0];
+  }
+
+  async updateBrandSettings(
+    input: BrandSettings,
+    actorId: string,
+  ): Promise<BrandSettings> {
+    input = brandSettingsSchema.parse(input);
+    return this.db.withTransaction(async (client) => {
+      const before = await client.query(
+        "SELECT invoice_title,invoice_subtitle,invoice_phones,invoice_thank_you,invoice_return_policy FROM organizations WHERE id=$1 FOR UPDATE",
+        [DEFAULT_ORGANIZATION_ID],
+      );
+      if (!before.rows[0])
+        throw new NotFoundException("Organisation introuvable.");
+      const result = await client.query<BrandSettings>(
+        `UPDATE organizations SET invoice_title=$2,invoice_subtitle=$3,
+          invoice_phones=$4,invoice_thank_you=$5,invoice_return_policy=$6,updated_at=now()
+         WHERE id=$1 RETURNING invoice_title AS title,invoice_subtitle AS subtitle,
+          invoice_phones AS phones,invoice_thank_you AS "thankYouText",
+          invoice_return_policy AS "returnPolicy"`,
+        [
+          DEFAULT_ORGANIZATION_ID,
+          input.title,
+          input.subtitle,
+          input.phones,
+          input.thankYouText,
+          input.returnPolicy,
+        ],
+      );
+      await client.query(
+        `INSERT INTO audit_logs
+          (organization_id,actor_id,action,entity_type,entity_id,before_data,after_data)
+         VALUES($1,$2,'BRAND_SETTINGS_UPDATED','organization',$1,$3::jsonb,$4::jsonb)`,
+        [
+          DEFAULT_ORGANIZATION_ID,
+          actorId,
+          JSON.stringify(before.rows[0]),
+          JSON.stringify(result.rows[0]),
+        ],
+      );
+      return result.rows[0]!;
+    });
+  }
 
   async updatePartner(
     table: "customers" | "suppliers",
@@ -413,12 +470,7 @@ export class ManagementService {
         );
       if (input.paidAmount > total)
         throw new BadRequestException("Le paiement dépasse le total.");
-      const status =
-        collected >= total
-          ? "PAID"
-          : collected > 0
-            ? "PARTIALLY_PAID"
-            : "CONFIRMED";
+      const status = "DELIVERED";
       const documentNumber = `FAC-${Date.now().toString(36).toUpperCase()}`;
       const order = await client.query<{ id: string }>(
         `INSERT INTO sales_orders
@@ -745,15 +797,9 @@ export class ManagementService {
         ? `(SELECT jsonb_build_object('id',id,'name',name,'phone',COALESCE(phone,''),'email',COALESCE(email,''),'address',COALESCE(address,'')) FROM customers WHERE id=$2)`
         : `(SELECT jsonb_build_object('id',id,'name',name,'phone',COALESCE(phone,''),'email',COALESCE(email,''),'address',COALESCE(address,'')) FROM suppliers WHERE id=$2)`;
       if (sale) {
-        const status =
-          current.amountPaid >= total
-            ? "PAID"
-            : current.amountPaid > 0
-              ? "PARTIALLY_PAID"
-              : "CONFIRMED";
         await client.query(
           `UPDATE sales_orders SET customer_id=$2,partner_snapshot=${partnerSnapshot},subtotal=$3,
-            discount_total=$4,shipping_total=$5,tax_total=$6,grand_total=$7,notes=$8,status=$9,updated_at=now()
+            discount_total=$4,shipping_total=$5,tax_total=$6,grand_total=$7,notes=$8,status='DELIVERED',updated_at=now()
            WHERE id=$1`,
           [
             id,
@@ -764,7 +810,6 @@ export class ManagementService {
             input.taxTotal,
             total,
             input.notes,
-            status,
           ],
         );
       } else {
@@ -923,13 +968,7 @@ export class ManagementService {
         [id],
       );
       const nextPaid = Math.max(0, order.amountPaid - input.refundAmount);
-      const status = totals.rows[0]?.allReturned
-        ? "REFUNDED"
-        : nextPaid >= nextTotal
-          ? "PAID"
-          : nextPaid > 0
-            ? "PARTIALLY_PAID"
-            : "CONFIRMED";
+      const status = totals.rows[0]?.allReturned ? "REFUNDED" : "DELIVERED";
       await client.query(
         `UPDATE sales_orders SET subtotal=GREATEST(0,subtotal-$2),grand_total=$3,amount_paid=$4,status=$5,updated_at=now() WHERE id=$1`,
         [id, returnValue, nextTotal, nextPaid, status],
@@ -1013,13 +1052,14 @@ export class ManagementService {
       const order = orderResult.rows[0];
       if (!order) throw new NotFoundException("Commande introuvable.");
       const current = this.normalizeStatus(order.status);
-      if (current === "DELIVERED" || current === "CANCELED") {
+      if (
+        current === "CANCELED" ||
+        (current === "DELIVERED" &&
+          !(order.channel === "WHOLESALE_DESKTOP" && status === "CANCELED"))
+      ) {
         throw new BadRequestException("Cette commande est déjà terminée.");
       }
-      if (
-        status === "ORDERED" ||
-        (status === "DELIVERED" && current === "ORDERED")
-      ) {
+      if (!["DELIVERED", "CANCELED"].includes(status)) {
         throw new BadRequestException("Transition de statut invalide.");
       }
       await ensureInitialInvoiceHistory(client, "sale", id, actorId);

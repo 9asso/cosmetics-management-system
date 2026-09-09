@@ -175,7 +175,7 @@ export const recipes: Record<string, string> = {
     "my-3 flex items-center gap-2 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-700 dark:bg-emerald-950/55 dark:text-emerald-300",
   "form-hint": "my-3 text-xs text-muted",
   "modal-actions":
-    "mt-5 flex flex-wrap justify-end gap-2 border-t border-line pt-4 pb-0",
+    "mt-5 flex flex-wrap justify-end gap-2 border-t border-line py-4",
   "summary-strip": `${card} flex flex-wrap items-center gap-3 px-3.5 py-3 [&>div]:grid [&>div]:min-w-[150px] [&>div]:grid-cols-[32px_auto] [&>div]:gap-x-2.5 [&>div]:border-r [&>div]:border-line [&>div]:pr-5 [&_small]:text-[10px] [&_small]:text-muted [&_strong]:text-base [&_strong]:font-bold`,
   "summary-icon":
     "row-span-2 grid size-8 shrink-0 place-items-center rounded-lg",
@@ -195,7 +195,7 @@ export const recipes: Record<string, string> = {
   grand: "py-4! [&_strong]:text-lg! [&_strong]:text-brand!",
   "process-card":
     "flex flex-col rounded-xl border border-brand/15 bg-brand-soft p-4 text-brand [&_strong]:mt-2.5 [&_strong]:text-xs [&_p]:mt-1 [&_p]:text-[11px] [&_p]:leading-relaxed [&_p]:text-muted",
-  sale: "border-emerald-100 bg-emerald-50 text-emerald-700",
+  sale: "dark:border-emerald-50/20 dark:bg-emerald-50/10 border-emerald-100 bg-emerald-50 text-emerald-700",
   "partner-grid": "grid grid-cols-1 gap-3 p-3.5 sm:grid-cols-2 xl:grid-cols-3",
   "partner-card":
     "flex min-w-0 items-start gap-3 rounded-xl border border-line bg-surface p-3 [&>span]:grid [&>span]:size-9 [&>span]:shrink-0 [&>span]:place-items-center [&>span]:rounded-lg [&>span]:bg-brand-soft [&>span]:text-brand [&>div]:flex [&>div]:min-w-0 [&>div]:flex-col [&_strong]:text-xs [&_small]:mt-1 [&_small]:truncate [&_small]:text-[10px] [&_small]:text-muted [&_em]:mt-2 [&_em]:text-[10px] [&_em]:text-brand [&_em]:not-italic",

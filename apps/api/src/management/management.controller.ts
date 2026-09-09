@@ -20,6 +20,7 @@ import {
   invoiceParamsSchema,
   type InvoiceQuery,
   createInvoiceReturnSchema,
+  brandSettingsSchema,
   updateInvoiceSchema,
   type CreateCustomerInput,
   type CreatePurchaseInput,
@@ -29,6 +30,7 @@ import {
   type UpdateOrderStatusInput,
   type CreateInvoiceReturnInput,
   type UpdateInvoiceInput,
+  type BrandSettings,
 } from "@cosmetics/contracts";
 import { CurrentUser, Roles } from "../auth/auth.decorators.js";
 import type { AuthenticatedUser } from "../auth/auth.types.js";
@@ -38,6 +40,20 @@ import { ManagementService } from "./management.service.js";
 @Controller()
 export class ManagementController {
   constructor(private readonly management: ManagementService) {}
+
+  @Get("settings/brand")
+  brandSettings() {
+    return this.management.brandSettings();
+  }
+
+  @Roles("OWNER")
+  @Patch("settings/brand")
+  updateBrandSettings(
+    @Body(new ZodValidationPipe(brandSettingsSchema)) input: BrandSettings,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.management.updateBrandSettings(input, user.id);
+  }
 
   @Roles("OWNER")
   @Patch("suppliers/:id")

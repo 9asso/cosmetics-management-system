@@ -66,7 +66,7 @@ function mount(kind: "sale" | "purchase") {
   vi.mocked(api.createWholesaleSale).mockResolvedValue({
     id: "doc",
     documentNumber: "FAC-QA",
-    status: "CONFIRMED",
+    status: "DELIVERED",
     total: 55,
   });
   const client = new QueryClient({
@@ -88,11 +88,21 @@ describe("multi-product commerce entry", () => {
         kind === "sale" ? "Client grossiste" : "Fournisseur",
       );
       fireEvent.focus(partner);
+      if (kind === "purchase") {
+        expect(await screen.findByRole("listbox")).toBeTruthy();
+        expect(screen.queryByRole("dialog")).toBeNull();
+        expect(screen.queryByRole("tab")).toBeNull();
+      }
       fireEvent.click(
         await screen.findByRole("option", { name: /QA partner/ }),
       );
       for (const id of ["a", "a", "b"]) {
         fireEvent.focus(screen.getByLabelText("Produit à ajouter"));
+        if (kind === "purchase") {
+          expect(await screen.findByRole("listbox")).toBeTruthy();
+          expect(screen.queryByRole("dialog")).toBeNull();
+          expect(screen.queryByRole("tab")).toBeNull();
+        }
         fireEvent.click(
           screen.getByRole("option", {
             name: id === "a" ? /Serum/ : /Lipstick/,
@@ -150,9 +160,14 @@ describe("multi-product commerce entry", () => {
     fireEvent.focus(screen.getByLabelText("Produit à ajouter"));
     fireEvent.click(await screen.findByRole("option", { name: /Serum/ }));
     fireEvent.click(screen.getByRole("button", { name: "Ajouter la ligne" }));
+    vi.mocked(api.products).mockImplementation(() => new Promise(() => {}));
     fireEvent.change(screen.getByLabelText("Produit à ajouter"), {
       target: { value: "barcode-123" },
     });
+    expect(screen.getByRole("listbox")).toBeTruthy();
+    expect(
+      (screen.getByLabelText("Produit à ajouter") as HTMLInputElement).disabled,
+    ).toBe(false);
     await waitFor(() =>
       expect(api.products).toHaveBeenCalledWith(
         expect.objectContaining({ page: 1, search: "barcode-123" }),

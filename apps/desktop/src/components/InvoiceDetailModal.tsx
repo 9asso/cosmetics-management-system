@@ -105,7 +105,7 @@ export function InvoiceDetailModal({
     try {
       await api.recordInvoicePrint(kind, id);
       const { downloadInvoicePdf } = await import("../lib/invoice-pdf");
-      await downloadInvoicePdf(detail.data);
+      await downloadInvoicePdf(detail.data, brandSettings.data);
       await detail.refetch();
     } catch (error) {
       setDownloadError(
@@ -118,6 +118,10 @@ export function InvoiceDetailModal({
   const detail = useQuery({
     queryKey: ["invoice-detail", kind, id],
     queryFn: () => api.invoice(kind, id),
+  });
+  const brandSettings = useQuery({
+    queryKey: ["brand-settings"],
+    queryFn: api.brandSettings,
   });
   const value = detail.data;
   const isCancelled = value
@@ -489,7 +493,10 @@ export function InvoiceDetailModal({
                       onClick={async () => {
                         const { downloadInvoicePdf } =
                           await import("../lib/invoice-pdf");
-                        await downloadInvoicePdf(entry.snapshot);
+                        await downloadInvoicePdf(
+                          entry.snapshot,
+                          brandSettings.data,
+                        );
                       }}
                     >
                       Imprimer cette version

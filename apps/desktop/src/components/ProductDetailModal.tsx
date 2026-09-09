@@ -354,9 +354,8 @@ export function ProductDetailModal({
                 {lots.data?.map((lot) => (
                   <tr key={lot.id}>
                     <td>
-                      <strong>{lot.source}</strong>
                       <small className="block text-muted">
-                        {new Date(lot.receivedOn).toLocaleDateString("fr-FR")} ·
+                        {lot.source} · {new Date(lot.receivedOn).toLocaleDateString("fr-FR")} ·
                         reçu {lot.receivedQuantity}
                       </small>
                     </td>

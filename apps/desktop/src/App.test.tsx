@@ -79,6 +79,7 @@ describe("local session recovery", () => {
       </QueryClientProvider>,
     );
     await screen.findByText("Dashboard ready");
+    expect(screen.getByRole("button", { name: "Paramètres" })).toBeTruthy();
     const ordersIcon = screen
       .getByRole("button", { name: "Commandes & livraisons" })
       .querySelector("svg");

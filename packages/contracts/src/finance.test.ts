@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createExpenseSchema,
+  createManualCheckSchema,
   createPurchaseSchema,
   createInvoiceReturnSchema,
   createWholesaleSaleSchema,
@@ -38,6 +39,19 @@ describe("finance validation", () => {
         check: { bankName: "Bank", checkNumber: "123", dueDate: "2026-02-30" },
       }).success,
     ).toBe(false);
+  });
+  it("allows a manual cheque without a cheque number", () => {
+    expect(
+      createManualCheckSchema.parse({
+        requestId: id,
+        contactName: "Ancien client",
+        amount: 120,
+        check: {
+          bankName: "Banque QA",
+          dueDate: "2026-09-09",
+        },
+      }).check.checkNumber,
+    ).toBe("");
   });
   it("rejects a cash amount on credit operations and duplicate item lines", () => {
     const base = {

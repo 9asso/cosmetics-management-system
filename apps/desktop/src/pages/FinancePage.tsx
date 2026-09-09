@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   CreateExpenseInput,
+  CreateManualCheckInput,
   ExpenseItem,
   FinanceBalance,
   FinanceCheck,
@@ -54,7 +55,7 @@ const paymentLabels: Record<string, string> = {
 const checkLabels: Record<string, string> = {
   PENDING: "En attente",
   DEPOSITED: "Déposé",
-  CLEARED: "Réglé",
+  CLEARED: "Encaissée",
   BOUNCED: "Rejeté",
   CANCELLED: "Annulé",
 };
@@ -85,6 +86,7 @@ export function FinancePage({
   const [exportError, setExportError] = useState("");
   const [payment, setPayment] = useState<FinanceBalance | null>(null);
   const [expense, setExpense] = useState(false);
+  const [manualCheck, setManualCheck] = useState(false);
   const [voiding, setVoiding] = useState<ExpenseItem | null>(null);
   const [invoice, setInvoice] = useState<{
     kind: "sale" | "purchase";
@@ -134,6 +136,7 @@ export function FinancePage({
   const saved = async (message: string) => {
     setPayment(null);
     setExpense(false);
+    setManualCheck(false);
     setVoiding(null);
     setNotice(message);
     await refresh();
@@ -399,6 +402,15 @@ export function FinancePage({
             >
               <Plus size={16} />
               Nouvelle dépense
+            </button>
+          )}
+          {tab === "checks" && (
+            <button
+              className={ui("primary-button")}
+              onClick={() => setManualCheck(true)}
+            >
+              <Plus size={16} />
+              Ajouter un chèque
             </button>
           )}
         </div>
@@ -693,6 +705,12 @@ export function FinancePage({
           onSaved={() => void saved("La dépense a été enregistrée.")}
         />
       )}
+      {manualCheck && (
+        <ManualCheckModal
+          onClose={() => setManualCheck(false)}
+          onSaved={() => void saved("Le chèque manuel a été ajouté.")}
+        />
+      )}
       {voiding && (
         <VoidExpenseModal
           value={voiding}
@@ -717,48 +735,131 @@ function CheckActions({
 }: {
   row: FinanceCheck;
   pending: boolean;
-  update: (status: "DEPOSITED" | "CLEARED" | "BOUNCED" | "CANCELLED") => void;
+  update: (status: "CLEARED") => void;
 }) {
   if (!["PENDING", "DEPOSITED"].includes(row.status))
     return <span className="text-muted">Traité</span>;
   return (
     <div className="flex flex-wrap gap-1">
-      {row.status === "PENDING" && row.dueDate && (
+      {(row.documentId &&
+        !["CANCELED", "CANCELLED", "REFUNDED"].includes(
+          row.documentStatus ?? "",
+        )) ||
+      !row.documentId ? (
         <button
           className={ui("secondary-button compact")}
           disabled={pending}
-          onClick={() => update("DEPOSITED")}
+          onClick={() => update("CLEARED")}
         >
-          Déposer
+          Encaissée
         </button>
+      ) : (
+        <span className="text-muted">Indisponible</span>
       )}
-      {row.documentId &&
-        !["CANCELED", "CANCELLED", "REFUNDED"].includes(
-          row.documentStatus ?? "",
-        ) && (
-          <button
-            className={ui("secondary-button compact")}
-            disabled={pending}
-            onClick={() => update("CLEARED")}
-          >
-            Réglé en banque
-          </button>
-        )}
-      <button
-        className={ui("secondary-button compact")}
-        disabled={pending}
-        onClick={() => update("BOUNCED")}
-      >
-        Rejeté
-      </button>
-      <button
-        className={ui("secondary-button compact")}
-        disabled={pending}
-        onClick={() => update("CANCELLED")}
-      >
-        Annuler
-      </button>
     </div>
+  );
+}
+
+function ManualCheckModal({
+  onClose,
+  onSaved,
+}: {
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [draft, setDraft] = useState<CreateManualCheckInput>({
+    requestId: createRequestId(),
+    contactName: "",
+    amount: 0,
+    reference: "",
+    check: emptyCheck,
+  });
+  const mutation = useMutation({
+    mutationFn: () => api.createManualCheck(draft),
+    onSuccess: onSaved,
+  });
+  return (
+    <Modal
+      title="Ajouter un chèque"
+      subtitle="Chèque ancien ou hors facture"
+      onClose={onClose}
+    >
+      <form
+        className={ui("product-form")}
+        onSubmit={(event) => {
+          event.preventDefault();
+          mutation.mutate();
+        }}
+      >
+        <div className={ui("form-grid")}>
+          <label>
+            <span>Client ou contact</span>
+            <input
+              required
+              minLength={2}
+              maxLength={160}
+              value={draft.contactName}
+              onChange={(event) =>
+                setDraft({ ...draft, contactName: event.target.value })
+              }
+            />
+          </label>
+          <label>
+            <span>Montant du chèque (MAD)</span>
+            <input
+              required
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={draft.amount || ""}
+              onChange={(event) =>
+                setDraft({ ...draft, amount: Number(event.target.value) })
+              }
+            />
+          </label>
+        </div>
+        <div className="mt-4">
+          <CheckFields
+            value={draft.check}
+            onChange={(check) => setDraft({ ...draft, check })}
+            checkNumberRequired={false}
+            hint="Ce chèque restera en attente jusqu’à l’action « Encaissée » dans la liste."
+          />
+        </div>
+        <label className={ui("full-field")}>
+          <span>Référence facultative</span>
+          <input
+            maxLength={120}
+            placeholder="Ancienne référence, note…"
+            value={draft.reference}
+            onChange={(event) =>
+              setDraft({ ...draft, reference: event.target.value })
+            }
+          />
+        </label>
+        {mutation.isError && errorMessage(mutation.error) && (
+          <p role="alert" className={ui("form-error")}>
+            {errorMessage(mutation.error)}
+          </p>
+        )}
+        <footer className={ui("modal-actions")}>
+          <button
+            type="button"
+            className={ui("secondary-button")}
+            onClick={onClose}
+          >
+            Fermer
+          </button>
+          <button
+            type="submit"
+            className={ui("primary-button")}
+            disabled={mutation.isPending}
+          >
+            Enregistrer le chèque
+          </button>
+        </footer>
+      </form>
+    </Modal>
   );
 }
 function PaymentModal({

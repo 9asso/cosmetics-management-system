@@ -126,8 +126,10 @@ describe.skipIf(!url)("local commerce integration (rolled back)", () => {
     const listed = await management.orders({
       search: sale.documentNumber,
       channel: "all",
-      status: "CONFIRMED",
+      status: "DELIVERED",
     });
+    expect(sale.status).toBe("DELIVERED");
+    expect(listed[0]?.status).toBe("DELIVERED");
     expect(listed[0]?.totalQuantity).toBe(2);
     expect(listed[0]?.itemCount).toBe(1);
     await management.updatePartner(
@@ -216,5 +218,31 @@ describe.skipIf(!url)("local commerce integration (rolled back)", () => {
         actorId,
       ),
     ).rejects.toThrow("introuvable");
+  });
+
+  it("persists and audits editable invoice brand settings", async () => {
+    expect((await management.brandSettings()).title).toBe(
+      "O'NIGHT DISTRIBUTEUR",
+    );
+    const updated = await management.updateBrandSettings(
+      {
+        title: "O'NIGHT TEST",
+        subtitle: "Distribution cosmetique",
+        phones: "0600000000",
+        thankYouText: "Merci !",
+        returnPolicy: "Retour avec ticket uniquement.",
+      },
+      actorId,
+    );
+    expect(updated.title).toBe("O'NIGHT TEST");
+    expect((await management.brandSettings()).phones).toBe("0600000000");
+    expect(
+      (
+        await client.query(
+          "SELECT COUNT(*)::int AS count FROM audit_logs WHERE action='BRAND_SETTINGS_UPDATED' AND actor_id=$1",
+          [actorId],
+        )
+      ).rows[0].count,
+    ).toBe(1);
   });
 });

@@ -10,6 +10,9 @@ export const checkDetailsSchema = z.object({
   checkNumber: z.string().trim().min(1).max(100),
   dueDate: z.iso.date(),
 });
+const manualCheckDetailsSchema = checkDetailsSchema.extend({
+  checkNumber: z.string().trim().max(100).default(""),
+});
 export const recordPaymentSchema = z
   .object({
     requestId: uuidSchema,
@@ -26,6 +29,16 @@ export const recordPaymentSchema = z
   );
 export const updateCheckSchema = z.object({
   status: z.enum(["DEPOSITED", "CLEARED", "BOUNCED", "CANCELLED"]),
+});
+export const createManualCheckSchema = z.object({
+  requestId: uuidSchema,
+  contactName: z.string().trim().min(2).max(160),
+  amount: financialAmountSchema.refine(
+    (value) => value > 0,
+    "Le montant doit être positif.",
+  ),
+  reference: z.string().trim().max(120).default(""),
+  check: manualCheckDetailsSchema,
 });
 export const expenseCategories = [
   "RENT",
@@ -70,6 +83,7 @@ export const financeQuerySchema = paginationQuerySchema.extend({
 export type RecordPaymentInput = z.infer<typeof recordPaymentSchema>;
 export type CheckDetails = z.infer<typeof checkDetailsSchema>;
 export type UpdateCheckInput = z.infer<typeof updateCheckSchema>;
+export type CreateManualCheckInput = z.infer<typeof createManualCheckSchema>;
 export type CreateExpenseInput = z.infer<typeof createExpenseSchema>;
 export type FinanceQuery = z.infer<typeof financeQuerySchema>;
 export interface FinanceBalance {

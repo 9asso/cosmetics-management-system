@@ -15,6 +15,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ReceiptText,
+  Settings,
   ShieldCheck,
   ShoppingBag,
   Store,
@@ -34,6 +35,7 @@ import {
   WholesaleSalesPage,
 } from "./pages/OperationsPages";
 import { TeamPage } from "./pages/TeamPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { EditNameModal } from "./components/EditNameModal";
 import { ErrorState } from "./components/EmptyState";
 import {
@@ -102,6 +104,12 @@ const navigation: Array<{
         icon: ShieldCheck,
         roles: ["OWNER"],
       },
+      {
+        id: "settings",
+        label: "Paramètres",
+        icon: Settings,
+        roles: ["OWNER"],
+      },
     ],
   },
 ];
@@ -156,6 +164,11 @@ const pageTitles: Record<
     eyebrow: "Sécurité",
     title: "Équipe & rôles",
     description: "Contrôlez les accès et responsabilités de chaque membre.",
+  },
+  settings: {
+    eyebrow: "Identité commerciale",
+    title: "Paramètres",
+    description: "Personnalisez les coordonnées et messages de vos factures.",
   },
 };
 
@@ -570,6 +583,7 @@ export function App() {
               }}
             />
           )}
+          {active === "settings" && user.role === "OWNER" && <SettingsPage />}
         </div>
       </main>
       {editProfile && user.role === "OWNER" && (

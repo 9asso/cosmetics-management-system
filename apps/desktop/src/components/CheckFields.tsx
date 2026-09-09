@@ -8,9 +8,13 @@ export const emptyCheck: CheckDetails = {
 export function CheckFields({
   value,
   onChange,
+  checkNumberRequired = true,
+  hint = "Le solde sera réduit après confirmation du règlement bancaire dans Finances & dépenses.",
 }: {
   value: CheckDetails;
   onChange: (value: CheckDetails) => void;
+  checkNumberRequired?: boolean;
+  hint?: string;
 }) {
   return (
     <div className={ui("form-grid")}>
@@ -25,9 +29,12 @@ export function CheckFields({
         />
       </label>
       <label>
-        <span>Numéro du chèque</span>
+        <span>
+          Numéro du chèque{checkNumberRequired ? "" : " (facultatif)"}
+        </span>
         <input
-          required
+          aria-label="Numéro du chèque"
+          required={checkNumberRequired}
           maxLength={100}
           value={value.checkNumber}
           onChange={(e) => onChange({ ...value, checkNumber: e.target.value })}
@@ -42,10 +49,7 @@ export function CheckFields({
           onChange={(e) => onChange({ ...value, dueDate: e.target.value })}
         />
       </label>
-      <p className="self-center text-xs text-muted">
-        Le solde sera réduit après confirmation du règlement bancaire dans
-        Finances &amp; dépenses.
-      </p>
+      <p className="self-center text-xs text-muted">{hint}</p>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import type {
   RecordPaymentInput,
   UpdateCheckInput,
   CreateExpenseInput,
+  CreateManualCheckInput,
   DashboardReport,
   UpdateInvoiceInput,
   CreateInvoiceReturnInput,
@@ -39,6 +40,7 @@ import type {
   InvoiceListItem,
   InvoiceDetail,
   InvoiceQuery,
+  BrandSettings,
 } from "@cosmetics/contracts";
 import { confirmChange, mutationConfirmation } from "./confirmation";
 
@@ -127,6 +129,12 @@ function queryString(values: Record<string, unknown>) {
 }
 
 export const api = {
+  brandSettings: () => request<BrandSettings>("/settings/brand"),
+  updateBrandSettings: (input: BrandSettings) =>
+    request<BrandSettings>("/settings/brand", {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
   uploadProductMedia: (file: File) =>
     request<{ url: string; type: "image" | "video" }>("/products/media", {
       method: "POST",
@@ -159,6 +167,11 @@ export const api = {
   updateCheck: (id: string, input: UpdateCheckInput) =>
     request<{ id: string }>(`/finance/checks/${id}`, {
       method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  createManualCheck: (input: CreateManualCheckInput) =>
+    request<{ id: string }>("/finance/checks", {
+      method: "POST",
       body: JSON.stringify(input),
     }),
   createExpense: (input: CreateExpenseInput) =>

@@ -1,4 +1,8 @@
-import { recordPaymentSchema, createExpenseSchema } from "@cosmetics/contracts";
+import {
+  createExpenseSchema,
+  createManualCheckSchema,
+  recordPaymentSchema,
+} from "@cosmetics/contracts";
 import {
   BadRequestException,
   ConflictException,
@@ -10,6 +14,7 @@ import {
 } from "@nestjs/common";
 import type {
   CreateExpenseInput,
+  CreateManualCheckInput,
   ExpenseItem,
   FinanceBalance,
   FinanceCheck,
@@ -153,18 +158,67 @@ export class FinanceService implements OnModuleInit, OnModuleDestroy {
     return this.page<FinanceCheck>(
       `SELECT p.id, CASE WHEN p.sales_order_id IS NOT NULL THEN 'sale' WHEN p.purchase_order_id IS NOT NULL THEN 'purchase' END AS kind,
       COALESCE(p.sales_order_id,p.purchase_order_id) AS "documentId", COALESCE(p.reference,'Sans référence') AS "documentNumber",
-      COALESCE(s.partner_snapshot->>'name',b.partner_snapshot->>'name',cu.name,su.name,'Contact non renseigné') AS "partnerName",
+      COALESCE(s.partner_snapshot->>'name',b.partner_snapshot->>'name',cu.name,su.name,NULLIF(c.contact_name,''),'Contact non renseigné') AS "partnerName",
       p.direction, p.amount::float, COALESCE(c.bank_name,'') AS "bankName", COALESCE(c.check_number,'') AS "checkNumber", c.due_date::text AS "dueDate",
       CASE WHEN p.status='COMPLETED' THEN 'CLEARED' WHEN p.status='FAILED' THEN 'BOUNCED' WHEN p.status='CANCELLED' THEN 'CANCELLED' ELSE COALESCE(c.status,'PENDING') END AS status,
       COALESCE(s.status,b.status) AS "documentStatus"
       FROM payments p LEFT JOIN checks c ON c.payment_id=p.id LEFT JOIN sales_orders s ON s.id=p.sales_order_id LEFT JOIN purchase_orders b ON b.id=p.purchase_order_id
       LEFT JOIN customers cu ON cu.id=p.customer_id LEFT JOIN suppliers su ON su.id=p.supplier_id
       WHERE p.organization_id=$1 AND p.method='CHECK' AND ($2='all' OR p.status='PENDING')
-      AND (COALESCE(p.reference,'') ILIKE $3 OR COALESCE(c.check_number,'') ILIKE $3 OR COALESCE(s.partner_snapshot->>'name',b.partner_snapshot->>'name',cu.name,su.name,'') ILIKE $3)
+      AND (COALESCE(p.reference,'') ILIKE $3 OR COALESCE(c.check_number,'') ILIKE $3 OR COALESCE(c.contact_name,'') ILIKE $3 OR COALESCE(s.partner_snapshot->>'name',b.partner_snapshot->>'name',cu.name,su.name,'') ILIKE $3)
       ORDER BY (p.status='PENDING') DESC,c.due_date ASC NULLS FIRST,p.created_at,p.id`,
       [org, query.status, `%${query.search}%`],
       query,
     );
+  }
+
+  async createManualCheck(input: CreateManualCheckInput, actorId: string) {
+    input = createManualCheckSchema.parse(input);
+    return this.db.withTransaction(async (client) => {
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtextextended($1,0))",
+        [`${org}:${input.requestId}`],
+      );
+      const previous = await client.query<{ id: string }>(
+        "SELECT id FROM payments WHERE organization_id=$1 AND request_id=$2",
+        [org, input.requestId],
+      );
+      if (previous.rows[0]) return previous.rows[0];
+      const payment = await client.query<{ id: string }>(
+        `INSERT INTO payments
+          (organization_id,direction,method,status,amount,reference,created_by,request_id)
+         VALUES ($1,'IN','CHECK','PENDING',$2,$3,$4,$5) RETURNING id`,
+        [
+          org,
+          input.amount,
+          input.reference || "Chèque manuel",
+          actorId,
+          input.requestId,
+        ],
+      );
+      const id = payment.rows[0]!.id;
+      await client.query(
+        `INSERT INTO checks
+          (payment_id,bank_name,check_number,due_date,contact_name)
+         VALUES ($1,$2,$3,$4,$5)`,
+        [
+          id,
+          input.check.bankName,
+          input.check.checkNumber,
+          input.check.dueDate,
+          input.contactName,
+        ],
+      );
+      await this.audit(
+        client,
+        actorId,
+        "MANUAL_CHECK_CREATED",
+        "payment",
+        id,
+        input,
+      );
+      return { id };
+    });
   }
 
   async expenses(query: FinanceQuery) {
@@ -383,16 +437,14 @@ export class FinanceService implements OnModuleInit, OnModuleDestroy {
       if (input.status === "DEPOSITED" && payment.checkStatus === "DEPOSITED")
         throw new BadRequestException("Ce chèque est déjà déposé.");
       if (input.status === "CLEARED") {
-        if (!doc || !documentId)
-          throw new BadRequestException(
-            "Ce chèque historique doit être rapproché d’une facture avant encaissement.",
-          );
-        this.ensurePayable(doc);
-        if (cents(payment.amount) > cents(doc.total) - cents(doc.amountPaid))
-          throw new BadRequestException(
-            "Le chèque dépasse le solde de la facture.",
-          );
-        await this.applyAmount(client, kind, documentId, payment.amount);
+        if (doc && documentId) {
+          this.ensurePayable(doc);
+          if (cents(payment.amount) > cents(doc.total) - cents(doc.amountPaid))
+            throw new BadRequestException(
+              "Le chèque dépasse le solde de la facture.",
+            );
+          await this.applyAmount(client, kind, documentId, payment.amount);
+        }
       }
       const paymentStatus = {
         DEPOSITED: "PENDING",

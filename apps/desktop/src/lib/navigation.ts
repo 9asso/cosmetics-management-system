@@ -7,6 +7,7 @@ export type Section =
   | "invoices"
   | "partners"
   | "team"
+  | "settings"
   | "finance";
 export type NavigationOptions = {
   stock?: "all" | "low" | "out";
@@ -23,6 +24,7 @@ export const sectionSlugs: Record<Section, string> = {
   invoices: "factures",
   partners: "clients-fournisseurs",
   team: "equipe-roles",
+  settings: "parametres",
   finance: "finances-depenses",
 };
 

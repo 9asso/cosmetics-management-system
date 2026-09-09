@@ -1,6 +1,7 @@
 import { PDFDocument, rgb, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
-import type { InvoiceSnapshot } from "@cosmetics/contracts";
+import type { BrandSettings, InvoiceSnapshot } from "@cosmetics/contracts";
+import { defaultBrandSettings } from "./brand-settings";
 
 const amount = (value: number) =>
   new Intl.NumberFormat("fr-FR", {
@@ -16,6 +17,7 @@ const clean = (value: string) =>
 export async function makeInvoicePdf(
   value: InvoiceSnapshot,
   fontBytes: Uint8Array | ArrayBuffer,
+  settings: BrandSettings = defaultBrandSettings,
 ) {
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
@@ -23,7 +25,7 @@ export async function makeInvoicePdf(
   pdf.setTitle(
     `${value.kind === "sale" ? "Facture" : "Achat"} ${value.documentNumber}`,
   );
-  pdf.setAuthor("ONight");
+  pdf.setAuthor(settings.title);
   pdf.setSubject("Document commercial");
   const ink = rgb(0.2, 0.19, 0.22),
     muted = rgb(0.43, 0.42, 0.46),
@@ -41,6 +43,24 @@ export async function makeInvoicePdf(
   const right = (value: string, edge: number, top: number, size = 10) => {
     const content = clean(value);
     text(content, edge - font.widthOfTextAtSize(content, size), top, size);
+  };
+  const fittedSize = (value: string, width: number, size: number, min = 6) => {
+    const content = clean(value);
+    let fitted = size;
+    while (fitted > min && font.widthOfTextAtSize(content, fitted) > width)
+      fitted -= 0.25;
+    return fitted;
+  };
+  const center = (value: string, top: number, size = 10, color = ink) => {
+    const content = clean(value);
+    const actualSize = fittedSize(content, 511, size);
+    text(
+      content,
+      (595.28 - font.widthOfTextAtSize(content, actualSize)) / 2,
+      top,
+      actualSize,
+      color,
+    );
   };
   const wrap = (value: string, width: number, size = 10) => {
     const lines: string[] = [];
@@ -73,20 +93,34 @@ export async function makeInvoicePdf(
   };
   const newPage = () => {
     page = pdf.addPage([595.28, 841.89]);
-    text("ONight", 42, 790, 25, brand);
+    text(
+      settings.title,
+      42,
+      794,
+      fittedSize(settings.title, 300, 17, 10),
+      brand,
+    );
+    text(
+      settings.subtitle,
+      42,
+      777,
+      fittedSize(settings.subtitle, 300, 9),
+      muted,
+    );
+    text(settings.phones, 42, 762, fittedSize(settings.phones, 300, 9));
     right(
       value.kind === "sale" ? "FACTURE DE VENTE" : "DOCUMENT D’ACHAT",
       553,
-      792,
+      794,
       10,
     );
-    right(value.documentNumber, 553, 775, 10);
+    right(value.documentNumber, 553, 777, 10);
     right(
       new Date(value.issuedAt).toLocaleDateString("fr-FR", {
         timeZone: "Africa/Casablanca",
       }),
       553,
-      758,
+      760,
       9,
     );
     page.drawLine({
@@ -210,31 +244,51 @@ export async function makeInvoicePdf(
   const pages = pdf.getPages();
   pages.forEach((current, index) => {
     page = current;
+    if (value.kind === "sale") {
+      center(settings.thankYouText, 63, 10, brand);
+      center(settings.returnPolicy, 49, 8, muted);
+    }
     page.drawLine({
-      start: { x: 42, y: 53 },
-      end: { x: 553, y: 53 },
+      start: { x: 42, y: value.kind === "sale" ? 39 : 53 },
+      end: { x: 553, y: value.kind === "sale" ? 39 : 53 },
       thickness: 0.5,
       color: line,
     });
     text(
-      `ONight · ${value.documentNumber} · Montants en MAD`,
+      `${settings.title} · ${value.documentNumber} · Montants en MAD`,
       42,
-      36,
-      8,
+      value.kind === "sale" ? 23 : 36,
+      fittedSize(
+        `${settings.title} · ${value.documentNumber} · Montants en MAD`,
+        440,
+        8,
+      ),
       muted,
     );
-    right(`${index + 1} / ${pages.length}`, 553, 36, 8);
+    right(
+      `${index + 1} / ${pages.length}`,
+      553,
+      value.kind === "sale" ? 23 : 36,
+      8,
+    );
   });
   return pdf.save();
 }
 
-export async function downloadInvoicePdf(value: InvoiceSnapshot) {
+export async function downloadInvoicePdf(
+  value: InvoiceSnapshot,
+  settings: BrandSettings = defaultBrandSettings,
+) {
   const response = await fetch(
     `${import.meta.env.BASE_URL}fonts/Lato-Regular.ttf`,
   );
   if (!response.ok)
     throw new Error("Impossible de charger la police du document. Réessayez.");
-  const bytes = await makeInvoicePdf(value, await response.arrayBuffer());
+  const bytes = await makeInvoicePdf(
+    value,
+    await response.arrayBuffer(),
+    settings,
+  );
   const url = URL.createObjectURL(
     new Blob([new Uint8Array(bytes)], { type: "application/pdf" }),
   );

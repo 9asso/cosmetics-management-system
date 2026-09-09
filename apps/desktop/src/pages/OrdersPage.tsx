@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { OrderStatus } from "@cosmetics/contracts";
 import {
-  CheckCircle2,
   PackageCheck,
   Search,
   ShoppingBag,
@@ -12,7 +11,7 @@ import {
 } from "lucide-react";
 import { ErrorState } from "../components/EmptyState";
 import { StatusPill } from "../components/StatusPill";
-import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
+import { InvoiceDetailModal } from "../components/InvoiceDetailModal";
 import { api, ApiRequestError } from "../lib/api";
 import { integer, money } from "../lib/format";
 
@@ -122,9 +121,9 @@ export function OrdersPage({ canUpdate = true }: { canUpdate?: boolean }) {
             onChange={(event) => setStatus(event.target.value as typeof status)}
           >
             <option value="all">Tous les statuts</option>
-            {Object.entries(labels).map(([value, label]) => (
+            {(["DELIVERED", "CANCELED"] as const).map((value) => (
               <option key={value} value={value}>
-                {label}
+                {labels[value]}
               </option>
             ))}
           </select>
@@ -152,7 +151,11 @@ export function OrdersPage({ canUpdate = true }: { canUpdate?: boolean }) {
                 </tr>
               )}
               {orders.data?.map((order) => (
-                <tr key={order.id} className="cursor-pointer" onClick={() => setSelectedId(order.id)}>
+                <tr
+                  key={order.id}
+                  className="cursor-pointer"
+                  onClick={() => setSelectedId(order.id)}
+                >
                   <td>
                     <strong>{order.orderNumber}</strong>
                     <small className={ui("sub-cell")}>
@@ -163,7 +166,15 @@ export function OrdersPage({ canUpdate = true }: { canUpdate?: boolean }) {
                     </small>
                   </td>
                   <td>
-                    <button className="text-left font-bold text-brand hover:underline" onClick={event => { event.stopPropagation(); setSelectedId(order.id); }}>{order.customerName}</button>
+                    <button
+                      className="text-left font-bold text-brand hover:underline"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedId(order.id);
+                      }}
+                    >
+                      {order.customerName}
+                    </button>
                     <small className={ui("sub-cell")}>
                       {order.customerPhone || "Téléphone non renseigné"}
                     </small>
@@ -194,40 +205,37 @@ export function OrdersPage({ canUpdate = true }: { canUpdate?: boolean }) {
                     </StatusPill>
                   </td>
                   <td>
-                    <div className={ui("row-actions")} onClick={event => event.stopPropagation()}>
-                      {canUpdate && order.status === "ORDERED" && (
-                        <button
-                          title="Confirmer"
-                          disabled={changeStatus.isPending}
-                          onClick={() =>
-                            changeStatus.mutate({
-                              id: order.id,
-                              next: "CONFIRMED",
-                            })
-                          }
-                        >
-                          <CheckCircle2 size={16} />
-                        </button>
-                      )}
-                      {canUpdate && order.status === "CONFIRMED" && (
-                        <button
-                          title="Marquer livrée"
-                          disabled={changeStatus.isPending}
-                          onClick={() =>
-                            changeStatus.mutate({
-                              id: order.id,
-                              next: "DELIVERED",
-                            })
-                          }
-                        >
-                          <PackageCheck size={16} />
-                        </button>
-                      )}
+                    <div
+                      className={ui("row-actions")}
+                      onClick={(event) => event.stopPropagation()}
+                    >
                       {canUpdate &&
+                        order.channel === "RETAIL_WEB" &&
                         !["DELIVERED", "CANCELED"].includes(order.status) && (
                           <button
-                            className={ui("danger")}
-                            title="Annuler"
+                            className={ui("secondary-button compact")}
+                            title="Livrée"
+                            disabled={changeStatus.isPending}
+                            onClick={() =>
+                              changeStatus.mutate({
+                                id: order.id,
+                                next: "DELIVERED",
+                              })
+                            }
+                          >
+                            <PackageCheck size={16} />
+                            {/* Livrée */}
+                          </button>
+                        )}
+                      {canUpdate &&
+                        order.status !== "CANCELED" &&
+                        !(
+                          order.status === "DELIVERED" &&
+                          order.channel === "RETAIL_WEB"
+                        ) && (
+                          <button
+                            className={ui("secondary-button compact danger")}
+                            title="Annulée"
                             disabled={changeStatus.isPending}
                             onClick={() =>
                               changeStatus.mutate({
@@ -237,10 +245,13 @@ export function OrdersPage({ canUpdate = true }: { canUpdate?: boolean }) {
                             }
                           >
                             <XCircle size={16} />
+                            {/* Annulée */}
                           </button>
                         )}
                       {!canUpdate && <span>Lecture seule</span>}
-                      {["DELIVERED", "CANCELED"].includes(order.status) && (
+                      {(order.status === "CANCELED" ||
+                        (order.status === "DELIVERED" &&
+                          order.channel === "RETAIL_WEB")) && (
                         <span>Terminée</span>
                       )}
                     </div>
@@ -257,15 +268,24 @@ export function OrdersPage({ canUpdate = true }: { canUpdate?: boolean }) {
             </tbody>
           </table>
         </div>
-        {changeStatus.isError && (!(changeStatus.error instanceof ApiRequestError) || changeStatus.error.status !== 499) && (
-          <p className={ui("inline-error")}>
-            {changeStatus.error instanceof ApiRequestError
-              ? changeStatus.error.message
-              : "Mise à jour impossible."}
-          </p>
-        )}
+        {changeStatus.isError &&
+          (!(changeStatus.error instanceof ApiRequestError) ||
+            changeStatus.error.status !== 499) && (
+            <p className={ui("inline-error")}>
+              {changeStatus.error instanceof ApiRequestError
+                ? changeStatus.error.message
+                : "Mise à jour impossible."}
+            </p>
+          )}
       </section>
-      {selectedId && <InvoiceDetailModal kind="sale" id={selectedId} surface="order" onClose={() => setSelectedId(null)} />}
+      {selectedId && (
+        <InvoiceDetailModal
+          kind="sale"
+          id={selectedId}
+          surface="order"
+          onClose={() => setSelectedId(null)}
+        />
+      )}
     </div>
   );
 }

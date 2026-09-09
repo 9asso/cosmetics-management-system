@@ -54,6 +54,7 @@ describe("downloadable invoice PDF", () => {
     const bytes = await makeInvoicePdf(sample, font);
     const pdf = await PDFDocument.load(bytes);
     expect(pdf.getTitle()).toBe("Facture FAC-QA-2026");
+    expect(pdf.getAuthor()).toBe("O'NIGHT DISTRIBUTEUR");
     expect(pdf.getPageCount()).toBe(1);
     expect(pdf.getPages()[0]!.getWidth()).toBeCloseTo(595.28);
     saveSample("invoice-single.pdf", bytes);

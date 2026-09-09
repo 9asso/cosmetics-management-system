@@ -101,7 +101,7 @@ export function SearchablePopup<T>({
         <span
           id={listId}
           role="listbox"
-          className="absolute z-40 mt-1 max-h-72 w-full overflow-auto rounded-xl border border-line bg-white p-1 shadow-xl dark:bg-[#282428]"
+          className="absolute left-0 top-full z-40 mt-1 max-h-72 w-full overflow-auto rounded-xl border border-line bg-white p-1 shadow-xl dark:bg-[#282428]"
         >
           {visibleItems.map((item) => {
             const id = getId(item);

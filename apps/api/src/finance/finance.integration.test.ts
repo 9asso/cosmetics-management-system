@@ -343,7 +343,7 @@ describe.skipIf(!url)(
       let invoice = await management.invoice("sale", sale.id);
       expect(invoice.amountPaid).toBe(40);
       expect(invoice.payments).toHaveLength(1);
-      expect(invoice.status).toBe("PARTIALLY_PAID");
+      expect(invoice.status).toBe("DELIVERED");
       const balances = await finance.balances(
         financeQuerySchema.parse({ search: sale.documentNumber }),
       );
@@ -356,7 +356,7 @@ describe.skipIf(!url)(
       );
       invoice = await management.invoice("sale", sale.id);
       expect(invoice.amountPaid).toBe(100);
-      expect(invoice.status).toBe("PAID");
+      expect(invoice.status).toBe("DELIVERED");
       expect(
         (
           await finance.balances(
@@ -655,6 +655,41 @@ describe.skipIf(!url)(
       const invoice = await management.invoice("purchase", purchase.id);
       expect(invoice.amountPaid).toBe(100);
       expect(invoice.status).toBe("RECEIVED");
+    });
+    it("records and clears a manual incoming check without an invoice", async () => {
+      const created = await finance.createManualCheck(
+        {
+          requestId: randomUUID(),
+          contactName: "Ancien client QA",
+          amount: 875.5,
+          reference: "Archive papier",
+          check: {
+            bankName: "Banque QA",
+            checkNumber: "OLD-QA-1",
+            dueDate: "2026-08-15",
+          },
+        },
+        actor,
+      );
+      const listed = (
+        await finance.checks(
+          financeQuerySchema.parse({ status: "pending", search: "OLD-QA-1" }),
+        )
+      ).items[0]!;
+      expect(listed).toMatchObject({
+        id: created.id,
+        kind: null,
+        documentId: null,
+        partnerName: "Ancien client QA",
+        status: "PENDING",
+      });
+      await finance.updateCheck(created.id, { status: "CLEARED" }, actor);
+      const cleared = (
+        await finance.checks(
+          financeQuerySchema.parse({ status: "all", search: "OLD-QA-1" }),
+        )
+      ).items[0]!;
+      expect(cleared.status).toBe("CLEARED");
     });
     it("rejects payments on cancelled and undelivered COD orders; cancellation closes pending checks", async () => {
       const { customer, product } = await fixture();

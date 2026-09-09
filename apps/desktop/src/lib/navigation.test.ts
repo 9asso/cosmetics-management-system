@@ -6,6 +6,7 @@ describe("page slugs", () => {
     expect(sectionFromPath("/vue-ensemble")).toBe("dashboard");
     expect(sectionFromPath("/vente-en-gros")).toBe("sales");
     expect(sectionFromPath("/finances-depenses")).toBe("finance");
+    expect(sectionFromPath("/parametres")).toBe("settings");
     expect(sectionPath("inventory")).toMatch(/\/produits-stock$/);
   });
 });

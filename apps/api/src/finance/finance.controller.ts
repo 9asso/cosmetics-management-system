@@ -9,6 +9,7 @@ import {
 } from "@nestjs/common";
 import {
   createExpenseSchema,
+  createManualCheckSchema,
   financeQuerySchema,
   invoiceParamsSchema,
   orderParamsSchema,
@@ -16,6 +17,7 @@ import {
   updateCheckSchema,
   voidExpenseSchema,
   type CreateExpenseInput,
+  type CreateManualCheckInput,
   type FinanceQuery,
   type RecordPaymentInput,
   type UpdateCheckInput,
@@ -46,6 +48,13 @@ export class FinanceController {
     @Query(new ZodValidationPipe(financeQuerySchema)) query: FinanceQuery,
   ) {
     return this.finance.expenses(query);
+  }
+  @Post("checks") createCheck(
+    @Body(new ZodValidationPipe(createManualCheckSchema))
+    input: CreateManualCheckInput,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.finance.createManualCheck(input, user.id);
   }
   @Post("payments/:kind/:id") payment(
     @Param(new ZodValidationPipe(invoiceParamsSchema))

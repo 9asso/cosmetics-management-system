@@ -10,6 +10,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FinancePage, type FinanceTab } from "./FinancePage";
 import { api } from "../lib/api";
+import type { FinanceCheck } from "@cosmetics/contracts";
 vi.mock("../lib/api", () => ({
   ApiRequestError: class extends Error {},
   api: {
@@ -18,6 +19,8 @@ vi.mock("../lib/api", () => ({
     financeChecks: vi.fn(),
     expenses: vi.fn(),
     recordPayment: vi.fn(),
+    createManualCheck: vi.fn(),
+    updateCheck: vi.fn(),
     createExpense: vi.fn(),
   },
 }));
@@ -26,7 +29,10 @@ afterEach(() => {
   vi.resetAllMocks();
   vi.unstubAllGlobals();
 });
-function mount(tab: FinanceTab = "receivables") {
+function mount(
+  tab: FinanceTab = "receivables",
+  checkItems: FinanceCheck[] = [],
+) {
   const payable = tab === "payables";
   vi.mocked(api.financeSummary).mockResolvedValue({
     receivables: 100,
@@ -66,8 +72,8 @@ function mount(tab: FinanceTab = "receivables") {
     pageSize: 25,
   });
   vi.mocked(api.financeChecks).mockResolvedValue({
-    items: [],
-    total: 0,
+    items: checkItems,
+    total: checkItems.length,
     page: 1,
     pageSize: 25,
   });
@@ -224,6 +230,67 @@ describe("finance workflows", () => {
       expect.objectContaining({ status: "pending" }),
     );
     expect(api.financeBalances).not.toHaveBeenCalled();
+    client.clear();
+  });
+  it("adds an unlinked cheque and keeps only the Encaissée action", async () => {
+    const manualCheck: FinanceCheck = {
+      id: "manual-check",
+      kind: null,
+      documentId: null,
+      documentNumber: "Ancien chèque",
+      partnerName: "Ancien client",
+      direction: "IN",
+      amount: 750,
+      bankName: "Banque QA",
+      checkNumber: "CHK-OLD-1",
+      dueDate: "2026-08-01",
+      status: "PENDING",
+      documentStatus: null,
+    };
+    vi.mocked(api.createManualCheck).mockResolvedValue({ id: "new-check" });
+    vi.mocked(api.updateCheck).mockResolvedValue({ id: "manual-check" });
+    const client = mount("checks", [manualCheck]);
+
+    expect(await screen.findByText("CHK-OLD-1")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Encaissée" })).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: /Déposer|Rejeté|Annuler/ }),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Encaissée" }));
+    await waitFor(() =>
+      expect(api.updateCheck).toHaveBeenCalledWith("manual-check", {
+        status: "CLEARED",
+      }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Ajouter un chèque" }));
+    fireEvent.change(screen.getByLabelText("Client ou contact"), {
+      target: { value: "Client historique" },
+    });
+    fireEvent.change(screen.getByLabelText("Montant du chèque (MAD)"), {
+      target: { value: "1250" },
+    });
+    fireEvent.change(screen.getByLabelText("Banque"), {
+      target: { value: "Banque Populaire" },
+    });
+    expect(
+      screen.getByLabelText("Numéro du chèque").hasAttribute("required"),
+    ).toBe(false);
+    fireEvent.change(screen.getByLabelText("Échéance du chèque"), {
+      target: { value: "2026-08-15" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Enregistrer le chèque" }),
+    );
+    await waitFor(() =>
+      expect(api.createManualCheck).toHaveBeenCalledWith(
+        expect.objectContaining({
+          contactName: "Client historique",
+          amount: 1250,
+          check: expect.objectContaining({ checkNumber: "" }),
+        }),
+      ),
+    );
     client.clear();
   });
 });

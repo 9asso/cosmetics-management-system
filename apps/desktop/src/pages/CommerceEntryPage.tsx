@@ -221,7 +221,11 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
         <fieldset disabled={mutation.isPending} className="min-w-0 space-y-5">
           <SearchablePopup
             label={purchase ? "Fournisseur" : "Client grossiste"}
-            placeholder={`Rechercher un ${purchase ? "fournisseur" : "client"}`}
+            placeholder={
+              purchase
+                ? "Nom, téléphone, email ou adresse"
+                : "Rechercher un client"
+            }
             items={partners.data ?? []}
             value={partnerId}
             onChange={setPartnerId}
@@ -268,7 +272,6 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
                         setSearch(value);
                         setProductId("");
                       }}
-                      disabled={products.isLoading}
                       emptyLabel="Aucun produit trouvé."
                     />
                   </div>
