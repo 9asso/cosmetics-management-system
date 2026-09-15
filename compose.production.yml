@@ -26,7 +26,7 @@ services:
       API_PORT: 4000
       PUBLIC_API_URL: ${PUBLIC_ORIGIN}/api/v1
       DATABASE_URL: postgresql://cosmetics:${POSTGRES_PASSWORD}@postgres:5432/cosmetics
-      CORS_ORIGINS: ${PUBLIC_ORIGIN}
+      CORS_ORIGINS: ${PUBLIC_ORIGIN},http://tauri.localhost,https://tauri.localhost,tauri://localhost
       AUTH_SECRET: ${AUTH_SECRET}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
