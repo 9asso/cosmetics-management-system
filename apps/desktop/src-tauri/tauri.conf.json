@@ -17,7 +17,8 @@
         "height": 900,
         "minWidth": 1060,
         "minHeight": 700,
-        "center": true
+        "center": true,
+        "additionalBrowserArguments": "--allow-running-insecure-content"
       }
     ],
     "security": {
