@@ -13,7 +13,7 @@ describe('shared API contracts', () => {
     });
 
     expect(value.purchasePrice).toBe(40);
-    expect(value.category).toBe('OTHER');
+    expect(value.category).toBe('SKIN_CARE');
   });
 
   it('rejects zero-value inventory adjustments', () => {

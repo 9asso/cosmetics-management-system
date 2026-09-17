@@ -22,6 +22,12 @@ export function mutationConfirmation(path: string, method: string, body?: string
   }
   if (path.endsWith('/void')) return {title:'Annuler cette dépense ?',detail:`Motif : ${value.reason}. Elle sera exclue des totaux et conservée dans l’historique.`,destructive:true};
   if (path === '/finance/expenses') return {title:'Enregistrer cette dépense ?',detail:`${value.name} · ${value.amount} MAD · ${value.incurredOn}.`};
+  if (path.includes('/lots/')) {
+    return {
+      title: 'Modifier les prix du lot ?',
+      detail: `Prix grossiste : ${value.wholesalePrice} MAD · Prix boutique : ${value.retailPrice} MAD. Les nouveaux prix s’appliqueront à ce lot en stock.`,
+    };
+  }
   const entity = path.startsWith('/products') ? 'le produit' : path.startsWith('/suppliers') ? 'le fournisseur' : path.startsWith('/customers') ? 'le client' : path.startsWith('/users') ? 'le compte' : 'cette opération';
   if (method === 'DELETE') return { title: `Supprimer ${entity} ?`, detail: 'Ce contact sera retiré des listes actives. Ses factures, paiements et coordonnées historiques seront conservés.', destructive: true };
   if (path.includes('/status')) {

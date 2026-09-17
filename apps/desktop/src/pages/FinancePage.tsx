@@ -393,7 +393,7 @@ export function FinancePage({
             onClick={() => void exportRows()}
           >
             <ArrowDownToLine size={15} />
-            {exporting ? "Export…" : "Exporter les résultats"}
+            {exporting ? "Export…" : "Exporter"}
           </button>
           {tab === "expenses" && (
             <button

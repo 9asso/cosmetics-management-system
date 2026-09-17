@@ -41,6 +41,7 @@ import type {
   InvoiceDetail,
   InvoiceQuery,
   BrandSettings,
+  UpdateStockLotInput,
 } from "@cosmetics/contracts";
 import { confirmChange, mutationConfirmation } from "./confirmation";
 
@@ -224,6 +225,15 @@ export const api = {
     request<Paginated<ProductListItem>>(`/products?${queryString(query)}`),
   productStockLots: (id: string) =>
     request<ProductStockLot[]>(`/products/${id}/lots`),
+  updateStockLot: (
+    productId: string,
+    lotId: string,
+    input: UpdateStockLotInput,
+  ) =>
+    request<ProductStockLot>(`/products/${productId}/lots/${lotId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
   createProduct: (input: CreateProductInput) =>
     request<ProductListItem>("/products", {
       method: "POST",

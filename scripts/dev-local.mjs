@@ -1,8 +1,8 @@
 import EmbeddedPostgres from "embedded-postgres";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import { createConnection } from "node:net";
 import { parse } from "dotenv";
 
@@ -22,19 +22,40 @@ for (const key of ["ADMIN_EMAIL", "ADMIN_PASSWORD", "AUTH_SECRET"]) {
   if (!local[key]) throw new Error(`${key} is required in .env.local`);
 }
 const databaseDir = resolve(root, ".local/postgres");
+let lastDbError = "";
 const database = new EmbeddedPostgres({
   databaseDir,
   user: "onight",
   password: local.ADMIN_PASSWORD,
   port: 54329,
   persistent: true,
-  postgresFlags: ["-h", "127.0.0.1", "-c", "lc_messages=C"],
+  postgresFlags: ["-h", "127.0.0.1", "-F", "-c", "lc_messages=C"],
   onLog: () => {},
-  onError: (message) => console.error(message),
+  onError: (message) => {
+    lastDbError = message;
+    console.error(message);
+  },
 });
+
+const nvmBin = resolve(
+  process.env.HOME || "",
+  ".nvm/versions/node",
+  process.version,
+  "bin",
+);
+const extraPaths = [
+  "/opt/homebrew/bin",
+  "/usr/local/bin",
+  nvmBin,
+  resolve(root, "node_modules/.bin"),
+].filter(existsSync);
+
 const env = {
   ...process.env,
   ...local,
+  PATH: extraPaths.length
+    ? `${extraPaths.join(":")}:${process.env.PATH || ""}`
+    : process.env.PATH,
   NODE_ENV: "development",
   DATABASE_URL: `postgresql://onight:${encodeURIComponent(local.ADMIN_PASSWORD)}@127.0.0.1:54329/onight`,
   API_PORT: "4000",
@@ -49,7 +70,11 @@ const env = {
 const children = [];
 let ownsDatabase = false;
 function run(args, wait = true) {
-  const child = spawn("pnpm", args, { cwd: root, env, stdio: "inherit" });
+  const child = spawn("pnpm", args, {
+    cwd: root,
+    env,
+    stdio: ["ignore", "inherit", "inherit"],
+  });
   children.push(child);
   if (!wait) return child;
   return new Promise((resolve, reject) => {
@@ -97,6 +122,55 @@ function isLocalDatabasePortInUse() {
     socket.once("error", () => resolvePortCheck(false));
   });
 }
+function cleanStaleDatabase() {
+  // 1. Kill any stale postgres processes referencing our local database directory
+  try {
+    const psOut = execSync("ps -ax -o pid,command", { encoding: "utf-8" });
+    for (const line of psOut.split("\n")) {
+      if (
+        (line.includes("postgres") && line.includes(".local/postgres")) ||
+        line.includes("postgres: startup") ||
+        line.includes("postgres: checkpointer") ||
+        line.includes("postgres: background writer")
+      ) {
+        const pid = parseInt(line.trim().split(/\s+/)[0] || "", 10);
+        if (pid && !isNaN(pid) && pid !== process.pid) {
+          try {
+            process.kill(pid, "SIGKILL");
+          } catch {}
+        }
+      }
+    }
+  } catch {}
+
+  // 2. Remove stale postmaster pid files
+  const pidFiles = [
+    resolve(databaseDir, "postmaster.pid"),
+    resolve(databaseDir, "postmaster 2.pid"),
+  ];
+  for (const pidFile of pidFiles) {
+    if (!existsSync(pidFile)) continue;
+    try {
+      unlinkSync(pidFile);
+    } catch {}
+  }
+
+  // 3. Clear any dangling SysV shared memory segments on macOS/Linux
+  if (process.platform === "darwin" || process.platform === "linux") {
+    try {
+      const ipcsOut = execSync("ipcs -m", { encoding: "utf-8" });
+      for (const line of ipcsOut.split("\n")) {
+        const match = line.match(/^m\s+(\d+)\s+/);
+        if (match && match[1]) {
+          try {
+            execSync(`ipcrm -m ${match[1]}`, { stdio: "ignore" });
+          } catch {}
+        }
+      }
+    } catch {}
+  }
+}
+
 process.on("SIGINT", () => void stop());
 process.on("SIGTERM", () => void stop());
 try {
@@ -106,6 +180,7 @@ try {
       throw new Error(
         "Port 54329 is already used by a different database or the local ADMIN_PASSWORD changed. Stop that process or restore the password used to create .local/postgres.",
       );
+    cleanStaleDatabase();
     if (!existsSync(resolve(databaseDir, "PG_VERSION")))
       await database.initialise();
     await database.start();
@@ -151,7 +226,12 @@ try {
             ["--filter", "@cosmetics/desktop", "dev", "--host", "127.0.0.1"],
             false,
           );
-    for (const child of [api, store, dashboard].filter(Boolean))
+    // Storefront failure is non-fatal — API and desktop keep running.
+    store?.once("exit", (code) => {
+      if (!stopping && code !== 0)
+        console.warn(`[storefront] exited with code ${code ?? 1} — continuing without it.`);
+    });
+    for (const child of [api, dashboard].filter(Boolean))
       child.once("exit", (code) => {
         if (!stopping) void stop(code ?? 1);
       });
@@ -165,7 +245,8 @@ try {
   setInterval(() => {}, 60_000);
 } catch (error) {
   console.error(
-    error?.message ??
+    error?.message ||
+      lastDbError ||
       "Local startup failed. Check that the local ports are available.",
   );
   await stop(1);

@@ -12,7 +12,7 @@ const organizationId = '00000000-0000-4000-8000-000000000001';
 const locationId = '00000000-0000-4000-8000-000000000001';
 const supplierId = '10000000-0000-4000-8000-00000000a001';
 const targetCount = 60;
-const categoryCaps = { SKIN_CARE: 18, MAKEUP: 12, FRAGRANCE: 10, HYGIENE: 10, ACCESSORIES: 5, OTHER: 10 };
+const categoryCaps = { SKIN_CARE: 18, MAKEUP: 12, FRAGRANCE: 10, HAIR: 10, BATH_BODY: 10 };
 
 function uuid(namespace, value) {
   const hex = createHash('sha256').update(`${namespace}:${value}`).digest('hex').slice(0, 32).split('');
@@ -45,11 +45,12 @@ function plainText(html = '') {
 
 function inferCategory(product) {
   const text = `${product.title} ${(product.tags ?? []).join(' ')}`.toLowerCase();
-  if (/pinceau|brush|éponge|sponge|trousse|bag|accessoir|appareil|tool|rouleau|roller/.test(text)) return 'ACCESSORIES';
+  if (/pinceau|éponge|sponge|trousse|makeup bag/.test(text)) return 'MAKEUP';
   if (/mascara|lip|rouge à lèvres|blush|poudre|powder|concealer|foundation|eyeliner|palette|makeup|maquillage|gloss|brow/.test(text)) return 'MAKEUP';
   if (/parfum|perfume|fragrance|eau de parfum|body mist|brume parfumée|cheirosa/.test(text)) return 'FRAGRANCE';
-  if (/shampoo|shampoing|cheveu|cheveux|hair|scalp|conditioner|après-shampoing|capillaire/.test(text)) return 'HYGIENE';
-  if (/body|corps|déodorant|deodorant|bronz|sun |solaire|spf|gommage|scrub|bain|douche/.test(text)) return 'OTHER';
+  if (/shampoo|shampoing|cheveu|cheveux|hair|scalp|conditioner|après-shampoing|capillaire|brush|brosse/.test(text)) return 'HAIR';
+  if (/body|corps|bronz|gommage|scrub|bain|douche/.test(text)) return 'BATH_BODY';
+  if (/déodorant|deodorant|hygiène|intime/.test(text)) return 'HYGIENE';
   return 'SKIN_CARE';
 }
 

@@ -365,8 +365,8 @@ export class ManagementService {
         await client.query(
           `INSERT INTO inventory_movements
             (organization_id, variant_id, location_id, quantity_delta, reason,
-             reference_type, reference_id, unit_cost, note, actor_id)
-           VALUES ($1, $2, $3, $4, 'PURCHASE_RECEIPT', 'purchase_order', $5, $6, $7, $8)`,
+             reference_type, reference_id, unit_cost, wholesale_price, retail_price, note, actor_id)
+           VALUES ($1, $2, $3, $4, 'PURCHASE_RECEIPT', 'purchase_order', $5, $6, $7, $8, $9, $10)`,
           [
             DEFAULT_ORGANIZATION_ID,
             item.variantId,
@@ -374,6 +374,8 @@ export class ManagementService {
             item.quantity,
             purchaseId,
             item.unitCost,
+            item.wholesalePrice ?? Number(variant.wholesalePrice),
+            item.retailPrice ?? Number(variant.retailPrice),
             input.notes,
             actorId,
           ],

@@ -19,10 +19,10 @@ INSERT INTO products (id, organization_id, name, brand, category, description, r
 ('20000000-0000-4000-8000-000000000004','00000000-0000-4000-8000-000000000001','Crème Hydratante Argan','Argana','SKIN_CARE','Crème visage enrichie en huile d’argan, 50 ml.',true),
 ('20000000-0000-4000-8000-000000000005','00000000-0000-4000-8000-000000000001','Mascara Volume Noir','Veloura','MAKEUP','Mascara volume intense.',true),
 ('20000000-0000-4000-8000-000000000006','00000000-0000-4000-8000-000000000001','Brume Fleur d’Oranger','Neroli','FRAGRANCE','Brume légère corps et cheveux, 100 ml.',true),
-('20000000-0000-4000-8000-000000000007','00000000-0000-4000-8000-000000000001','Pinceau Teint Pro','Maison Élan','ACCESSORIES','Pinceau professionnel fibres douces.',false),
+('20000000-0000-4000-8000-000000000007','00000000-0000-4000-8000-000000000001','Pinceau Teint Pro','Maison Élan','MAKEUP','Pinceau professionnel fibres douces.',false),
 ('20000000-0000-4000-8000-000000000008','00000000-0000-4000-8000-000000000001','Gel Nettoyant Doux','Lumera','HYGIENE','Gel nettoyant quotidien, 200 ml.',true),
 ('20000000-0000-4000-8000-000000000009','00000000-0000-4000-8000-000000000001','Shampooing Kératine','Veloura','HYGIENE','Shampooing réparateur à la kératine, 250 ml.',true),
-('20000000-0000-4000-8000-000000000010','00000000-0000-4000-8000-000000000001','Lait Corps Rose & Argan','Argana','OTHER','Lait hydratant pour le corps à la rose et à l’argan, 200 ml.',true)
+('20000000-0000-4000-8000-000000000010','00000000-0000-4000-8000-000000000001','Lait Corps Rose & Argan','Argana','BATH_BODY','Lait hydratant pour le corps à la rose et à l’argan, 200 ml.',true)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO product_variants (id, product_id, sku, barcode, reference, purchase_price, wholesale_price, retail_price, low_stock_threshold) VALUES

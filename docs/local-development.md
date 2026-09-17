@@ -12,7 +12,8 @@ ADMIN_PASSWORD=choose-a-local-demo-password
 AUTH_SECRET=choose-a-long-local-only-secret
 ```
 
-Then run `pnpm install` and `pnpm dev:local` from the repository root.
+Then run `pnpm install` and `pnpm dev` from the repository root. `pnpm
+dev:local` is retained as an explicit alias for the same local workflow.
 
 - Dashboard: http://localhost:1420
 - Store: http://localhost:3000

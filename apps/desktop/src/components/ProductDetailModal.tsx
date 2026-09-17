@@ -1,38 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { ProductMediaEditor } from "./ProductMediaEditor";
-import type { ProductListItem } from "@cosmetics/contracts";
+import { productTaxonomy, type ProductListItem, type ProductStockLot } from "@cosmetics/contracts";
 import {
   Barcode,
   Boxes,
   Building2,
+  Check,
   CircleDollarSign,
   Eye,
   EyeOff,
   PackageCheck,
+  Pencil,
   Tag,
+  X,
 } from "lucide-react";
 import { Modal } from "./Modal";
 import { money } from "../lib/format";
 import { resolveMediaUrl } from "../lib/media";
 
-const categories: Record<ProductListItem["category"], string> = {
-  MAKEUP: "Maquillage",
-  SKIN_CARE: "Soin de la peau",
-  FRAGRANCE: "Parfum",
-  ACCESSORIES: "Accessoires",
-  HYGIENE: "Hygiène",
-  OTHER: "Autre",
-};
+const categories = Object.fromEntries(
+  Object.entries(productTaxonomy).map(([key, value]) => [key, value.label]),
+) as Record<ProductListItem["category"], string>;
 
-function Detail({ label, value }: { label: string; value: string | number }) {
+function Detail({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string | number;
+  hint?: string;
+}) {
   return (
     <div className="rounded-xl border border-line bg-white p-3 dark:bg-[#302b2f]">
       <dt className="text-[9px] font-bold uppercase tracking-wider text-muted">
         {label}
       </dt>
       <dd className="mt-1.5 break-words text-xs font-bold text-ink">{value}</dd>
+      {hint && <p className="mt-1 text-[10px] text-muted">{hint}</p>}
     </div>
   );
 }
@@ -47,6 +54,10 @@ export function ProductDetailModal({
   canManage?: boolean;
 }) {
   const [product, setProduct] = useState(initialProduct);
+  useEffect(() => {
+    setProduct(initialProduct);
+  }, [initialProduct]);
+
   const [activeImage, setActiveImage] = useState(0);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -62,6 +73,95 @@ export function ProductDetailModal({
     queryKey: ["product-stock-lots", product.id],
     queryFn: () => api.productStockLots(product.id),
   });
+
+  // Calculate weighted average prices across all active lots in stock
+  const activeLots = (lots.data ?? []).filter((l) => l.remainingQuantity > 0);
+  const totalRemaining = activeLots.reduce((sum, l) => sum + l.remainingQuantity, 0);
+
+  const effectivePurchasePrice =
+    totalRemaining > 0
+      ? activeLots.reduce((sum, l) => sum + l.purchasePrice * l.remainingQuantity, 0) / totalRemaining
+      : (lots.data && lots.data.length > 0
+          ? lots.data.reduce((sum, l) => sum + l.purchasePrice, 0) / lots.data.length
+          : product.purchasePrice);
+
+  const effectiveWholesalePrice =
+    totalRemaining > 0
+      ? activeLots.reduce((sum, l) => sum + l.wholesalePrice * l.remainingQuantity, 0) / totalRemaining
+      : (lots.data && lots.data.length > 0
+          ? lots.data.reduce((sum, l) => sum + l.wholesalePrice, 0) / lots.data.length
+          : product.wholesalePrice);
+
+  const effectiveRetailPrice =
+    totalRemaining > 0
+      ? activeLots.reduce((sum, l) => sum + l.retailPrice * l.remainingQuantity, 0) / totalRemaining
+      : (lots.data && lots.data.length > 0
+          ? lots.data.reduce((sum, l) => sum + l.retailPrice, 0) / lots.data.length
+          : product.retailPrice);
+
+  const minWholesale = activeLots.length > 0 ? Math.min(...activeLots.map((l) => l.wholesalePrice)) : effectiveWholesalePrice;
+  const maxWholesale = activeLots.length > 0 ? Math.max(...activeLots.map((l) => l.wholesalePrice)) : effectiveWholesalePrice;
+  const minRetail = activeLots.length > 0 ? Math.min(...activeLots.map((l) => l.retailPrice)) : effectiveRetailPrice;
+  const maxRetail = activeLots.length > 0 ? Math.max(...activeLots.map((l) => l.retailPrice)) : effectiveRetailPrice;
+  const minPurchase = activeLots.length > 0 ? Math.min(...activeLots.map((l) => l.purchasePrice)) : effectivePurchasePrice;
+  const maxPurchase = activeLots.length > 0 ? Math.max(...activeLots.map((l) => l.purchasePrice)) : effectivePurchasePrice;
+
+  const wholesaleMargin = effectiveWholesalePrice - effectivePurchasePrice;
+  const wholesaleMarginPct =
+    effectivePurchasePrice > 0
+      ? Math.round((wholesaleMargin / effectivePurchasePrice) * 100)
+      : null;
+
+  const retailMargin = effectiveRetailPrice - effectivePurchasePrice;
+  const retailMarginPct =
+    effectivePurchasePrice > 0
+      ? Math.round((retailMargin / effectivePurchasePrice) * 100)
+      : null;
+
+  const [editingLotId, setEditingLotId] = useState<string | null>(null);
+  const [lotDraft, setLotDraft] = useState({ wholesalePrice: 0, retailPrice: 0 });
+  const [savingLotId, setSavingLotId] = useState<string | null>(null);
+  const [lotError, setLotError] = useState<string | null>(null);
+
+  function startEditLot(lot: ProductStockLot) {
+    setEditingLotId(lot.id);
+    setLotDraft({
+      wholesalePrice: lot.wholesalePrice,
+      retailPrice: lot.retailPrice,
+    });
+    setLotError(null);
+  }
+
+  function cancelEditLot() {
+    setEditingLotId(null);
+    setLotError(null);
+  }
+
+  async function saveLot(lotId: string) {
+    setSavingLotId(lotId);
+    setLotError(null);
+    try {
+      await api.updateStockLot(product.id, lotId, lotDraft);
+      setEditingLotId(null);
+      setProduct((prev) => ({
+        ...prev,
+        wholesalePrice: lotDraft.wholesalePrice,
+        retailPrice: lotDraft.retailPrice,
+      }));
+      await cache.invalidateQueries({
+        queryKey: ["product-stock-lots", product.id],
+      });
+      await cache.invalidateQueries({ queryKey: ["products"] });
+    } catch (err) {
+      setLotError(
+        err instanceof Error
+          ? err.message
+          : "Impossible de modifier les prix du lot.",
+      );
+    } finally {
+      setSavingLotId(null);
+    }
+  }
   async function saveMedia() {
     setSaving(true);
     setError("");
@@ -109,7 +209,7 @@ export function ProductDetailModal({
         <section className="grid overflow-hidden rounded-2xl border border-line bg-surface md:grid-cols-[260px_1fr]">
           <div className="relative grid min-h-60 place-items-center overflow-hidden bg-linear-to-br from-brand-soft via-white to-pink-50 dark:from-[#392830] dark:via-[#282428] dark:to-[#302630] p-6">
             <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-brand shadow-sm dark:bg-[#302b2f]/90">
-              {categories[product.category]}
+              {categories[product.category]} · {product.subcategory || "Non classé"}
             </span>
             <div className="w-full pt-6">
               {activeImage === images.length && product.videoUrl ? (
@@ -294,11 +394,13 @@ export function ProductDetailModal({
               Prix boutique
             </div>
             <strong className="mt-2 block text-2xl">
-              {money.format(product.retailPrice)}
+              {money.format(effectiveRetailPrice)}
             </strong>
             <small className="text-[10px] text-muted">
               {product.compareAtPrice === null
-                ? "Aucun ancien prix"
+                ? (activeLots.length > 1 && minRetail !== maxRetail
+                    ? `De ${money.format(minRetail)} à ${money.format(maxRetail)}`
+                    : "Prix unitaire actuel")
                 : `Ancien prix ${money.format(product.compareAtPrice)}`}
             </small>
           </article>
@@ -316,16 +418,37 @@ export function ProductDetailModal({
           </div>
           <dl className="grid gap-3 sm:grid-cols-3">
             <Detail
-              label="Prix d’achat"
-              value={money.format(product.purchasePrice)}
+              label="Prix d'achat"
+              value={money.format(effectivePurchasePrice)}
+              hint={
+                activeLots.length > 1 && minPurchase !== maxPurchase
+                  ? `PMP (${money.format(minPurchase)} – ${money.format(maxPurchase)})`
+                  : activeLots.length > 1
+                    ? `PMP · ${activeLots.length} réceptions en stock`
+                    : undefined
+              }
             />
             <Detail
               label="Prix grossiste"
-              value={money.format(product.wholesalePrice)}
+              value={money.format(effectiveWholesalePrice)}
+              hint={
+                activeLots.length > 1 && minWholesale !== maxWholesale
+                  ? `Moyenne (${money.format(minWholesale)} – ${money.format(maxWholesale)}) · marge ${wholesaleMarginPct !== null ? `${wholesaleMarginPct >= 0 ? "+" : ""}${wholesaleMarginPct}%` : ""}`
+                  : wholesaleMarginPct !== null
+                    ? `Marge : ${wholesaleMargin >= 0 ? "+" : ""}${money.format(wholesaleMargin)} (${wholesaleMarginPct >= 0 ? "+" : ""}${wholesaleMarginPct}%)`
+                    : undefined
+              }
             />
             <Detail
               label="Prix boutique"
-              value={money.format(product.retailPrice)}
+              value={money.format(effectiveRetailPrice)}
+              hint={
+                activeLots.length > 1 && minRetail !== maxRetail
+                  ? `Moyenne (${money.format(minRetail)} – ${money.format(maxRetail)}) · marge ${retailMarginPct !== null ? `${retailMarginPct >= 0 ? "+" : ""}${retailMarginPct}%` : ""}`
+                  : retailMarginPct !== null
+                    ? `Marge : ${retailMargin >= 0 ? "+" : ""}${money.format(retailMargin)} (${retailMarginPct >= 0 ? "+" : ""}${retailMarginPct}%)`
+                    : undefined
+              }
             />
           </dl>
         </section>
@@ -342,46 +465,177 @@ export function ProductDetailModal({
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr>
-                  <th>Lot</th>
-                  <th>Stock restant</th>
-                  <th>Prix d’achat</th>
-                  <th>Prix grossiste</th>
-                  <th>Prix boutique</th>
+                <tr className="border-b border-line">
+                  <th className="py-2.5 font-bold">Lot</th>
+                  <th className="py-2.5 font-bold">Stock restant</th>
+                  <th className="py-2.5 font-bold">Prix d’achat</th>
+                  <th className="py-2.5 font-bold">Prix grossiste</th>
+                  <th className="py-2.5 font-bold">Prix boutique</th>
+                  {canManage && (
+                    <th className="py-2.5 text-right font-bold">Actions</th>
+                  )}
                 </tr>
               </thead>
-              <tbody>
-                {lots.data?.map((lot) => (
-                  <tr key={lot.id}>
-                    <td>
-                      <small className="block text-muted">
-                        {lot.source} · {new Date(lot.receivedOn).toLocaleDateString("fr-FR")} ·
-                        reçu {lot.receivedQuantity}
-                      </small>
-                    </td>
-                    <td>{lot.remainingQuantity}</td>
-                    <td>{money.format(lot.purchasePrice)}</td>
-                    <td>{money.format(lot.wholesalePrice)}</td>
-                    <td>{money.format(lot.retailPrice)}</td>
-                  </tr>
-                ))}
+              <tbody className="divide-y divide-line/60">
+                {lots.data?.map((lot) => {
+                  const isEditing = editingLotId === lot.id;
+                  const isSaving = savingLotId === lot.id;
+                  return (
+                    <tr
+                      key={lot.id}
+                      className={
+                        isEditing
+                          ? "bg-brand-soft/25 dark:bg-[#392e35]"
+                          : "hover:bg-black/2 dark:hover:bg-white/2"
+                      }
+                    >
+                      <td className="py-2">
+                        <small className="text-[11px] font-semibold block text-muted">
+                          {lot.source} ·{" "}
+                          {lot.supplierName && `${lot.supplierName}${" · "}`}
+                          {new Date(lot.receivedOn).toLocaleDateString("fr-FR")}{" "}
+                          · reçu {lot.receivedQuantity}
+                        </small>
+                      </td>
+                      <td className="py-2 font-medium">
+                        {lot.remainingQuantity}
+                      </td>
+                      <td className="py-2">
+                        {money.format(lot.purchasePrice)}<br/>
+                        <small className="text-muted italic opacity-75">
+                          {money.format(lot.purchasePrice * lot.remainingQuantity)}
+                        </small>
+                      </td>
+                      <td className="py-2">
+                        {isEditing ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              disabled={isSaving}
+                              value={lotDraft.wholesalePrice}
+                              onChange={(e) =>
+                                setLotDraft((prev) => ({
+                                  ...prev,
+                                  wholesalePrice: Math.max(
+                                    0,
+                                    parseFloat(e.target.value) || 0,
+                                  ),
+                                }))
+                              }
+                              className="w-24 rounded-lg border border-line bg-white px-2 py-1 text-xs font-bold text-ink shadow-xs focus:border-brand focus:outline-hidden dark:bg-[#282428]"
+                              aria-label="Prix grossiste du lot"
+                            />
+                            <span className="text-[10px] text-muted">MAD</span>
+                          </div>
+                        ) : (
+                          <span className="font-semibold text-ink">
+                            {money.format(lot.wholesalePrice)}<br/>
+                            <small className="text-muted italic opacity-75">
+                              {money.format(lot.wholesalePrice * lot.remainingQuantity)}
+                            </small>
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2">
+                        {isEditing ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              disabled={isSaving}
+                              value={lotDraft.retailPrice}
+                              onChange={(e) =>
+                                setLotDraft((prev) => ({
+                                  ...prev,
+                                  retailPrice: Math.max(
+                                    0,
+                                    parseFloat(e.target.value) || 0,
+                                  ),
+                                }))
+                              }
+                              className="w-24 rounded-lg border border-line bg-white px-2 py-1 text-xs font-bold text-ink shadow-xs focus:border-brand focus:outline-hidden dark:bg-[#282428]"
+                              aria-label="Prix boutique du lot"
+                            />
+                            <span className="text-[10px] text-muted">MAD</span>
+                          </div>
+                        ) : (
+                          <span className="font-semibold text-ink">
+                            {money.format(lot.retailPrice)}<br/>
+                            <small className="text-muted italic opacity-75">
+                              {money.format(lot.retailPrice * lot.remainingQuantity)}
+                            </small>
+                          </span>
+                        )}
+                      </td>
+                      {canManage && (
+                        <td className="py-2 text-right">
+                          {isEditing ? (
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                disabled={isSaving}
+                                onClick={() => void saveLot(lot.id)}
+                                className="inline-flex items-center gap-1 rounded-lg bg-brand px-2.5 py-1 text-xs font-bold text-white shadow-xs hover:bg-brand/90 disabled:opacity-50"
+                                title="Enregistrer les prix"
+                              >
+                                <Check size={13} />
+                                <span>{isSaving ? "…" : "Valider"}</span>
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isSaving}
+                                onClick={cancelEditLot}
+                                className="inline-flex items-center rounded-lg border border-line bg-white p-1 text-xs font-medium text-muted hover:bg-stone-50 dark:bg-[#282428] dark:hover:bg-[#342e34]"
+                                title="Annuler"
+                              >
+                                <X size={13} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => startEditLot(lot)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-line bg-white px-2 py-1 text-xs font-bold text-brand hover:border-brand/40 hover:bg-brand-soft/30 dark:bg-[#282428]"
+                              title="Modifier les prix de ce lot"
+                            >
+                              <Pencil size={11} />
+                              <span>Modifier</span>
+                            </button>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
                 {lots.isLoading && (
                   <tr>
-                    <td colSpan={5} className="py-5 text-center text-muted">
+                    <td
+                      colSpan={canManage ? 7 : 6}
+                      className="py-5 text-center text-muted"
+                    >
                       Chargement des lots…
                     </td>
                   </tr>
                 )}
                 {lots.data?.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-5 text-center text-muted">
+                    <td
+                      colSpan={canManage ? 7 : 6}
+                      className="py-5 text-center text-muted"
+                    >
                       Aucun stock disponible.
                     </td>
                   </tr>
                 )}
                 {lots.isError && (
                   <tr>
-                    <td colSpan={5} className="py-5 text-center text-rose-700">
+                    <td
+                      colSpan={canManage ? 7 : 6}
+                      className="py-5 text-center text-rose-700 dark:text-rose-300"
+                    >
                       Impossible de charger le détail des lots.
                     </td>
                   </tr>
@@ -389,6 +643,14 @@ export function ProductDetailModal({
               </tbody>
             </table>
           </div>
+          {lotError && (
+            <p
+              role="alert"
+              className="mt-2 rounded-lg bg-rose-50 p-2 text-xs font-semibold text-rose-600 dark:bg-rose-500/10 dark:text-rose-300"
+            >
+              {lotError}
+            </p>
+          )}
           <p className="mt-3 text-[10px] text-muted">
             Les sorties sont imputées aux lots les plus anciens (FIFO). Chaque
             nouvelle réception conserve ses trois prix.

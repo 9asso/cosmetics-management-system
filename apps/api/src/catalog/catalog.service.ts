@@ -12,6 +12,7 @@ import type {
   ProductListItem,
   ProductListQuery,
   ProductStockLot,
+  UpdateStockLotInput,
 } from "@cosmetics/contracts";
 import type { DatabaseError } from "pg";
 import { DEFAULT_LOCATION_ID, DEFAULT_ORGANIZATION_ID } from "../constants.js";
@@ -157,14 +158,15 @@ export class CatalogService {
       `WITH inbound AS (
         SELECT m.id,m.quantity_delta::int AS quantity,m.created_at,
           COALESCE(m.unit_cost,v.purchase_price)::float AS "purchasePrice",
-          COALESCE(NULLIF(i.wholesale_price_snapshot,0),v.wholesale_price)::float AS "wholesalePrice",
-          COALESCE(NULLIF(i.retail_price_snapshot,0),v.retail_price)::float AS "retailPrice",
+          COALESCE(m.wholesale_price, NULLIF(i.wholesale_price_snapshot,0), v.wholesale_price)::float AS "wholesalePrice",
+          COALESCE(m.retail_price, NULLIF(i.retail_price_snapshot,0), v.retail_price)::float AS "retailPrice",
           CASE
             WHEN m.reason='PURCHASE_RECEIPT' THEN COALESCE(o.order_number,'Réception fournisseur')
             WHEN m.reason='OPENING_BALANCE' THEN 'Stock initial'
             WHEN m.reason='CUSTOMER_RETURN' THEN 'Retour client'
             ELSE 'Ajustement de stock'
           END AS source,
+          COALESCE(s.name, '') AS "supplierName",
           b.on_hand::int AS "onHand"
         FROM inventory_movements m
         JOIN product_variants v ON v.id=m.variant_id
@@ -172,6 +174,7 @@ export class CatalogService {
         JOIN inventory_balances b ON b.variant_id=v.id AND b.location_id=m.location_id
         LEFT JOIN purchase_orders o ON m.reference_type='purchase_order' AND o.id=m.reference_id
         LEFT JOIN purchase_order_items i ON i.purchase_order_id=o.id AND i.variant_id=v.id
+        LEFT JOIN suppliers s ON s.id=o.supplier_id
         WHERE p.id=$1 AND p.organization_id=$2 AND m.quantity_delta>0
       ), ranked AS (
         SELECT *,COALESCE(SUM(quantity) OVER(
@@ -179,7 +182,7 @@ export class CatalogService {
         ),0)::int AS newer_quantity
         FROM inbound
       )
-      SELECT id,source,created_at::text AS "receivedOn",quantity AS "receivedQuantity",
+      SELECT id,source,"supplierName",created_at::text AS "receivedOn",quantity AS "receivedQuantity",
         LEAST(quantity,GREATEST(0,"onHand"-newer_quantity))::int AS "remainingQuantity",
         "purchasePrice","wholesalePrice","retailPrice"
       FROM ranked
@@ -195,6 +198,100 @@ export class CatalogService {
       if (!found.rowCount) throw new NotFoundException("Produit introuvable.");
     }
     return result.rows;
+  }
+
+
+  async updateStockLot(
+    productId: string,
+    lotId: string,
+    input: UpdateStockLotInput,
+  ): Promise<ProductStockLot> {
+    return this.db.withTransaction(async (client) => {
+      const lot = await client.query<{
+        id: string;
+        referenceType: string | null;
+        referenceId: string | null;
+        variantId: string;
+        wholesalePrice: number;
+        retailPrice: number;
+      }>(
+        `SELECT m.id, m.reference_type AS "referenceType", m.reference_id AS "referenceId",
+                m.variant_id AS "variantId",
+                COALESCE(m.wholesale_price, v.wholesale_price)::float AS "wholesalePrice",
+                COALESCE(m.retail_price, v.retail_price)::float AS "retailPrice"
+         FROM inventory_movements m
+         JOIN product_variants v ON v.id = m.variant_id
+         JOIN products p ON p.id = v.product_id
+         WHERE m.id = $1 AND p.id = $2 AND m.organization_id = $3
+         FOR UPDATE OF m`,
+        [lotId, productId, DEFAULT_ORGANIZATION_ID],
+      );
+      if (!lot.rows[0]) {
+        throw new NotFoundException("Lot introuvable.");
+      }
+
+      await client.query(
+        `UPDATE inventory_movements
+         SET wholesale_price = $1, retail_price = $2
+         WHERE id = $3`,
+        [input.wholesalePrice, input.retailPrice, lotId],
+      );
+
+      if (
+        lot.rows[0].referenceType === "purchase_order" &&
+        lot.rows[0].referenceId
+      ) {
+        await client.query(
+          `UPDATE purchase_order_items
+           SET wholesale_price_snapshot = $1, retail_price_snapshot = $2
+           WHERE purchase_order_id = $3 AND variant_id = $4`,
+          [
+            input.wholesalePrice,
+            input.retailPrice,
+            lot.rows[0].referenceId,
+            lot.rows[0].variantId,
+          ],
+        );
+      }
+
+      await client.query(
+        `UPDATE product_variants
+         SET wholesale_price = $1, retail_price = $2, updated_at = now()
+         WHERE id = $3`,
+        [input.wholesalePrice, input.retailPrice, lot.rows[0].variantId],
+      );
+
+      await client.query(
+        `INSERT INTO audit_logs (organization_id, action, entity_type, entity_id, before_data, after_data)
+         VALUES ($1, 'STOCK_LOT_PRICES_UPDATED', 'inventory_movement', $2, $3::jsonb, $4::jsonb)`,
+        [
+          DEFAULT_ORGANIZATION_ID,
+          lotId,
+          JSON.stringify({
+            wholesalePrice: lot.rows[0].wholesalePrice,
+            retailPrice: lot.rows[0].retailPrice,
+          }),
+          JSON.stringify(input),
+        ],
+      );
+
+      const lots = await this.stockLots(productId);
+      const updated = lots.find((l) => l.id === lotId);
+      if (!updated) {
+        return {
+          id: lotId,
+          source: "",
+          supplierName: "",
+          receivedOn: new Date().toISOString(),
+          receivedQuantity: 0,
+          remainingQuantity: 0,
+          purchasePrice: 0,
+          wholesalePrice: input.wholesalePrice,
+          retailPrice: input.retailPrice,
+        };
+      }
+      return updated;
+    });
   }
 
   async list(
@@ -222,6 +319,10 @@ export class CatalogService {
       values.push(query.category);
       filters.push(`p.category = $${values.length}`);
     }
+    if (query.subcategory) {
+      values.push(query.subcategory);
+      filters.push(`p.subcategory = $${values.length}`);
+    }
     if (query.stock === "low") {
       filters.push(
         "(COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0)) > 0 AND (COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0)) <= v.low_stock_threshold",
@@ -240,6 +341,7 @@ export class CatalogService {
         p.name,
         p.brand,
         p.category,
+        p.subcategory,
         p.description,
         p.image_url AS "imageUrl",
         p.images,
@@ -335,14 +437,15 @@ export class CatalogService {
         }
         const product = await client.query<{ id: string }>(
           `INSERT INTO products
-            (organization_id, name, brand, category, description, image_url, source_url, retail_visible)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            (organization_id, name, brand, category, subcategory, description, image_url, source_url, retail_visible)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
            RETURNING id`,
           [
             DEFAULT_ORGANIZATION_ID,
             input.name,
             input.brand,
             input.category,
+            input.subcategory,
             input.description,
             imageUrl,
             input.sourceUrl,
@@ -431,14 +534,16 @@ export class CatalogService {
         if (input.initialQuantity > 0) {
           await client.query(
             `INSERT INTO inventory_movements
-              (organization_id, variant_id, location_id, quantity_delta, reason, unit_cost, note)
-             VALUES ($1, $2, $3, $4, 'OPENING_BALANCE', $5, 'Initial product quantity')`,
+              (organization_id, variant_id, location_id, quantity_delta, reason, unit_cost, wholesale_price, retail_price, note)
+             VALUES ($1, $2, $3, $4, 'OPENING_BALANCE', $5, $6, $7, 'Initial product quantity')`,
             [
               DEFAULT_ORGANIZATION_ID,
               variantId,
               DEFAULT_LOCATION_ID,
               input.initialQuantity,
               input.purchasePrice,
+              input.wholesalePrice,
+              input.retailPrice,
             ],
           );
         }

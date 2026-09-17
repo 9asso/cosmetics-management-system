@@ -3,8 +3,10 @@
   "private": true,
   "packageManager": "pnpm@10.34.5",
   "scripts": {
-    "dev": "turbo dev",
+    "dev": "node scripts/dev-local.mjs",
     "dev:local": "node scripts/dev-local.mjs",
+    "dev:external": "turbo dev",
+    "dev:vps": "node scripts/dev-vps.mjs",
     "dev:api": "node scripts/dev-local.mjs --api-only",
     "build": "turbo build",
     "typecheck": "turbo typecheck",

@@ -792,7 +792,7 @@ export function DashboardPage({
           ) : (
             <>
               {!periods.some((period) => period.orderCount > 0) && (
-                <p className="rounded-lg bg-brand-soft p-3 text-sm">
+                <p className="rounded-lg bg-brand-soft p-3 text-sm mb-3">
                   Aucune vente confirmée sur cette période.
                 </p>
               )}

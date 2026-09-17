@@ -15,6 +15,8 @@ import {
   productListQuerySchema,
   type CreateProductInput,
   type ProductListQuery,
+  updateStockLotSchema,
+  type UpdateStockLotInput,
 } from "@cosmetics/contracts";
 import { ZodValidationPipe } from "../common/zod-validation.pipe.js";
 import { CatalogService } from "./catalog.service.js";
@@ -35,6 +37,17 @@ export class CatalogController {
   @Get(":id/lots")
   stockLots(@Param("id", new ParseUUIDPipe()) id: string) {
     return this.catalog.stockLots(id);
+  }
+
+  @Patch(":productId/lots/:lotId")
+  @Roles("OWNER", "MANAGER", "WAREHOUSE")
+  updateStockLot(
+    @Param("productId", new ParseUUIDPipe()) productId: string,
+    @Param("lotId", new ParseUUIDPipe()) lotId: string,
+    @Body(new ZodValidationPipe(updateStockLotSchema))
+    input: UpdateStockLotInput,
+  ) {
+    return this.catalog.updateStockLot(productId, lotId, input);
   }
 
   @Post("media")

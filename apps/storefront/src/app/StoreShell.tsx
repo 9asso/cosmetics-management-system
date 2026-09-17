@@ -8,7 +8,7 @@ import {
   type CSSProperties,
   type FormEvent,
 } from "react";
-import type { ProductListItem, RetailOrderResult } from "@cosmetics/contracts";
+import { productTaxonomy, type ProductListItem, type RetailOrderResult } from "@cosmetics/contracts";
 import {
   ArrowRight,
   BadgeCheck,
@@ -53,22 +53,28 @@ const categoryCards: Array<{
   className: string;
 }> = [
   {
-    id: "SKIN_CARE",
-    name: "Soins visage",
-    subtitle: "Sérums & crèmes",
-    className: "skin",
+    id: "BATH_BODY",
+    name: "Bath & Body",
+    subtitle: "Corps, douche & hydratation",
+    className: "body",
   },
   {
-    id: "HYGIENE",
+    id: "HAIR",
     name: "Cheveux",
-    subtitle: "Shampoings & soins",
+    subtitle: "Soins, traitements & coiffage",
     className: "hair",
   },
   {
-    id: "OTHER",
-    name: "Corps",
-    subtitle: "Hydratation & bien-être",
-    className: "body",
+    id: "SUPPLEMENTS",
+    name: "Compléments alimentaires",
+    subtitle: "Vitamines, minéraux & bien-être",
+    className: "wellness",
+  },
+  {
+    id: "SKIN_CARE",
+    name: "Skin care",
+    subtitle: "Visage, sérums & crèmes",
+    className: "skin",
   },
   {
     id: "MAKEUP",
@@ -78,9 +84,21 @@ const categoryCards: Array<{
   },
   {
     id: "FRAGRANCE",
-    name: "Parfums",
+    name: "Parfum",
     subtitle: "Senteurs sélectionnées",
     className: "wellness",
+  },
+  {
+    id: "HYGIENE",
+    name: "Hygiène",
+    subtitle: "Déodorants & hygiène intime",
+    className: "body",
+  },
+  {
+    id: "ORAL_CARE",
+    name: "Soin dentaire",
+    subtitle: "Dentifrices & blanchiment",
+    className: "skin",
   },
 ];
 
@@ -93,6 +111,7 @@ export function StoreShell({ products }: { products: ProductListItem[] }) {
   const [order, setOrder] = useState<RetailOrderResult | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<Category>("ALL");
+  const [subcategory, setSubcategory] = useState("");
   const [selectedProduct, setSelectedProduct] =
     useState<ProductListItem | null>(null);
   const [catalogLimit, setCatalogLimit] = useState(10);
@@ -128,6 +147,8 @@ export function StoreShell({ products }: { products: ProductListItem[] }) {
       products.filter((product) => {
         const matchesCategory =
           category === "ALL" || product.category === category;
+        const matchesSubcategory =
+          !subcategory || product.subcategory === subcategory;
         const text =
           `${product.name} ${product.brand} ${product.sku}`.toLocaleLowerCase(
             "fr",
@@ -138,11 +159,12 @@ export function StoreShell({ products }: { products: ProductListItem[] }) {
             product.compareAtPrice > product.retailPrice);
         return (
           matchesCategory &&
+          matchesSubcategory &&
           matchesOffer &&
           text.includes(search.trim().toLocaleLowerCase("fr"))
         );
       }),
-    [category, products, search, saleOnly],
+    [category, products, search, saleOnly, subcategory],
   );
   const brands = useMemo(
     () =>
@@ -196,6 +218,7 @@ export function StoreShell({ products }: { products: ProductListItem[] }) {
 
   const scrollToCatalog = (nextCategory: Category = "ALL") => {
     setCategory(nextCategory);
+    setSubcategory("");
     setSearch("");
     setSaleOnly(false);
     setCatalogLimit(10);
@@ -661,6 +684,18 @@ export function StoreShell({ products }: { products: ProductListItem[] }) {
               </button>
             )}
           </div>
+          {category !== "ALL" && (
+            <div className="mb-5 flex flex-wrap gap-2">
+              <button onClick={() => setSubcategory("")} aria-pressed={!subcategory}>
+                Toutes
+              </button>
+              {productTaxonomy[category].subcategories.map((value) => (
+                <button key={value} onClick={() => setSubcategory(value)} aria-pressed={subcategory === value}>
+                  {value}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="product-grid">
             {shownProducts.slice(0, catalogLimit).map((product, index) => (
               <article className="store-product" key={product.variantId}>

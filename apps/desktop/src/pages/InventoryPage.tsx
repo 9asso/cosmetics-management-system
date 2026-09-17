@@ -2,7 +2,7 @@ import { ui } from "../lib/ui";
 import { resolveMediaUrl } from "../lib/media";
 import { useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { CreateProductInput, ProductListItem } from "@cosmetics/contracts";
+import { productTaxonomy, type CreateProductInput, type ProductListItem } from "@cosmetics/contracts";
 import {
   ArrowDownToLine,
   PackagePlus,
@@ -22,7 +22,8 @@ import { integer, money } from "../lib/format";
 const emptyProduct: CreateProductInput = {
   name: "",
   brand: "",
-  category: "OTHER",
+  category: "SKIN_CARE",
+  subcategory: "Autres soins visage",
   description: "",
   imageUrl: "",
   media: { images: [], videoUrl: "" },
@@ -40,14 +41,9 @@ const emptyProduct: CreateProductInput = {
   retailVisible: false,
 };
 
-const categoryLabels: Record<string, string> = {
-  MAKEUP: "Maquillage",
-  SKIN_CARE: "Soin de la peau",
-  FRAGRANCE: "Parfum",
-  ACCESSORIES: "Accessoires",
-  HYGIENE: "Hygiène",
-  OTHER: "Autre",
-};
+const categoryLabels = Object.fromEntries(
+  Object.entries(productTaxonomy).map(([key, value]) => [key, value.label]),
+) as Record<CreateProductInput["category"], string>;
 
 function StockStatus({ product }: { product: ProductListItem }) {
   if (product.onHand - product.reserved === 0)
@@ -72,6 +68,7 @@ export function InventoryPage({
   const [category, setCategory] = useState<CreateProductInput["category"] | "">(
     "",
   );
+  const [subcategory, setSubcategory] = useState("");
   const [showCreate, setShowCreate] = useState(initialCreate && canManage);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
@@ -92,12 +89,13 @@ export function InventoryPage({
   });
   const [draft, setDraft] = useState<CreateProductInput>(emptyProduct);
   const products = useQuery({
-    queryKey: ["products", search, stock, category, page],
+    queryKey: ["products", search, stock, category, subcategory, page],
     queryFn: () =>
       api.products({
         search,
         stock,
         category: category || undefined,
+        subcategory: subcategory || undefined,
         page,
         pageSize: 50,
       }),
@@ -162,6 +160,7 @@ export function InventoryPage({
           search,
           stock,
           category: category || undefined,
+          subcategory: subcategory || undefined,
           page,
           pageSize: 100,
         }),
@@ -172,6 +171,7 @@ export function InventoryPage({
           "Marque",
           "SKU",
           "Catégorie",
+          "Sous-catégorie",
           "Stock",
           "Réservé",
           "Disponible",
@@ -186,6 +186,7 @@ export function InventoryPage({
           product.brand,
           product.sku,
           categoryLabels[product.category] ?? product.category,
+          product.subcategory,
           product.onHand,
           product.reserved,
           product.onHand - product.reserved,
@@ -293,6 +294,7 @@ export function InventoryPage({
               value={category}
               onChange={(event) => {
                 setCategory(event.target.value as typeof category);
+                setSubcategory("");
                 setPage(1);
               }}
             >
@@ -304,13 +306,28 @@ export function InventoryPage({
               ))}
             </select>
           </label>
+          <label className={ui("category-filter")}>
+            <select
+              value={subcategory}
+              disabled={!category}
+              onChange={(event) => {
+                setSubcategory(event.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Toutes sous-catégories</option>
+              {category && productTaxonomy[category].subcategories.map((value) => (
+                <option value={value} key={value}>{value}</option>
+              ))}
+            </select>
+          </label>
           <button
             className={ui("secondary-button")}
             disabled={exporting || products.isLoading}
             onClick={() => void exportProducts()}
           >
             <ArrowDownToLine size={16} />{" "}
-            {exporting ? "Export…" : "Exporter les résultats"}
+            {exporting ? "Export…" : "Exporter"}
           </button>
         </div>
 
@@ -378,7 +395,10 @@ export function InventoryPage({
                       {product.barcode || "Sans code-barres"}
                     </small>
                   </td>
-                  <td>{categoryLabels[product.category]}</td>
+                  <td>
+                    {categoryLabels[product.category]}
+                    <small className={ui("sub-cell")}>{product.subcategory || "—"}</small>
+                  </td>
                   <td>
                     <strong>{integer.format(product.onHand)}</strong>
                     <small className={ui("sub-cell")}>
@@ -444,7 +464,10 @@ export function InventoryPage({
       {selectedProduct && (
         <ProductDetailModal
           canManage={canManage}
-          product={selectedProduct}
+          product={
+            products.data?.items.find((p) => p.id === selectedProduct.id) ??
+            selectedProduct
+          }
           onClose={() => setSelectedProduct(null)}
         />
       )}
@@ -506,6 +529,7 @@ export function InventoryPage({
                       ...draft,
                       category: e.target
                         .value as CreateProductInput["category"],
+                      subcategory: productTaxonomy[e.target.value as CreateProductInput["category"]].subcategories[0],
                     })
                   }
                 >
@@ -513,6 +537,17 @@ export function InventoryPage({
                     <option value={value} key={value}>
                       {label}
                     </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Sous-catégorie</span>
+                <select
+                  value={draft.subcategory}
+                  onChange={(e) => setDraft({ ...draft, subcategory: e.target.value })}
+                >
+                  {productTaxonomy[draft.category].subcategories.map((value) => (
+                    <option value={value} key={value}>{value}</option>
                   ))}
                 </select>
               </label>

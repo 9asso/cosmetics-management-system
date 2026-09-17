@@ -55,37 +55,40 @@ docs/
    pnpm install
    ```
 
-2. Copy the environment file:
+2. Create an ignored local environment file:
 
    ```bash
-   cp .env.example .env
+   cp .env.example .env.local
    ```
 
-3. Start PostgreSQL. With Docker installed:
+   Set `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `AUTH_SECRET` in `.env.local`.
 
-   ```bash
-   docker compose up -d postgres
-   ```
-
-4. Create the schema and optional development product:
-
-   ```bash
-   pnpm db:migrate
-   pnpm --filter @cosmetics/api db:seed
-   ```
-
-5. Run all web processes:
+3. Start the app. This launches a persistent embedded PostgreSQL database,
+   applies migrations, and starts all web processes:
 
    ```bash
    pnpm dev
    ```
+
+   `npm run dev` also works when pnpm is installed.
 
    - Desktop web UI: http://localhost:1420
    - API: http://localhost:4000/api/v1
    - API documentation: http://localhost:4000/api/docs
    - Retail storefront: http://localhost:3000
 
-6. Once Rust and OS prerequisites are installed, run the native desktop window:
+4. To use an external PostgreSQL database instead, copy `.env.example` to
+   `.env`, configure `DATABASE_URL`, migrate it, and use the lower-level
+   workspace launcher:
+
+   ```bash
+   docker compose up -d postgres
+   pnpm db:migrate
+   pnpm --filter @cosmetics/api db:seed
+   pnpm dev:external
+   ```
+
+5. Once Rust and OS prerequisites are installed, run the native desktop window:
 
    ```bash
    pnpm --filter @cosmetics/desktop tauri dev
