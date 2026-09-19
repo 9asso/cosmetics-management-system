@@ -4,12 +4,14 @@ import {
   CalendarDays,
   CheckCircle2,
   CreditCard,
+  Download,
   History,
   Mail,
   MapPin,
   PackageOpen,
   Pencil,
   Phone,
+  Printer,
   ReceiptText,
   RotateCcw,
   UserRound,
@@ -20,6 +22,7 @@ import { ErrorState } from "./EmptyState";
 import { api } from "../lib/api";
 import { money } from "../lib/format";
 import { ui } from "../lib/ui";
+import { printInvoice } from "../lib/invoice-print";
 import {
   InvoiceEditModal,
   InvoicePaymentModal,
@@ -81,6 +84,8 @@ export function InvoiceDetailModal({
   const cache = useQueryClient();
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
+  const [printing, setPrinting] = useState(false);
+  const [printError, setPrintError] = useState("");
   const [action, setAction] = useState<"payment" | "edit" | "return" | null>(
     null,
   );
@@ -98,6 +103,27 @@ export function InvoiceDetailModal({
       ].map((key) => cache.invalidateQueries({ queryKey: [key] })),
     );
   };
+  async function handlePrint(snapshot?: import("@cosmetics/contracts").InvoiceSnapshot) {
+    const docToPrint = snapshot ?? detail.data;
+    if (!docToPrint) return;
+    setPrinting(true);
+    setPrintError("");
+    try {
+      if (!snapshot) {
+        await api.recordInvoicePrint(kind, id);
+      }
+      await printInvoice(docToPrint, brandSettings.data);
+      if (!snapshot) {
+        await detail.refetch();
+      }
+    } catch (error) {
+      setPrintError(
+        error instanceof Error ? error.message : "Impression impossible.",
+      );
+    } finally {
+      setPrinting(false);
+    }
+  }
   async function downloadPdf() {
     if (!detail.data) return;
     setDownloading(true);
@@ -489,16 +515,10 @@ export function InvoiceDetailModal({
                     </span>
                     <button
                       type="button"
-                      className="ml-auto text-brand hover:underline"
-                      onClick={async () => {
-                        const { downloadInvoicePdf } =
-                          await import("../lib/invoice-pdf");
-                        await downloadInvoicePdf(
-                          entry.snapshot,
-                          brandSettings.data,
-                        );
-                      }}
+                      className="ml-auto inline-flex items-center gap-1.5 font-medium text-brand hover:underline"
+                      onClick={() => void handlePrint(entry.snapshot)}
                     >
+                      <Printer size={13} />
                       Imprimer cette version
                     </button>
                   </div>
@@ -508,9 +528,9 @@ export function InvoiceDetailModal({
           </section>
 
           <footer className="flex flex-wrap justify-end gap-2 border-t border-line pt-5">
-            {downloadError && (
+            {(downloadError || printError) && (
               <p role="alert" className="w-full text-xs text-rose-700">
-                {downloadError}
+                {downloadError || printError}
               </p>
             )}
             {!isCancelled && balance > 0 && (
@@ -550,11 +570,21 @@ export function InvoiceDetailModal({
               disabled={downloading}
               onClick={() => void downloadPdf()}
             >
+              <Download size={15} />
               {downloading ? "Création du PDF…" : "Télécharger le PDF"}
             </button>
             <button
               type="button"
-              className="rounded-lg bg-linear-to-r from-brand to-brand-secondary px-5 py-2 text-xs font-bold text-white shadow-sm"
+              className="inline-flex items-center gap-2 rounded-lg bg-linear-to-r from-brand to-brand-secondary px-5 py-2 text-xs font-bold text-white shadow-sm hover:opacity-95 disabled:opacity-50"
+              disabled={printing}
+              onClick={() => void handlePrint()}
+            >
+              <Printer size={15} />
+              {printing ? "Impression…" : "Imprimer la facture"}
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-line px-5 py-2 text-xs font-bold text-ink hover:bg-stone-50 dark:hover:bg-[#302b2f]"
               onClick={onClose}
             >
               Fermer
