@@ -207,6 +207,36 @@ describe("finance workflows", () => {
     ).toBeTruthy();
     client.clear();
   });
+  it("uses the complete report period picker before exporting expenses", async () => {
+    const client = mount("expenses");
+
+    const exportButton = await screen.findByRole("button", {
+      name: "Exporter",
+    });
+    await waitFor(() =>
+      expect(exportButton.hasAttribute("disabled")).toBe(false),
+    );
+    fireEvent.click(exportButton);
+
+    expect(
+      screen.getByRole("dialog", { name: "Exporter les dépenses" }),
+    ).toBeTruthy();
+    expect(screen.getByText("Période du rapport")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Semaine dernière" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "14 derniers jours" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Mois dernier" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Mois précédents" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Mois suivants" })).toBeTruthy();
+    expect(screen.getByLabelText("Date de début")).toBeTruthy();
+    expect(screen.getByLabelText("Date de fin")).toBeTruthy();
+    client.clear();
+  });
   it("opens the supplier settlement form when randomUUID is unavailable in the WebView", async () => {
     const originalCrypto = globalThis.crypto;
     vi.stubGlobal("crypto", {

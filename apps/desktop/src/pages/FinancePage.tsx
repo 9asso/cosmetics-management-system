@@ -28,6 +28,7 @@ import { Modal } from "../components/Modal";
 import { StatusPill } from "../components/StatusPill";
 import { CheckFields, emptyCheck } from "../components/CheckFields";
 import { InvoiceDetailModal } from "../components/InvoiceDetailModal";
+import { ReportPeriodPicker } from "../components/ReportPeriodPicker";
 
 export type FinanceTab = "receivables" | "payables" | "checks" | "expenses";
 const tabs: Record<FinanceTab, string> = {
@@ -710,78 +711,18 @@ export function FinancePage({
           title="Exporter les dépenses"
           subtitle="Confirmez la période, puis choisissez l’emplacement du fichier."
           onClose={() => !exporting && setExpenseExportOpen(false)}
+          size="wide"
         >
           <div className="space-y-4 p-5 sm:p-6">
-            <div>
-              <strong className="block text-sm">Période du rapport</strong>
-              <small className="text-xs text-muted">
-                Les deux dates sont incluses dans l’export.
-              </small>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label>
-                <span className="mb-1 block text-xs font-bold">
-                  Date de début
-                </span>
-                <input
-                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm"
-                  type="date"
-                  value={exportFrom}
-                  max={exportTo}
-                  onChange={(e) => setExportFrom(e.target.value)}
-                />
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-bold">
-                  Date de fin
-                </span>
-                <input
-                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm"
-                  type="date"
-                  value={exportTo}
-                  min={exportFrom}
-                  max={today()}
-                  onChange={(e) => setExportTo(e.target.value)}
-                />
-              </label>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                className={ui("secondary-button compact")}
-                onClick={() => {
-                  const value = today();
-                  setExportFrom(`${value.slice(0, 8)}01`);
-                  setExportTo(value);
-                }}
-              >
-                Ce mois
-              </button>
-              <button
-                type="button"
-                className={ui("secondary-button compact")}
-                onClick={() => {
-                  const value = today();
-                  const start = new Date(`${value}T12:00:00Z`);
-                  start.setUTCDate(start.getUTCDate() - 29);
-                  setExportFrom(start.toISOString().slice(0, 10));
-                  setExportTo(value);
-                }}
-              >
-                30 derniers jours
-              </button>
-              <button
-                type="button"
-                className={ui("secondary-button compact")}
-                onClick={() => {
-                  const value = today();
-                  setExportFrom(`${value.slice(0, 4)}-01-01`);
-                  setExportTo(value);
-                }}
-              >
-                Cette année
-              </button>
-            </div>
+            <ReportPeriodPicker
+              dateFrom={exportFrom}
+              dateTo={exportTo}
+              today={today()}
+              onChange={(from, to) => {
+                setExportFrom(from);
+                setExportTo(to);
+              }}
+            />
             {exportError && (
               <p role="alert" className={ui("form-error")}>
                 {exportError}

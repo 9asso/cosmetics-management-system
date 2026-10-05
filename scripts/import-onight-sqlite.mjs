@@ -507,6 +507,11 @@ try {
       (SELECT COALESCE(sum(on_hand),0)::int FROM inventory_balances) AS stock,
       (SELECT count(*)::int FROM sales_orders) AS sales,
       (SELECT COALESCE(sum(grand_total),0)::float FROM sales_orders) AS sales_total,
+      (SELECT count(*)::int FROM sales_orders
+        WHERE status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
+          AND grand_total > amount_paid) AS client_credits,
+      (SELECT COALESCE(sum(GREATEST(0,grand_total-amount_paid)),0)::float FROM sales_orders
+        WHERE status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')) AS client_credit_balance,
       (SELECT count(*)::int FROM purchase_orders) AS purchases,
       (SELECT COALESCE(sum(total),0)::float FROM purchase_orders) AS purchase_total,
       (SELECT count(*)::int FROM expenses) AS expenses,
