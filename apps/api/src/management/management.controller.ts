@@ -63,15 +63,10 @@ export class ManagementController {
     input: CreateSupplierInput,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.management.updatePartner(
-      "suppliers",
-      params.id,
-      input,
-      user.id,
-    );
+    return this.management.updatePartner("suppliers", params.id, input, user);
   }
 
-  @Roles("OWNER")
+  @Roles("OWNER", "SALES_REP")
   @Patch("customers/:id")
   updateCustomer(
     @Param(new ZodValidationPipe(orderParamsSchema)) params: { id: string },
@@ -79,12 +74,7 @@ export class ManagementController {
     input: CreateCustomerInput,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.management.updatePartner(
-      "customers",
-      params.id,
-      input,
-      user.id,
-    );
+    return this.management.updatePartner("customers", params.id, input, user);
   }
 
   @Roles("OWNER")
@@ -93,23 +83,24 @@ export class ManagementController {
     @Param(new ZodValidationPipe(orderParamsSchema)) params: { id: string },
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.management.archivePartner("suppliers", params.id, user.id);
+    return this.management.archivePartner("suppliers", params.id, user);
   }
 
-  @Roles("OWNER")
+  @Roles("OWNER", "SALES_REP")
   @Delete("customers/:id")
   deleteCustomer(
     @Param(new ZodValidationPipe(orderParamsSchema)) params: { id: string },
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.management.archivePartner("customers", params.id, user.id);
+    return this.management.archivePartner("customers", params.id, user);
   }
 
   @Get("invoices")
   invoices(
     @Query(new ZodValidationPipe(invoiceQuerySchema)) query: InvoiceQuery,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.management.invoices(query);
+    return this.management.invoices(query, user);
   }
 
   @Get("invoices/:kind/:id")
@@ -119,11 +110,12 @@ export class ManagementController {
       kind: "sale" | "purchase";
       id: string;
     },
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.management.invoice(params.kind, params.id);
+    return this.management.invoice(params.kind, params.id, user);
   }
 
-  @Roles("OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT")
+  @Roles("OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT", "SALES_REP")
   @Patch("invoices/:kind/:id")
   updateInvoice(
     @Param(new ZodValidationPipe(invoiceParamsSchema))
@@ -131,12 +123,7 @@ export class ManagementController {
     @Body(new ZodValidationPipe(updateInvoiceSchema)) input: UpdateInvoiceInput,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.management.updateInvoice(
-      params.kind,
-      params.id,
-      input,
-      user.id,
-    );
+    return this.management.updateInvoice(params.kind, params.id, input, user);
   }
 
   @Roles("OWNER", "MANAGER", "CASHIER")
@@ -156,10 +143,11 @@ export class ManagementController {
     params: { kind: "sale" | "purchase"; id: string },
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.management.recordInvoicePrint(params.kind, params.id, user.id);
+    return this.management.recordInvoicePrint(params.kind, params.id, user);
   }
 
   @Get("suppliers")
+  @Roles("OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT", "STAFF")
   suppliers() {
     return this.management.suppliers();
   }
@@ -174,17 +162,18 @@ export class ManagementController {
   }
 
   @Get("customers")
-  customers() {
-    return this.management.customers();
+  customers(@CurrentUser() user: AuthenticatedUser) {
+    return this.management.customers(user);
   }
 
-  @Roles("OWNER", "MANAGER", "CASHIER")
+  @Roles("OWNER", "MANAGER", "CASHIER", "SALES_REP")
   @Post("customers")
   createCustomer(
     @Body(new ZodValidationPipe(createCustomerSchema))
     input: CreateCustomerInput,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.management.createCustomer(input);
+    return this.management.createCustomer(input, user.id);
   }
 
   @Roles("OWNER", "MANAGER", "WAREHOUSE", "ACCOUNTANT")
@@ -197,17 +186,18 @@ export class ManagementController {
     return this.management.createPurchase(input, user.id);
   }
 
-  @Roles("OWNER", "MANAGER", "CASHIER")
+  @Roles("OWNER", "MANAGER", "CASHIER", "SALES_REP")
   @Post("wholesale-sales")
   wholesaleSale(
     @Body(new ZodValidationPipe(createWholesaleSaleSchema))
     input: CreateWholesaleSaleInput,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.management.createWholesaleSale(input, user.id);
+    return this.management.createWholesaleSale(input, user);
   }
 
   @Get("orders")
+  @Roles("OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT", "STAFF")
   orders(
     @Query(new ZodValidationPipe(orderListQuerySchema)) query: OrderListQuery,
   ) {

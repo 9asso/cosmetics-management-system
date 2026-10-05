@@ -32,7 +32,8 @@ type UserRow = {
 export class AuthService {
   private readonly secret =
     process.env.AUTH_SECRET ?? "development-secret-change-me";
-  private readonly expiresIn = 60 * 60 * 12;
+  // Desktop sessions survive restarts without storing the user's password.
+  private readonly expiresIn = 60 * 60 * 24 * 365;
 
   constructor(private readonly db: DatabaseService) {
     if (process.env.NODE_ENV === "production" && !process.env.AUTH_SECRET) {

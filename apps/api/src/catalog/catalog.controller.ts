@@ -20,7 +20,8 @@ import {
 } from "@cosmetics/contracts";
 import { ZodValidationPipe } from "../common/zod-validation.pipe.js";
 import { CatalogService } from "./catalog.service.js";
-import { Roles } from "../auth/auth.decorators.js";
+import { CurrentUser, Roles } from "../auth/auth.decorators.js";
+import type { AuthenticatedUser } from "../auth/auth.types.js";
 
 @Controller("products")
 export class CatalogController {
@@ -30,13 +31,17 @@ export class CatalogController {
   list(
     @Query(new ZodValidationPipe(productListQuerySchema))
     query: ProductListQuery,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.catalog.list(query);
+    return this.catalog.list(query, false, user.role === "SALES_REP");
   }
 
   @Get(":id/lots")
-  stockLots(@Param("id", new ParseUUIDPipe()) id: string) {
-    return this.catalog.stockLots(id);
+  stockLots(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.catalog.stockLots(id, user.role === "SALES_REP");
   }
 
   @Patch(":productId/lots/:lotId")

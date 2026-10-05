@@ -25,7 +25,13 @@ type CartLine = {
   wholesalePrice: number;
   retailPrice: number;
 };
-export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
+export function CommerceEntryPage({
+  kind,
+  restricted = false,
+}: {
+  kind: "sale" | "purchase";
+  restricted?: boolean;
+}) {
   const purchase = kind === "purchase";
   const cache = useQueryClient();
   const [partnerId, setPartnerId] = useState("");
@@ -596,6 +602,7 @@ export function CommerceEntryPage({ kind }: { kind: "sale" | "purchase" }) {
         <InvoiceDetailModal
           kind={kind}
           id={mutation.data.id}
+          restricted={restricted}
           onClose={() => setShowInvoice(false)}
         />
       )}

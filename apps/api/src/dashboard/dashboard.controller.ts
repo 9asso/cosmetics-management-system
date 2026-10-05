@@ -9,11 +9,13 @@ export class DashboardController {
   constructor(private readonly dashboard: DashboardService) {}
 
   @Get("summary")
+  @Roles("OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT", "STAFF")
   summary() {
     return this.dashboard.summary();
   }
 
   @Get("analytics")
+  @Roles("OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT", "STAFF")
   analytics(
     @Query(
       new ZodValidationPipe(

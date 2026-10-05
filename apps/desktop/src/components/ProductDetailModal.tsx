@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { ProductMediaEditor } from "./ProductMediaEditor";
-import { productTaxonomy, type ProductListItem, type ProductStockLot } from "@cosmetics/contracts";
+import {
+  productTaxonomy,
+  type ProductListItem,
+  type ProductStockLot,
+} from "@cosmetics/contracts";
 import {
   Barcode,
   Boxes,
@@ -48,10 +52,12 @@ export function ProductDetailModal({
   product: initialProduct,
   onClose,
   canManage = false,
+  canViewPurchasePrice = true,
 }: {
   product: ProductListItem;
   onClose: () => void;
   canManage?: boolean;
+  canViewPurchasePrice?: boolean;
 }) {
   const [product, setProduct] = useState(initialProduct);
   useEffect(() => {
@@ -76,35 +82,68 @@ export function ProductDetailModal({
 
   // Calculate weighted average prices across all active lots in stock
   const activeLots = (lots.data ?? []).filter((l) => l.remainingQuantity > 0);
-  const totalRemaining = activeLots.reduce((sum, l) => sum + l.remainingQuantity, 0);
+  const totalRemaining = activeLots.reduce(
+    (sum, l) => sum + l.remainingQuantity,
+    0,
+  );
 
   const effectivePurchasePrice =
     totalRemaining > 0
-      ? activeLots.reduce((sum, l) => sum + l.purchasePrice * l.remainingQuantity, 0) / totalRemaining
-      : (lots.data && lots.data.length > 0
-          ? lots.data.reduce((sum, l) => sum + l.purchasePrice, 0) / lots.data.length
-          : product.purchasePrice);
+      ? activeLots.reduce(
+          (sum, l) => sum + l.purchasePrice * l.remainingQuantity,
+          0,
+        ) / totalRemaining
+      : lots.data && lots.data.length > 0
+        ? lots.data.reduce((sum, l) => sum + l.purchasePrice, 0) /
+          lots.data.length
+        : product.purchasePrice;
 
   const effectiveWholesalePrice =
     totalRemaining > 0
-      ? activeLots.reduce((sum, l) => sum + l.wholesalePrice * l.remainingQuantity, 0) / totalRemaining
-      : (lots.data && lots.data.length > 0
-          ? lots.data.reduce((sum, l) => sum + l.wholesalePrice, 0) / lots.data.length
-          : product.wholesalePrice);
+      ? activeLots.reduce(
+          (sum, l) => sum + l.wholesalePrice * l.remainingQuantity,
+          0,
+        ) / totalRemaining
+      : lots.data && lots.data.length > 0
+        ? lots.data.reduce((sum, l) => sum + l.wholesalePrice, 0) /
+          lots.data.length
+        : product.wholesalePrice;
 
   const effectiveRetailPrice =
     totalRemaining > 0
-      ? activeLots.reduce((sum, l) => sum + l.retailPrice * l.remainingQuantity, 0) / totalRemaining
-      : (lots.data && lots.data.length > 0
-          ? lots.data.reduce((sum, l) => sum + l.retailPrice, 0) / lots.data.length
-          : product.retailPrice);
+      ? activeLots.reduce(
+          (sum, l) => sum + l.retailPrice * l.remainingQuantity,
+          0,
+        ) / totalRemaining
+      : lots.data && lots.data.length > 0
+        ? lots.data.reduce((sum, l) => sum + l.retailPrice, 0) /
+          lots.data.length
+        : product.retailPrice;
 
-  const minWholesale = activeLots.length > 0 ? Math.min(...activeLots.map((l) => l.wholesalePrice)) : effectiveWholesalePrice;
-  const maxWholesale = activeLots.length > 0 ? Math.max(...activeLots.map((l) => l.wholesalePrice)) : effectiveWholesalePrice;
-  const minRetail = activeLots.length > 0 ? Math.min(...activeLots.map((l) => l.retailPrice)) : effectiveRetailPrice;
-  const maxRetail = activeLots.length > 0 ? Math.max(...activeLots.map((l) => l.retailPrice)) : effectiveRetailPrice;
-  const minPurchase = activeLots.length > 0 ? Math.min(...activeLots.map((l) => l.purchasePrice)) : effectivePurchasePrice;
-  const maxPurchase = activeLots.length > 0 ? Math.max(...activeLots.map((l) => l.purchasePrice)) : effectivePurchasePrice;
+  const minWholesale =
+    activeLots.length > 0
+      ? Math.min(...activeLots.map((l) => l.wholesalePrice))
+      : effectiveWholesalePrice;
+  const maxWholesale =
+    activeLots.length > 0
+      ? Math.max(...activeLots.map((l) => l.wholesalePrice))
+      : effectiveWholesalePrice;
+  const minRetail =
+    activeLots.length > 0
+      ? Math.min(...activeLots.map((l) => l.retailPrice))
+      : effectiveRetailPrice;
+  const maxRetail =
+    activeLots.length > 0
+      ? Math.max(...activeLots.map((l) => l.retailPrice))
+      : effectiveRetailPrice;
+  const minPurchase =
+    activeLots.length > 0
+      ? Math.min(...activeLots.map((l) => l.purchasePrice))
+      : effectivePurchasePrice;
+  const maxPurchase =
+    activeLots.length > 0
+      ? Math.max(...activeLots.map((l) => l.purchasePrice))
+      : effectivePurchasePrice;
 
   const wholesaleMargin = effectiveWholesalePrice - effectivePurchasePrice;
   const wholesaleMarginPct =
@@ -119,7 +158,10 @@ export function ProductDetailModal({
       : null;
 
   const [editingLotId, setEditingLotId] = useState<string | null>(null);
-  const [lotDraft, setLotDraft] = useState({ wholesalePrice: 0, retailPrice: 0 });
+  const [lotDraft, setLotDraft] = useState({
+    wholesalePrice: 0,
+    retailPrice: 0,
+  });
   const [savingLotId, setSavingLotId] = useState<string | null>(null);
   const [lotError, setLotError] = useState<string | null>(null);
 
@@ -209,7 +251,8 @@ export function ProductDetailModal({
         <section className="grid overflow-hidden rounded-2xl border border-line bg-surface md:grid-cols-[260px_1fr]">
           <div className="relative grid min-h-60 place-items-center overflow-hidden bg-linear-to-br from-brand-soft via-white to-pink-50 dark:from-[#392830] dark:via-[#282428] dark:to-[#302630] p-6">
             <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-brand shadow-sm dark:bg-[#302b2f]/90">
-              {categories[product.category]} · {product.subcategory || "Non classé"}
+              {categories[product.category]} ·{" "}
+              {product.subcategory || "Non classé"}
             </span>
             <div className="w-full pt-6">
               {activeImage === images.length && product.videoUrl ? (
@@ -398,9 +441,9 @@ export function ProductDetailModal({
             </strong>
             <small className="text-[10px] text-muted">
               {product.compareAtPrice === null
-                ? (activeLots.length > 1 && minRetail !== maxRetail
-                    ? `De ${money.format(minRetail)} à ${money.format(maxRetail)}`
-                    : "Prix unitaire actuel")
+                ? activeLots.length > 1 && minRetail !== maxRetail
+                  ? `De ${money.format(minRetail)} à ${money.format(maxRetail)}`
+                  : "Prix unitaire actuel"
                 : `Ancien prix ${money.format(product.compareAtPrice)}`}
             </small>
           </article>
@@ -416,38 +459,46 @@ export function ProductDetailModal({
             </div>
             <CircleDollarSign size={20} className="text-brand" />
           </div>
-          <dl className="grid gap-3 sm:grid-cols-3">
-            <Detail
-              label="Prix d'achat"
-              value={money.format(effectivePurchasePrice)}
-              hint={
-                activeLots.length > 1 && minPurchase !== maxPurchase
-                  ? `PMP (${money.format(minPurchase)} – ${money.format(maxPurchase)})`
-                  : activeLots.length > 1
-                    ? `PMP · ${activeLots.length} réceptions en stock`
-                    : undefined
-              }
-            />
+          <dl
+            className={`grid gap-3 ${canViewPurchasePrice ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
+          >
+            {canViewPurchasePrice && (
+              <Detail
+                label="Prix d'achat"
+                value={money.format(effectivePurchasePrice)}
+                hint={
+                  activeLots.length > 1 && minPurchase !== maxPurchase
+                    ? `PMP (${money.format(minPurchase)} – ${money.format(maxPurchase)})`
+                    : activeLots.length > 1
+                      ? `PMP · ${activeLots.length} réceptions en stock`
+                      : undefined
+                }
+              />
+            )}
             <Detail
               label="Prix grossiste"
               value={money.format(effectiveWholesalePrice)}
               hint={
-                activeLots.length > 1 && minWholesale !== maxWholesale
-                  ? `Moyenne (${money.format(minWholesale)} – ${money.format(maxWholesale)}) · marge ${wholesaleMarginPct !== null ? `${wholesaleMarginPct >= 0 ? "+" : ""}${wholesaleMarginPct}%` : ""}`
-                  : wholesaleMarginPct !== null
-                    ? `Marge : ${wholesaleMargin >= 0 ? "+" : ""}${money.format(wholesaleMargin)} (${wholesaleMarginPct >= 0 ? "+" : ""}${wholesaleMarginPct}%)`
-                    : undefined
+                canViewPurchasePrice
+                  ? activeLots.length > 1 && minWholesale !== maxWholesale
+                    ? `Moyenne (${money.format(minWholesale)} – ${money.format(maxWholesale)}) · marge ${wholesaleMarginPct !== null ? `${wholesaleMarginPct >= 0 ? "+" : ""}${wholesaleMarginPct}%` : ""}`
+                    : wholesaleMarginPct !== null
+                      ? `Marge : ${wholesaleMargin >= 0 ? "+" : ""}${money.format(wholesaleMargin)} (${wholesaleMarginPct >= 0 ? "+" : ""}${wholesaleMarginPct}%)`
+                      : undefined
+                  : undefined
               }
             />
             <Detail
               label="Prix boutique"
               value={money.format(effectiveRetailPrice)}
               hint={
-                activeLots.length > 1 && minRetail !== maxRetail
-                  ? `Moyenne (${money.format(minRetail)} – ${money.format(maxRetail)}) · marge ${retailMarginPct !== null ? `${retailMarginPct >= 0 ? "+" : ""}${retailMarginPct}%` : ""}`
-                  : retailMarginPct !== null
-                    ? `Marge : ${retailMargin >= 0 ? "+" : ""}${money.format(retailMargin)} (${retailMarginPct >= 0 ? "+" : ""}${retailMarginPct}%)`
-                    : undefined
+                canViewPurchasePrice
+                  ? activeLots.length > 1 && minRetail !== maxRetail
+                    ? `Moyenne (${money.format(minRetail)} – ${money.format(maxRetail)}) · marge ${retailMarginPct !== null ? `${retailMarginPct >= 0 ? "+" : ""}${retailMarginPct}%` : ""}`
+                    : retailMarginPct !== null
+                      ? `Marge : ${retailMargin >= 0 ? "+" : ""}${money.format(retailMargin)} (${retailMarginPct >= 0 ? "+" : ""}${retailMarginPct}%)`
+                      : undefined
+                  : undefined
               }
             />
           </dl>
@@ -468,7 +519,9 @@ export function ProductDetailModal({
                 <tr className="border-b border-line">
                   <th className="py-2.5 font-bold">Lot</th>
                   <th className="py-2.5 font-bold">Stock restant</th>
-                  <th className="py-2.5 font-bold">Prix d’achat</th>
+                  {canViewPurchasePrice && (
+                    <th className="py-2.5 font-bold">Prix d’achat</th>
+                  )}
                   <th className="py-2.5 font-bold">Prix grossiste</th>
                   <th className="py-2.5 font-bold">Prix boutique</th>
                   {canManage && (
@@ -493,19 +546,26 @@ export function ProductDetailModal({
                         <small className="text-[11px] font-semibold block text-muted">
                           {lot.source} ·{" "}
                           {lot.supplierName && `${lot.supplierName}${" · "}`}
-                          {new Date(lot.receivedOn).toLocaleDateString("fr-FR")}{" "}
+                          {new Date(lot.receivedOn).toLocaleDateString(
+                            "fr-FR",
+                          )}{" "}
                           · reçu {lot.receivedQuantity}
                         </small>
                       </td>
                       <td className="py-2 font-medium">
                         {lot.remainingQuantity}
                       </td>
-                      <td className="py-2">
-                        {money.format(lot.purchasePrice)}<br/>
-                        <small className="text-muted italic opacity-75">
-                          {money.format(lot.purchasePrice * lot.remainingQuantity)}
-                        </small>
-                      </td>
+                      {canViewPurchasePrice && (
+                        <td className="py-2">
+                          {money.format(lot.purchasePrice)}
+                          <br />
+                          <small className="text-muted italic opacity-75">
+                            {money.format(
+                              lot.purchasePrice * lot.remainingQuantity,
+                            )}
+                          </small>
+                        </td>
+                      )}
                       <td className="py-2">
                         {isEditing ? (
                           <div className="flex items-center gap-1">
@@ -531,9 +591,12 @@ export function ProductDetailModal({
                           </div>
                         ) : (
                           <span className="font-semibold text-ink">
-                            {money.format(lot.wholesalePrice)}<br/>
+                            {money.format(lot.wholesalePrice)}
+                            <br />
                             <small className="text-muted italic opacity-75">
-                              {money.format(lot.wholesalePrice * lot.remainingQuantity)}
+                              {money.format(
+                                lot.wholesalePrice * lot.remainingQuantity,
+                              )}
                             </small>
                           </span>
                         )}
@@ -563,9 +626,12 @@ export function ProductDetailModal({
                           </div>
                         ) : (
                           <span className="font-semibold text-ink">
-                            {money.format(lot.retailPrice)}<br/>
+                            {money.format(lot.retailPrice)}
+                            <br />
                             <small className="text-muted italic opacity-75">
-                              {money.format(lot.retailPrice * lot.remainingQuantity)}
+                              {money.format(
+                                lot.retailPrice * lot.remainingQuantity,
+                              )}
                             </small>
                           </span>
                         )}

@@ -9,6 +9,7 @@ import {
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./App";
+import { registerConfirmation } from "./lib/confirmation";
 import {
   api,
   ApiRequestError,
@@ -40,6 +41,9 @@ vi.mock("./pages/DashboardPage", () => ({
     </div>
   ),
 }));
+vi.mock("./pages/SalesRepDashboard", () => ({
+  SalesRepDashboard: () => <div>Sales dashboard ready</div>,
+}));
 const user = {
   id: "owner",
   email: "owner@example.test",
@@ -49,6 +53,10 @@ const user = {
 const stored = new Map<string, string>();
 beforeEach(() => {
   stored.clear();
+  Object.defineProperty(HTMLDialogElement.prototype, "showModal", {
+    configurable: true,
+    value: vi.fn(),
+  });
   Object.defineProperty(window, "localStorage", {
     configurable: true,
     value: {
@@ -61,11 +69,35 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  registerConfirmation(undefined);
   vi.resetAllMocks();
   window.localStorage.clear();
   document.documentElement.classList.remove("dark");
 });
 describe("local session recovery", () => {
+  it("shows only the restricted sales workspace to a sales representative", async () => {
+    vi.mocked(hasAccessToken).mockReturnValue(true);
+    vi.mocked(api.me).mockResolvedValue({ ...user, role: "SALES_REP" });
+    vi.mocked(api.health).mockResolvedValue({ status: "ok" });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <App />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText("Sales dashboard ready")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Produits & stock" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Historique des factures" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Clients & fournisseurs" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Commandes & livraisons" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Finances & dépenses" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Équipe & rôles" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Boutique" })).toBeNull();
+    client.clear();
+  });
+
   it("opens the dashboard report from the top bar beside the purchase action", async () => {
     vi.mocked(hasAccessToken).mockReturnValue(true);
     vi.mocked(api.me).mockResolvedValue(user);
@@ -180,6 +212,7 @@ describe("local session recovery", () => {
     fireEvent.click(screen.getByRole("button", { name: "Se connecter" }));
     await screen.findByText("Dashboard ready");
     expect(document.documentElement.classList.contains("dark")).toBe(true);
+    registerConfirmation(async () => true);
     fireEvent.click(screen.getByRole("button", { name: "Se déconnecter" }));
     await screen.findByRole("button", { name: "Se connecter" });
     expect(document.documentElement.classList.contains("dark")).toBe(false);

@@ -5,9 +5,11 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
+    "core:window:allow-destroy",
     "dialog:default",
     "fs:allow-app-read-recursive",
     "fs:allow-app-write-recursive",
+    "fs:allow-write-text-file",
     "opener:default"
   ]
 }

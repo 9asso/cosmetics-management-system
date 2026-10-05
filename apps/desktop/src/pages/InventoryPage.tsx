@@ -2,7 +2,11 @@ import { ui } from "../lib/ui";
 import { resolveMediaUrl } from "../lib/media";
 import { useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { productTaxonomy, type CreateProductInput, type ProductListItem } from "@cosmetics/contracts";
+import {
+  productTaxonomy,
+  type CreateProductInput,
+  type ProductListItem,
+} from "@cosmetics/contracts";
 import {
   ArrowDownToLine,
   PackagePlus,
@@ -45,6 +49,27 @@ const categoryLabels = Object.fromEntries(
   Object.entries(productTaxonomy).map(([key, value]) => [key, value.label]),
 ) as Record<CreateProductInput["category"], string>;
 
+function skuSuffix() {
+  return globalThis.crypto?.randomUUID
+    ? globalThis.crypto
+        .randomUUID()
+        .replaceAll("-", "")
+        .slice(0, 6)
+        .toUpperCase()
+    : Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+
+function productSku(name: string, suffix: string) {
+  const slug = name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60);
+  return slug ? `${slug}-${suffix}` : suffix;
+}
+
 function StockStatus({ product }: { product: ProductListItem }) {
   if (product.onHand - product.reserved === 0)
     return <StatusPill tone="bad">Rupture</StatusPill>;
@@ -55,10 +80,12 @@ function StockStatus({ product }: { product: ProductListItem }) {
 
 export function InventoryPage({
   canManage = true,
+  canViewPurchasePrice = true,
   initialStock = "all",
   initialCreate = false,
 }: {
   canManage?: boolean;
+  canViewPurchasePrice?: boolean;
   initialStock?: "all" | "low" | "out";
   initialCreate?: boolean;
 }) {
@@ -79,6 +106,7 @@ export function InventoryPage({
   const suppliers = useQuery({
     queryKey: ["suppliers"],
     queryFn: api.suppliers,
+    enabled: canManage,
   });
   const [adjustProduct, setAdjustProduct] = useState<ProductListItem | null>(
     null,
@@ -88,6 +116,7 @@ export function InventoryPage({
     note: "Correction après comptage physique",
   });
   const [draft, setDraft] = useState<CreateProductInput>(emptyProduct);
+  const [skuToken, setSkuToken] = useState(skuSuffix);
   const products = useQuery({
     queryKey: ["products", search, stock, category, subcategory, page],
     queryFn: () =>
@@ -129,6 +158,7 @@ export function InventoryPage({
       ]);
       setShowCreate(false);
       setDraft(emptyProduct);
+      setSkuToken(skuSuffix());
     },
   });
 
@@ -165,38 +195,41 @@ export function InventoryPage({
           pageSize: 100,
         }),
       );
-      downloadCsv(`inventaire-${new Date().toISOString().slice(0, 10)}.csv`, [
+      await downloadCsv(
+        `inventaire-${new Date().toISOString().slice(0, 10)}.csv`,
         [
-          "Produit",
-          "Marque",
-          "SKU",
-          "Catégorie",
-          "Sous-catégorie",
-          "Stock",
-          "Réservé",
-          "Disponible",
-          "Seuil alerte",
-          "Prix achat",
-          "Prix grossiste",
-          "Prix retail",
-          "Fournisseur",
+          [
+            "Produit",
+            "Marque",
+            "SKU",
+            "Catégorie",
+            "Sous-catégorie",
+            "Stock",
+            "Réservé",
+            "Disponible",
+            "Seuil alerte",
+            ...(canViewPurchasePrice ? ["Prix achat"] : []),
+            "Prix grossiste",
+            "Prix retail",
+            "Fournisseur",
+          ],
+          ...rows.map((product) => [
+            product.name,
+            product.brand,
+            product.sku,
+            categoryLabels[product.category] ?? product.category,
+            product.subcategory,
+            product.onHand,
+            product.reserved,
+            product.onHand - product.reserved,
+            product.lowStockThreshold,
+            ...(canViewPurchasePrice ? [product.purchasePrice] : []),
+            product.wholesalePrice,
+            product.retailPrice,
+            product.supplierName,
+          ]),
         ],
-        ...rows.map((product) => [
-          product.name,
-          product.brand,
-          product.sku,
-          categoryLabels[product.category] ?? product.category,
-          product.subcategory,
-          product.onHand,
-          product.reserved,
-          product.onHand - product.reserved,
-          product.lowStockThreshold,
-          product.purchasePrice,
-          product.wholesalePrice,
-          product.retailPrice,
-          product.supplierName,
-        ]),
-      ]);
+      );
     } catch (error) {
       setExportError(
         error instanceof ApiRequestError
@@ -229,10 +262,12 @@ export function InventoryPage({
           <small>Unités affichées</small>
           <strong>{integer.format(counts.units)}</strong>
         </div>
-        <div>
-          <small>Valeur affichée</small>
-          <strong>{money.format(counts.value)}</strong>
-        </div>
+        {canViewPurchasePrice && (
+          <div>
+            <small>Valeur affichée</small>
+            <strong>{money.format(counts.value)}</strong>
+          </div>
+        )}
         {canManage && (
           <button
             className={ui("primary-button")}
@@ -316,9 +351,12 @@ export function InventoryPage({
               }}
             >
               <option value="">Toutes sous-catégories</option>
-              {category && productTaxonomy[category].subcategories.map((value) => (
-                <option value={value} key={value}>{value}</option>
-              ))}
+              {category &&
+                productTaxonomy[category].subcategories.map((value) => (
+                  <option value={value} key={value}>
+                    {value}
+                  </option>
+                ))}
             </select>
           </label>
           <button
@@ -326,8 +364,7 @@ export function InventoryPage({
             disabled={exporting || products.isLoading}
             onClick={() => void exportProducts()}
           >
-            <ArrowDownToLine size={16} />{" "}
-            {exporting ? "Export…" : "Exporter"}
+            <ArrowDownToLine size={16} /> {exporting ? "Export…" : "Exporter"}
           </button>
         </div>
 
@@ -344,7 +381,7 @@ export function InventoryPage({
                 <th>Référence</th>
                 <th>Catégorie</th>
                 <th>Stock</th>
-                <th>Prix achat</th>
+                {canViewPurchasePrice && <th>Prix achat</th>}
                 <th>Prix grossiste</th>
                 <th>État</th>
                 <th />
@@ -353,7 +390,10 @@ export function InventoryPage({
             <tbody>
               {products.isLoading && (
                 <tr>
-                  <td colSpan={8} className={ui("loading-cell")}>
+                  <td
+                    colSpan={canViewPurchasePrice ? 8 : 7}
+                    className={ui("loading-cell")}
+                  >
                     Chargement de l’inventaire…
                   </td>
                 </tr>
@@ -397,7 +437,9 @@ export function InventoryPage({
                   </td>
                   <td>
                     {categoryLabels[product.category]}
-                    <small className={ui("sub-cell")}>{product.subcategory || "—"}</small>
+                    <small className={ui("sub-cell")}>
+                      {product.subcategory || "—"}
+                    </small>
                   </td>
                   <td>
                     <strong>{integer.format(product.onHand)}</strong>
@@ -406,7 +448,9 @@ export function InventoryPage({
                       {product.onHand - product.reserved} disponible
                     </small>
                   </td>
-                  <td>{money.format(product.purchasePrice)}</td>
+                  {canViewPurchasePrice && (
+                    <td>{money.format(product.purchasePrice)}</td>
+                  )}
                   <td>{money.format(product.wholesalePrice)}</td>
                   <td>
                     <StockStatus product={product} />
@@ -430,7 +474,10 @@ export function InventoryPage({
               ))}
               {products.data?.items.length === 0 && (
                 <tr>
-                  <td colSpan={8} className={ui("loading-cell")}>
+                  <td
+                    colSpan={canViewPurchasePrice ? 8 : 7}
+                    className={ui("loading-cell")}
+                  >
                     Aucun produit ne correspond à cette recherche.
                   </td>
                 </tr>
@@ -464,6 +511,7 @@ export function InventoryPage({
       {selectedProduct && (
         <ProductDetailModal
           canManage={canManage}
+          canViewPurchasePrice={canViewPurchasePrice}
           product={
             products.data?.items.find((p) => p.id === selectedProduct.id) ??
             selectedProduct
@@ -486,7 +534,13 @@ export function InventoryPage({
                   required
                   minLength={2}
                   value={draft.name}
-                  onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      name: e.target.value,
+                      sku: productSku(e.target.value, skuToken),
+                    })
+                  }
                   placeholder="Ex. Sérum Éclat Vitamine C"
                 />
               </label>
@@ -506,8 +560,8 @@ export function InventoryPage({
                 <input
                   required
                   value={draft.sku}
-                  onChange={(e) => setDraft({ ...draft, sku: e.target.value })}
-                  placeholder="LUM-SER-C30"
+                  readOnly
+                  placeholder="Généré depuis le nom"
                 />
               </label>
               <label>
@@ -529,7 +583,10 @@ export function InventoryPage({
                       ...draft,
                       category: e.target
                         .value as CreateProductInput["category"],
-                      subcategory: productTaxonomy[e.target.value as CreateProductInput["category"]].subcategories[0],
+                      subcategory:
+                        productTaxonomy[
+                          e.target.value as CreateProductInput["category"]
+                        ].subcategories[0],
                     })
                   }
                 >
@@ -544,11 +601,17 @@ export function InventoryPage({
                 <span>Sous-catégorie</span>
                 <select
                   value={draft.subcategory}
-                  onChange={(e) => setDraft({ ...draft, subcategory: e.target.value })}
+                  onChange={(e) =>
+                    setDraft({ ...draft, subcategory: e.target.value })
+                  }
                 >
-                  {productTaxonomy[draft.category].subcategories.map((value) => (
-                    <option value={value} key={value}>{value}</option>
-                  ))}
+                  {productTaxonomy[draft.category].subcategories.map(
+                    (value) => (
+                      <option value={value} key={value}>
+                        {value}
+                      </option>
+                    ),
+                  )}
                 </select>
               </label>
               <div>

@@ -7,6 +7,7 @@ export const userRoles = [
   "CASHIER",
   "WAREHOUSE",
   "ACCOUNTANT",
+  "SALES_REP",
   "STAFF",
 ] as const;
 export const userRoleSchema = z.enum(userRoles);

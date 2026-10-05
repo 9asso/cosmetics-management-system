@@ -153,7 +153,10 @@ export class CatalogService {
     return result.rows[0].data;
   }
 
-  async stockLots(productId: string): Promise<ProductStockLot[]> {
+  async stockLots(
+    productId: string,
+    hidePurchasePrice = false,
+  ): Promise<ProductStockLot[]> {
     const result = await this.db.query<ProductStockLot>(
       `WITH inbound AS (
         SELECT m.id,m.quantity_delta::int AS quantity,m.created_at,
@@ -197,9 +200,11 @@ export class CatalogService {
       );
       if (!found.rowCount) throw new NotFoundException("Produit introuvable.");
     }
-    return result.rows;
+    return result.rows.map((row) => ({
+      ...row,
+      purchasePrice: hidePurchasePrice ? 0 : Number(row.purchasePrice),
+    }));
   }
-
 
   async updateStockLot(
     productId: string,
@@ -297,6 +302,7 @@ export class CatalogService {
   async list(
     query: ProductListQuery,
     retailOnly = false,
+    hidePurchasePrice = false,
   ): Promise<Paginated<ProductListItem>> {
     const values: unknown[] = [DEFAULT_ORGANIZATION_ID, DEFAULT_LOCATION_ID];
     const filters = [
@@ -374,7 +380,7 @@ export class CatalogService {
 
     const items = result.rows.map(({ totalCount: _total, ...row }) => ({
       ...row,
-      purchasePrice: Number(row.purchasePrice),
+      purchasePrice: hidePurchasePrice ? 0 : Number(row.purchasePrice),
       wholesalePrice: Number(row.wholesalePrice),
       retailPrice: Number(row.retailPrice),
       compareAtPrice:

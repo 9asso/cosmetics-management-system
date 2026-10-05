@@ -25,6 +25,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { DashboardPage } from "./pages/DashboardPage";
+import { SalesRepDashboard } from "./pages/SalesRepDashboard";
 import { InventoryPage } from "./pages/InventoryPage";
 import { LoginPage } from "./pages/LoginPage";
 import { OrdersPage } from "./pages/OrdersPage";
@@ -52,6 +53,7 @@ import {
   type Section,
   type NavigationOptions,
 } from "./lib/navigation";
+import { confirmChange } from "./lib/confirmation";
 
 const navigation: Array<{
   group: string;
@@ -82,9 +84,21 @@ const navigation: Array<{
         id: "sales",
         label: "Nouvelle vente en gros",
         icon: ShoppingBag,
-        roles: ["OWNER", "MANAGER", "CASHIER"],
+        roles: ["OWNER", "MANAGER", "CASHIER", "SALES_REP"],
       },
-      { id: "orders", label: "Commandes & livraisons", icon: ReceiptText },
+      {
+        id: "orders",
+        label: "Commandes & livraisons",
+        icon: ReceiptText,
+        roles: [
+          "OWNER",
+          "MANAGER",
+          "CASHIER",
+          "WAREHOUSE",
+          "ACCOUNTANT",
+          "STAFF",
+        ],
+      },
       { id: "invoices", label: "Historique des factures", icon: FileClock },
     ],
   },
@@ -178,6 +192,7 @@ const roleLabels: Record<UserRole, string> = {
   CASHIER: "Vendeur",
   WAREHOUSE: "Magasinier",
   ACCOUNTANT: "Comptable",
+  SALES_REP: "Commercial restreint",
   STAFF: "Employé",
 };
 
@@ -253,6 +268,30 @@ export function App() {
   }, [me.data, me.error]);
 
   useEffect(() => {
+    if (!("__TAURI_INTERNALS__" in window)) return;
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+    void import("@tauri-apps/api/window").then(async ({ getCurrentWindow }) => {
+      const appWindow = getCurrentWindow();
+      const stop = await appWindow.onCloseRequested(async (event) => {
+        event.preventDefault();
+        const confirmed = await confirmChange({
+          title: "Quitter ONight ?",
+          detail:
+            "Votre session restera connectée pour la prochaine ouverture.",
+        });
+        if (confirmed) await appWindow.destroy();
+      });
+      if (disposed) stop();
+      else unlisten = stop;
+    });
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
+
+  useEffect(() => {
     const followBrowserHistory = () => {
       setNavigationOptions({});
       setNavigationVersion((version) => version + 1);
@@ -302,7 +341,12 @@ export function App() {
     window.history.pushState({}, "", sectionPath(section));
     setMobileMenu(false);
   };
-  const logout = () => {
+  const logout = async () => {
+    const confirmed = await confirmChange({
+      title: "Se déconnecter ?",
+      detail: "Vous devrez saisir vos identifiants pour vous reconnecter.",
+    });
+    if (!confirmed) return;
     setAccessToken("");
     setAuthenticated(false);
     setUser(null);
@@ -347,7 +391,9 @@ export function App() {
     );
 
   const canManageStock = ["OWNER", "MANAGER", "WAREHOUSE"].includes(user.role);
-  const canSell = ["OWNER", "MANAGER", "CASHIER"].includes(user.role);
+  const canSell = ["OWNER", "MANAGER", "CASHIER", "SALES_REP"].includes(
+    user.role,
+  );
   const initials = user.displayName
     .split(" ")
     .map((word) => word[0])
@@ -410,17 +456,19 @@ export function App() {
           ))}
         </nav>
         <div className={ui("sidebar-footer")}>
-          <button
-            className={ui("store-link")}
-            onClick={openStore}
-            aria-label="Voir la boutique"
-          >
-            <Store size={18} />
-            <span>
-              <strong>Voir la boutique</strong>
-              <small>Catalogue retail en direct</small>
-            </span>
-          </button>
+          {user.role !== "SALES_REP" && (
+            <button
+              className={ui("store-link")}
+              onClick={openStore}
+              aria-label="Voir la boutique"
+            >
+              <Store size={18} />
+              <span>
+                <strong>Voir la boutique</strong>
+                <small>Catalogue retail en direct</small>
+              </span>
+            </button>
+          )}
           {/* <p className={ui("sidebar-account-label")}>Compte</p> */}
           <div className={ui("profile")}>
             {/* <span className={ui("avatar")}>{initials}</span> */}
@@ -446,7 +494,7 @@ export function App() {
               )}
               <small className="text-white!">{roleLabels[user.role]}</small>
             </div>
-            <button onClick={logout} title="Se déconnecter">
+            <button onClick={() => void logout()} title="Se déconnecter">
               <LogOut
                 size={18}
                 color="white"
@@ -487,9 +535,11 @@ export function App() {
                 {darkMode ? "Mode clair" : "Mode sombre"}
               </span>
             </button>
-            <button className={ui("secondary-button")} onClick={openStore}>
-              <Store size={16} /> Boutique
-            </button>
+            {user.role !== "SALES_REP" && (
+              <button className={ui("secondary-button")} onClick={openStore}>
+                <Store size={16} /> Boutique
+              </button>
+            )}
             {canManageStock && (
               <button
                 className={`${ui("secondary-button")} max-lg:flex! max-md:w-8 max-md:gap-0! max-md:px-0! max-md:text-[0px]!`}
@@ -538,18 +588,22 @@ export function App() {
                   : "Connexion…"}
             </span>
           </header>
-          {active === "dashboard" && (
-            <DashboardPage
-              onNavigate={navigate}
-              role={user.role}
-              reportOpen={dashboardReportOpen}
-              onReportClose={() => setDashboardReportOpen(false)}
-            />
-          )}
+          {active === "dashboard" &&
+            (user.role === "SALES_REP" ? (
+              <SalesRepDashboard onNavigate={navigate} />
+            ) : (
+              <DashboardPage
+                onNavigate={navigate}
+                role={user.role}
+                reportOpen={dashboardReportOpen}
+                onReportClose={() => setDashboardReportOpen(false)}
+              />
+            ))}
           {active === "inventory" && (
             <InventoryPage
               key={navigationVersion}
               canManage={canManageStock}
+              canViewPurchasePrice={user.role !== "SALES_REP"}
               initialStock={navigationOptions.stock}
               initialCreate={navigationOptions.createProduct}
             />
@@ -562,8 +616,8 @@ export function App() {
               />
             )}
           {active === "purchases" && <PurchasesPage />}
-          {active === "sales" && <WholesaleSalesPage />}
-          {active === "invoices" && <InvoicesPage />}
+          {active === "sales" && <WholesaleSalesPage role={user.role} />}
+          {active === "invoices" && <InvoicesPage role={user.role} />}
           {active === "orders" && (
             <OrdersPage
               canUpdate={["OWNER", "MANAGER", "CASHIER", "WAREHOUSE"].includes(

@@ -75,11 +75,13 @@ export function InvoiceDetailModal({
   id,
   onClose,
   surface = "invoice",
+  restricted = false,
 }: {
   kind: "sale" | "purchase";
   id: string;
   onClose: () => void;
   surface?: "order" | "invoice";
+  restricted?: boolean;
 }) {
   const cache = useQueryClient();
   const [downloading, setDownloading] = useState(false);
@@ -103,7 +105,9 @@ export function InvoiceDetailModal({
       ].map((key) => cache.invalidateQueries({ queryKey: [key] })),
     );
   };
-  async function handlePrint(snapshot?: import("@cosmetics/contracts").InvoiceSnapshot) {
+  async function handlePrint(
+    snapshot?: import("@cosmetics/contracts").InvoiceSnapshot,
+  ) {
     const docToPrint = snapshot ?? detail.data;
     if (!docToPrint) return;
     setPrinting(true);
@@ -533,7 +537,7 @@ export function InvoiceDetailModal({
                 {downloadError || printError}
               </p>
             )}
-            {!isCancelled && balance > 0 && (
+            {!restricted && !isCancelled && balance > 0 && (
               <button
                 type="button"
                 className={ui("secondary-button")}
@@ -551,7 +555,8 @@ export function InvoiceDetailModal({
                 <Pencil size={15} /> Corriger
               </button>
             )}
-            {kind === "sale" &&
+            {!restricted &&
+              kind === "sale" &&
               !isCancelled &&
               value.items.some(
                 (item) => item.returnedQuantity < item.quantity,

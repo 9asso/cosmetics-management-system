@@ -29,6 +29,7 @@ import type {
   BrandSettings,
 } from "@cosmetics/contracts";
 import type { PoolClient } from "pg";
+import type { AuthenticatedUser } from "../auth/auth.types.js";
 import { DEFAULT_LOCATION_ID, DEFAULT_ORGANIZATION_ID } from "../constants.js";
 import { DatabaseService } from "../database/database.service.js";
 import {
@@ -55,6 +56,16 @@ type VariantRow = {
   onHand: number;
   reserved: number;
 };
+
+function actorContext(actor?: AuthenticatedUser | string): AuthenticatedUser {
+  if (actor && typeof actor !== "string") return actor;
+  return {
+    id: actor ?? "00000000-0000-4000-8000-000000000000",
+    email: "",
+    displayName: "",
+    role: "OWNER",
+  };
+}
 
 @Injectable()
 export class ManagementService {
@@ -119,12 +130,17 @@ export class ManagementService {
     table: "customers" | "suppliers",
     id: string,
     input: CreateSupplierInput | CreateCustomerInput,
-    actorId: string,
+    actorInput: AuthenticatedUser | string,
   ): Promise<BusinessPartner> {
+    const actor = actorContext(actorInput);
+    const actorId = actor.id;
     return this.db.withTransaction(async (client) => {
       const before = await client.query(
-        `SELECT * FROM ${table} WHERE id = $1 AND organization_id = $2 AND active = true FOR UPDATE`,
-        [id, DEFAULT_ORGANIZATION_ID],
+        `SELECT * FROM ${table} WHERE id = $1 AND organization_id = $2 AND active = true
+         ${actor.role === "SALES_REP" ? "AND created_by = $3" : ""} FOR UPDATE`,
+        actor.role === "SALES_REP"
+          ? [id, DEFAULT_ORGANIZATION_ID, actorId]
+          : [id, DEFAULT_ORGANIZATION_ID],
       );
       if (!before.rowCount) throw new NotFoundException("Contact introuvable.");
       const values: unknown[] = [
@@ -163,13 +179,18 @@ export class ManagementService {
   async archivePartner(
     table: "customers" | "suppliers",
     id: string,
-    actorId: string,
+    actorInput: AuthenticatedUser | string,
   ) {
+    const actor = actorContext(actorInput);
+    const actorId = actor.id;
     return this.db.withTransaction(async (client) => {
       const result = await client.query(
         `UPDATE ${table} SET active = false, updated_at = now()
-        WHERE id = $1 AND organization_id = $2 AND active = true RETURNING id`,
-        [id, DEFAULT_ORGANIZATION_ID],
+        WHERE id = $1 AND organization_id = $2 AND active = true
+        ${actor.role === "SALES_REP" ? "AND created_by = $3" : ""} RETURNING id`,
+        actor.role === "SALES_REP"
+          ? [id, DEFAULT_ORGANIZATION_ID, actorId]
+          : [id, DEFAULT_ORGANIZATION_ID],
       );
       if (!result.rowCount) throw new NotFoundException("Contact introuvable.");
       await client.query(
@@ -181,7 +202,12 @@ export class ManagementService {
     });
   }
 
-  async invoices(query: InvoiceQuery): Promise<Paginated<InvoiceListItem>> {
+  async invoices(
+    query: InvoiceQuery,
+    actorInput?: AuthenticatedUser | string,
+  ): Promise<Paginated<InvoiceListItem>> {
+    const actor = actorContext(actorInput);
+    const restricted = actor.role === "SALES_REP";
     const result = await this.db.query<
       InvoiceListItem & { totalCount: string }
     >(
@@ -189,10 +215,12 @@ export class ManagementService {
         SELECT id, 'sale' AS kind, order_number AS "documentNumber", COALESCE(partner_snapshot->>'name', 'Client comptoir') AS "partnerName",
           status, grand_total::float AS total, amount_paid::float AS "amountPaid", COALESCE(placed_at, created_at) AS "issuedAt"
         FROM sales_orders WHERE organization_id = $1 AND status NOT IN ('DRAFT', 'ORDERED')
+          AND ($6::boolean = false OR created_by = $5)
         UNION ALL
         SELECT id, 'purchase', order_number, COALESCE(partner_snapshot->>'name', 'Fournisseur'), status,
           total::float, amount_paid::float, COALESCE(ordered_at, created_at)
         FROM purchase_orders WHERE organization_id = $1 AND status NOT IN ('DRAFT', 'ORDERED')
+          AND $6::boolean = false
       ) SELECT *, COUNT(*) OVER()::text AS "totalCount" FROM documents
       WHERE ($2 = 'all' OR kind = $2) AND ("documentNumber" ILIKE $3 OR "partnerName" ILIKE $3)
       ORDER BY "issuedAt" DESC, id LIMIT 25 OFFSET $4`,
@@ -201,6 +229,8 @@ export class ManagementService {
         query.kind,
         `%${query.search}%`,
         (query.page - 1) * 25,
+        actor.id,
+        restricted,
       ],
     );
     return {
@@ -211,7 +241,13 @@ export class ManagementService {
     };
   }
 
-  async invoice(kind: "sale" | "purchase", id: string): Promise<InvoiceDetail> {
+  async invoice(
+    kind: "sale" | "purchase",
+    id: string,
+    actorInput?: AuthenticatedUser | string,
+  ): Promise<InvoiceDetail> {
+    const actor = actorContext(actorInput);
+    await this.requireDocumentAccess(kind, id, actor);
     return loadInvoice(this.db, kind, id);
   }
 
@@ -242,13 +278,18 @@ export class ManagementService {
     return result.rows[0]!;
   }
 
-  async customers(): Promise<BusinessPartner[]> {
+  async customers(
+    actorInput?: AuthenticatedUser | string,
+  ): Promise<BusinessPartner[]> {
+    const actor = actorContext(actorInput);
     const result = await this.db.query<CustomerRow>(
       `SELECT id, name, COALESCE(phone, '') AS phone, COALESCE(email, '') AS email,
         COALESCE(address, '') AS address, credit_limit AS "creditLimit"
        FROM customers
-       WHERE organization_id = $1 AND type = 'WHOLESALE' AND active = true ORDER BY name`,
-      [DEFAULT_ORGANIZATION_ID],
+       WHERE organization_id = $1 AND type = 'WHOLESALE' AND active = true
+         AND ($2::boolean = false OR created_by = $3)
+       ORDER BY name`,
+      [DEFAULT_ORGANIZATION_ID, actor.role === "SALES_REP", actor.id],
     );
     return result.rows.map((row) => ({
       ...row,
@@ -256,11 +297,14 @@ export class ManagementService {
     }));
   }
 
-  async createCustomer(input: CreateCustomerInput): Promise<BusinessPartner> {
+  async createCustomer(
+    input: CreateCustomerInput,
+    actorId?: string,
+  ): Promise<BusinessPartner> {
     const result = await this.db.query<CustomerRow>(
       `INSERT INTO customers
-        (organization_id, type, name, phone, email, address, credit_limit)
-       VALUES ($1, 'WHOLESALE', $2, NULLIF($3, ''), NULLIF($4, ''), NULLIF($5, ''), $6)
+        (organization_id, type, name, phone, email, address, credit_limit, created_by)
+       VALUES ($1, 'WHOLESALE', $2, NULLIF($3, ''), NULLIF($4, ''), NULLIF($5, ''), $6, $7)
        RETURNING id, name, COALESCE(phone, '') AS phone, COALESCE(email, '') AS email,
          COALESCE(address, '') AS address, credit_limit AS "creditLimit"`,
       [
@@ -270,6 +314,7 @@ export class ManagementService {
         input.email,
         input.address,
         input.creditLimit,
+        actorId ?? null,
       ],
     );
     const row = result.rows[0]!;
@@ -422,12 +467,24 @@ export class ManagementService {
 
   async createWholesaleSale(
     input: CreateWholesaleSaleInput,
-    actorId: string,
+    actorInput: AuthenticatedUser | string,
   ): Promise<OperationResult> {
+    const actor = actorContext(actorInput);
+    const actorId = actor.id;
     input = createWholesaleSaleSchema.parse(input);
     const collected = input.paymentMethod === "CHECK" ? 0 : input.paidAmount;
     return this.db.withTransaction(async (client) => {
       await this.requireActivePartner(client, "customers", input.customerId);
+      if (actor.role === "SALES_REP") {
+        const owned = await client.query(
+          "SELECT 1 FROM customers WHERE id=$1 AND organization_id=$2 AND created_by=$3 AND active=true",
+          [input.customerId, DEFAULT_ORGANIZATION_ID, actorId],
+        );
+        if (!owned.rowCount)
+          throw new BadRequestException(
+            "Vous pouvez facturer uniquement vos propres clients.",
+          );
+      }
       const variants = await this.loadVariants(
         client,
         input.items.map((item) => item.variantId),
@@ -577,10 +634,14 @@ export class ManagementService {
     kind: "sale" | "purchase",
     id: string,
     input: UpdateInvoiceInput,
-    actorId: string,
+    actorInput: AuthenticatedUser | string,
   ) {
+    const actor = actorContext(actorInput);
+    const actorId = actor.id;
     input = updateInvoiceSchema.parse(input);
     const sale = kind === "sale";
+    if (actor.role === "SALES_REP" && !sale)
+      throw new NotFoundException("Document introuvable.");
     return this.db.withTransaction(async (client) => {
       const document = await client.query<{
         status: string;
@@ -590,8 +651,11 @@ export class ManagementService {
         `SELECT status, ${sale ? "channel" : "'PURCHASE'"} AS channel,
           amount_paid::float AS "amountPaid"
          FROM ${sale ? "sales_orders" : "purchase_orders"}
-         WHERE id=$1 AND organization_id=$2 FOR UPDATE`,
-        [id, DEFAULT_ORGANIZATION_ID],
+         WHERE id=$1 AND organization_id=$2
+           ${actor.role === "SALES_REP" ? "AND created_by=$3" : ""} FOR UPDATE`,
+        actor.role === "SALES_REP"
+          ? [id, DEFAULT_ORGANIZATION_ID, actorId]
+          : [id, DEFAULT_ORGANIZATION_ID],
       );
       const current = document.rows[0];
       if (!current) throw new NotFoundException("Document introuvable.");
@@ -983,8 +1047,11 @@ export class ManagementService {
   async recordInvoicePrint(
     kind: "sale" | "purchase",
     id: string,
-    actorId: string,
+    actorInput: AuthenticatedUser | string,
   ) {
+    const actor = actorContext(actorInput);
+    await this.requireDocumentAccess(kind, id, actor);
+    const actorId = actor.id;
     return this.db.withTransaction(async (client) => {
       await ensureInitialInvoiceHistory(client, kind, id, actorId);
       await captureInvoiceHistory(client, kind, id, "PRINTED", actorId);
@@ -1212,6 +1279,21 @@ export class ManagementService {
     );
     if (!result.rowCount)
       throw new BadRequestException("Ce contact est archivé ou introuvable.");
+  }
+
+  private async requireDocumentAccess(
+    kind: "sale" | "purchase",
+    id: string,
+    actor: AuthenticatedUser,
+  ) {
+    if (actor.role !== "SALES_REP") return;
+    if (kind !== "sale") throw new NotFoundException("Document introuvable.");
+    const result = await this.db.query(
+      `SELECT 1 FROM sales_orders
+       WHERE id=$1 AND organization_id=$2 AND created_by=$3`,
+      [id, DEFAULT_ORGANIZATION_ID, actor.id],
+    );
+    if (!result.rowCount) throw new NotFoundException("Document introuvable.");
   }
 
   private normalizeStatus(status: string): OrderStatus {

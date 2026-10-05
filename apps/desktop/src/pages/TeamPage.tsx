@@ -20,6 +20,7 @@ const roleLabels: Record<UserRole, string> = {
   CASHIER: "Vendeur",
   WAREHOUSE: "Magasinier",
   ACCOUNTANT: "Comptable",
+  SALES_REP: "Commercial restreint",
   STAFF: "Employé",
 };
 const blank: CreateUserInput = {
@@ -99,17 +100,19 @@ export function TeamPage({
         </button>
       </section>
       <p className="text-xs leading-relaxed text-muted">
-        Vous pouvez modifier votre nom, le nom et le rôle des membres. Les comptes des
-        autres administrateurs sont protégés.
+        Vous pouvez modifier votre nom, le nom et le rôle des membres. Les
+        comptes des autres administrateurs sont protégés.
       </p>
       <section className={ui("panel data-panel")}>
-        {update.isError && (!(update.error instanceof ApiRequestError) || update.error.status !== 499) && (
-          <p role="alert" className={ui("inline-error")}>
-            {update.error instanceof ApiRequestError
-              ? update.error.message
-              : "Mise à jour impossible."}
-          </p>
-        )}
+        {update.isError &&
+          (!(update.error instanceof ApiRequestError) ||
+            update.error.status !== 499) && (
+            <p role="alert" className={ui("inline-error")}>
+              {update.error instanceof ApiRequestError
+                ? update.error.message
+                : "Mise à jour impossible."}
+            </p>
+          )}
         <div className={ui("table-wrap")}>
           <table>
             <thead>
@@ -157,7 +160,8 @@ export function TeamPage({
                             aria-label={`Modifier le nom de ${user.displayName}`}
                             onClick={() => setEditing(user)}
                           >
-                            <Pencil size={14} /> {self ? 'Modifier le nom' : 'Nom et rôle'}
+                            <Pencil size={14} />{" "}
+                            {self ? "Modifier le nom" : "Nom et rôle"}
                           </button>
                           {!self && (
                             <button
@@ -192,7 +196,9 @@ export function TeamPage({
         <EditNameModal
           key={editing.id}
           user={editing}
-          allowRoleChange={editing.id !== currentUser.id && editing.role !== 'OWNER'}
+          allowRoleChange={
+            editing.id !== currentUser.id && editing.role !== "OWNER"
+          }
           onClose={() => setEditing(null)}
           onSaved={onUserSaved}
         />
@@ -258,13 +264,15 @@ export function TeamPage({
                 </select>
               </label>
             </div>
-            {create.isError && (!(create.error instanceof ApiRequestError) || create.error.status !== 499) && (
-              <p role="alert" className={ui("form-error")}>
-                {create.error instanceof ApiRequestError
-                  ? create.error.message
-                  : "Création impossible."}
-              </p>
-            )}
+            {create.isError &&
+              (!(create.error instanceof ApiRequestError) ||
+                create.error.status !== 499) && (
+                <p role="alert" className={ui("form-error")}>
+                  {create.error instanceof ApiRequestError
+                    ? create.error.message
+                    : "Création impossible."}
+                </p>
+              )}
             <footer className={ui("modal-actions")}>
               <button
                 type="button"

@@ -20,13 +20,26 @@ export function csvContent(rows: (string | number | null)[][]): string {
       .join("\r\n")
   );
 }
-export function downloadCsv(
+export async function downloadCsv(
   filename: string,
   rows: (string | number | null)[][],
 ) {
+  const content = csvContent(rows);
+  if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+    const [{ save }, { writeTextFile }] = await Promise.all([
+      import("@tauri-apps/plugin-dialog"),
+      import("@tauri-apps/plugin-fs"),
+    ]);
+    const path = await save({
+      defaultPath: filename,
+      filters: [{ name: "Fichier CSV", extensions: ["csv"] }],
+    });
+    if (path) await writeTextFile(path, content);
+    return;
+  }
   const link = document.createElement("a");
   const url = URL.createObjectURL(
-    new Blob([csvContent(rows)], { type: "text/csv;charset=utf-8" }),
+    new Blob([content], { type: "text/csv;charset=utf-8" }),
   );
   link.href = url;
   link.download = filename;
