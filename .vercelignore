@@ -1,0 +1,18 @@
+.git
+.github
+.local
+.turbo
+.vercel
+node_modules
+old
+release
+backup_before_reset_*.sql.gz
+database/seeds/dev 2.sql
+apps/desktop/src-tauri/target
+apps/desktop/src-tauri/gen
+.env
+.env.*
+!.env.example
+*.log
+*.tsbuildinfo
+.DS_Store
