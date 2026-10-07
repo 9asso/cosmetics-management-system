@@ -6,6 +6,7 @@ import {
   productTaxonomy,
   type ProductListItem,
   type ProductStockLot,
+  type UpdateProductInput,
 } from "@cosmetics/contracts";
 import {
   Barcode,
@@ -23,10 +24,33 @@ import {
 import { Modal } from "./Modal";
 import { money } from "../lib/format";
 import { resolveMediaUrl } from "../lib/media";
+import { ui } from "../lib/ui";
+import { SearchablePopup } from "./SearchablePopup";
 
 const categories = Object.fromEntries(
   Object.entries(productTaxonomy).map(([key, value]) => [key, value.label]),
 ) as Record<ProductListItem["category"], string>;
+
+function detailsFrom(product: ProductListItem): UpdateProductInput {
+  return {
+    name: product.name,
+    brand: product.brand,
+    category: product.category,
+    subcategory: product.subcategory,
+    description: product.description,
+    sourceUrl: product.sourceUrl,
+    sku: product.sku,
+    barcode: product.barcode,
+    reference: product.reference,
+    supplierId: product.supplierId ?? null,
+    purchasePrice: product.purchasePrice,
+    wholesalePrice: product.wholesalePrice,
+    retailPrice: product.retailPrice,
+    compareAtPrice: product.compareAtPrice,
+    lowStockThreshold: product.lowStockThreshold,
+    retailVisible: product.retailVisible,
+  };
+}
 
 function Detail({
   label,
@@ -62,19 +86,30 @@ export function ProductDetailModal({
   const [product, setProduct] = useState(initialProduct);
   useEffect(() => {
     setProduct(initialProduct);
+    setDetailDraft(detailsFrom(initialProduct));
   }, [initialProduct]);
 
   const [activeImage, setActiveImage] = useState(0);
-  const [editing, setEditing] = useState(false);
+  const [editingMedia, setEditingMedia] = useState(false);
+  const [editingDetails, setEditingDetails] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [detailError, setDetailError] = useState("");
+  const [detailDraft, setDetailDraft] = useState<UpdateProductInput>(() =>
+    detailsFrom(initialProduct),
+  );
   const images = product.images ?? (product.imageUrl ? [product.imageUrl] : []);
   const [draft, setDraft] = useState({
     images,
     videoUrl: product.videoUrl ?? "",
   });
   const cache = useQueryClient();
+  const suppliers = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: api.suppliers,
+    enabled: canManage,
+  });
   const lots = useQuery({
     queryKey: ["product-stock-lots", product.id],
     queryFn: () => api.productStockLots(product.id),
@@ -215,10 +250,32 @@ export function ProductDetailModal({
         imageUrl: media.images[0] ?? "",
       }));
       setActiveImage(0);
-      setEditing(false);
+      setEditingMedia(false);
       await cache.invalidateQueries({ queryKey: ["products"] });
     } catch (error) {
       setError(
+        error instanceof Error ? error.message : "Enregistrement impossible.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveDetails() {
+    setSaving(true);
+    setDetailError("");
+    try {
+      const updated = await api.updateProduct(product.id, detailDraft);
+      setProduct(updated);
+      setDetailDraft(detailsFrom(updated));
+      setEditingDetails(false);
+      await Promise.all([
+        cache.invalidateQueries({ queryKey: ["products"] }),
+        cache.invalidateQueries({ queryKey: ["dashboard-summary"] }),
+        cache.invalidateQueries({ queryKey: ["dashboard-analytics"] }),
+      ]);
+    } catch (error) {
+      setDetailError(
         error instanceof Error ? error.message : "Enregistrement impossible.",
       );
     } finally {
@@ -354,55 +411,342 @@ export function ProductDetailModal({
         </section>
 
         {canManage && (
-          <div className="mt-4">
-            {!editing ? (
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              className="rounded-lg bg-brand px-4 py-2 text-xs font-bold text-white"
+              onClick={() => {
+                setDetailDraft(detailsFrom(product));
+                setEditingDetails(true);
+                setEditingMedia(false);
+                setDetailError("");
+              }}
+            >
+              <Pencil size={14} className="mr-1 inline" /> Modifier le produit
+            </button>
+            {!editingMedia ? (
               <button
                 type="button"
                 className="rounded-lg border border-line px-4 py-2 text-xs font-bold text-brand"
                 onClick={() => {
                   setDraft({ images, videoUrl: product.videoUrl ?? "" });
-                  setEditing(true);
+                  setEditingMedia(true);
+                  setEditingDetails(false);
                   setError("");
                 }}
               >
                 Gérer la galerie & vidéo
               </button>
-            ) : (
-              <>
-                <ProductMediaEditor
-                  value={draft}
-                  onChange={setDraft}
-                  disabled={saving}
-                  onBusyChange={setUploading}
+            ) : null}
+          </div>
+        )}
+
+        {canManage && editingDetails && (
+          <form
+            className={ui("product-form") + " mt-4"}
+            onSubmit={(event) => {
+              event.preventDefault();
+              void saveDetails();
+            }}
+          >
+            <div className={ui("form-grid")}>
+              <label>
+                <span>Nom</span>
+                <input
+                  required
+                  minLength={2}
+                  value={detailDraft.name}
+                  onChange={(event) =>
+                    setDetailDraft({ ...detailDraft, name: event.target.value })
+                  }
                 />
-                {error && (
-                  <p
-                    role="alert"
-                    className="mb-3 text-xs text-rose-600 dark:text-rose-300"
-                  >
-                    {error}
-                  </p>
-                )}
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    disabled={saving || uploading}
-                    onClick={() => void saveMedia()}
-                    className="rounded-lg bg-brand px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
-                  >
-                    {saving ? "Enregistrement…" : "Enregistrer les médias"}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={saving || uploading}
-                    onClick={() => setEditing(false)}
-                    className="text-xs text-muted"
-                  >
-                    Annuler
-                  </button>
-                </div>
-              </>
+              </label>
+              <label>
+                <span>Marque</span>
+                <input
+                  required
+                  value={detailDraft.brand}
+                  onChange={(event) =>
+                    setDetailDraft({
+                      ...detailDraft,
+                      brand: event.target.value,
+                    })
+                  }
+                />
+              </label>
+              <label>
+                <span>SKU</span>
+                <input
+                  required
+                  value={detailDraft.sku}
+                  onChange={(event) =>
+                    setDetailDraft({ ...detailDraft, sku: event.target.value })
+                  }
+                />
+              </label>
+              <label>
+                <span>Code-barres</span>
+                <input
+                  value={detailDraft.barcode}
+                  onChange={(event) =>
+                    setDetailDraft({
+                      ...detailDraft,
+                      barcode: event.target.value,
+                    })
+                  }
+                />
+              </label>
+              <label>
+                <span>Référence</span>
+                <input
+                  value={detailDraft.reference}
+                  onChange={(event) =>
+                    setDetailDraft({
+                      ...detailDraft,
+                      reference: event.target.value,
+                    })
+                  }
+                />
+              </label>
+              <label>
+                <span>Catégorie</span>
+                <select
+                  value={detailDraft.category}
+                  onChange={(event) => {
+                    const category = event.target
+                      .value as UpdateProductInput["category"];
+                    setDetailDraft({
+                      ...detailDraft,
+                      category,
+                      subcategory: productTaxonomy[category].subcategories[0],
+                    });
+                  }}
+                >
+                  {Object.entries(categories).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Sous-catégorie</span>
+                <select
+                  value={detailDraft.subcategory}
+                  onChange={(event) =>
+                    setDetailDraft({
+                      ...detailDraft,
+                      subcategory: event.target.value,
+                    })
+                  }
+                >
+                  {productTaxonomy[detailDraft.category].subcategories.map(
+                    (value) => (
+                      <option key={value} value={value}>
+                        {value}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </label>
+              <SearchablePopup
+                label="Fournisseur"
+                placeholder="Aucun fournisseur"
+                items={suppliers.data ?? []}
+                value={detailDraft.supplierId ?? ""}
+                onChange={(supplierId) =>
+                  setDetailDraft({
+                    ...detailDraft,
+                    supplierId: supplierId || null,
+                  })
+                }
+                getId={(supplier) => supplier.id}
+                getLabel={(supplier) => supplier.name}
+                getDetail={(supplier) =>
+                  supplier.phone || supplier.email || supplier.address
+                }
+              />
+              {canViewPurchasePrice && (
+                <label>
+                  <span>Prix d’achat (MAD)</span>
+                  <input
+                    required
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={detailDraft.purchasePrice}
+                    onChange={(event) =>
+                      setDetailDraft({
+                        ...detailDraft,
+                        purchasePrice: Number(event.target.value),
+                      })
+                    }
+                  />
+                </label>
+              )}
+              <label>
+                <span>Prix grossiste (MAD)</span>
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={detailDraft.wholesalePrice}
+                  onChange={(event) =>
+                    setDetailDraft({
+                      ...detailDraft,
+                      wholesalePrice: Number(event.target.value),
+                    })
+                  }
+                />
+              </label>
+              <label>
+                <span>Prix boutique (MAD)</span>
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={detailDraft.retailPrice}
+                  onChange={(event) =>
+                    setDetailDraft({
+                      ...detailDraft,
+                      retailPrice: Number(event.target.value),
+                    })
+                  }
+                />
+              </label>
+              <label>
+                <span>Ancien prix / prix barré</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={detailDraft.compareAtPrice ?? ""}
+                  onChange={(event) =>
+                    setDetailDraft({
+                      ...detailDraft,
+                      compareAtPrice: event.target.value
+                        ? Number(event.target.value)
+                        : null,
+                    })
+                  }
+                />
+              </label>
+              <label>
+                <span>Seuil stock faible</span>
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={detailDraft.lowStockThreshold}
+                  onChange={(event) =>
+                    setDetailDraft({
+                      ...detailDraft,
+                      lowStockThreshold: Number(event.target.value),
+                    })
+                  }
+                />
+              </label>
+              <label className="sm:col-span-2">
+                <span>URL source</span>
+                <input
+                  value={detailDraft.sourceUrl}
+                  onChange={(event) =>
+                    setDetailDraft({
+                      ...detailDraft,
+                      sourceUrl: event.target.value,
+                    })
+                  }
+                />
+              </label>
+              <label className="sm:col-span-2">
+                <span>Description</span>
+                <textarea
+                  rows={5}
+                  value={detailDraft.description}
+                  onChange={(event) =>
+                    setDetailDraft({
+                      ...detailDraft,
+                      description: event.target.value,
+                    })
+                  }
+                />
+              </label>
+              <label className="flex-row items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={detailDraft.retailVisible}
+                  onChange={(event) =>
+                    setDetailDraft({
+                      ...detailDraft,
+                      retailVisible: event.target.checked,
+                    })
+                  }
+                />
+                <span>Visible dans la boutique</span>
+              </label>
+            </div>
+            {detailError && (
+              <p role="alert" className={ui("form-error")}>
+                {detailError}
+              </p>
             )}
+            <footer className={ui("modal-actions")}>
+              <button
+                type="button"
+                className={ui("secondary-button")}
+                disabled={saving}
+                onClick={() => setEditingDetails(false)}
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                className={ui("primary-button")}
+                disabled={saving}
+              >
+                {saving ? "Enregistrement…" : "Enregistrer le produit"}
+              </button>
+            </footer>
+          </form>
+        )}
+
+        {canManage && editingMedia && (
+          <div className="mt-4">
+            <ProductMediaEditor
+              value={draft}
+              onChange={setDraft}
+              disabled={saving}
+              onBusyChange={setUploading}
+            />
+            {error && (
+              <p
+                role="alert"
+                className="mb-3 text-xs text-rose-600 dark:text-rose-300"
+              >
+                {error}
+              </p>
+            )}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                disabled={saving || uploading}
+                onClick={() => void saveMedia()}
+                className="rounded-lg bg-brand px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+              >
+                {saving ? "Enregistrement…" : "Enregistrer les médias"}
+              </button>
+              <button
+                type="button"
+                disabled={saving || uploading}
+                onClick={() => setEditingMedia(false)}
+                className="text-xs text-muted"
+              >
+                Annuler
+              </button>
+            </div>
           </div>
         )}
 

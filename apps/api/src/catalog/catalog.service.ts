@@ -12,6 +12,7 @@ import type {
   ProductListItem,
   ProductListQuery,
   ProductStockLot,
+  UpdateProductInput,
   UpdateStockLotInput,
 } from "@cosmetics/contracts";
 import type { DatabaseError } from "pg";
@@ -356,6 +357,7 @@ export class CatalogService {
         v.sku,
         COALESCE(v.barcode, '') AS barcode,
         v.reference,
+        psl.supplier_id AS "supplierId",
         COALESCE(s.name, '') AS "supplierName",
         v.purchase_price AS "purchasePrice",
         v.wholesale_price AS "wholesalePrice",
@@ -586,6 +588,121 @@ export class CatalogService {
     } catch (error) {
       if ((error as DatabaseError).code === "23505") {
         throw new ConflictException("SKU or barcode already exists");
+      }
+      throw error;
+    }
+  }
+
+  async update(
+    id: string,
+    input: UpdateProductInput,
+  ): Promise<ProductListItem> {
+    try {
+      const variantId = await this.db.withTransaction(async (client) => {
+        const current = await client.query<{
+          variantId: string;
+          name: string;
+          sku: string;
+        }>(
+          `SELECT v.id AS "variantId", p.name, v.sku
+           FROM products p
+           JOIN product_variants v ON v.product_id=p.id AND v.active=true
+           WHERE p.id=$1 AND p.organization_id=$2 AND p.active=true
+           FOR UPDATE OF p, v`,
+          [id, DEFAULT_ORGANIZATION_ID],
+        );
+        const product = current.rows[0];
+        if (!product) throw new NotFoundException("Produit introuvable.");
+
+        if (input.supplierId) {
+          const supplier = await client.query(
+            "SELECT id FROM suppliers WHERE id=$1 AND organization_id=$2 AND active=true FOR SHARE",
+            [input.supplierId, DEFAULT_ORGANIZATION_ID],
+          );
+          if (!supplier.rowCount)
+            throw new BadRequestException(
+              "Fournisseur archivé ou introuvable.",
+            );
+        }
+
+        await client.query(
+          `UPDATE products SET
+             name=$3, brand=$4, category=$5, subcategory=$6,
+             description=$7, source_url=$8, retail_visible=$9, updated_at=now()
+           WHERE id=$1 AND organization_id=$2`,
+          [
+            id,
+            DEFAULT_ORGANIZATION_ID,
+            input.name,
+            input.brand,
+            input.category,
+            input.subcategory,
+            input.description,
+            input.sourceUrl,
+            input.retailVisible,
+          ],
+        );
+        await client.query(
+          `UPDATE product_variants SET
+             sku=$2, barcode=NULLIF($3,''), reference=$4,
+             purchase_price=$5, wholesale_price=$6, retail_price=$7,
+             compare_at_price=$8, low_stock_threshold=$9, updated_at=now()
+           WHERE id=$1`,
+          [
+            product.variantId,
+            input.sku,
+            input.barcode,
+            input.reference,
+            input.purchasePrice,
+            input.wholesalePrice,
+            input.retailPrice,
+            input.compareAtPrice ?? null,
+            input.lowStockThreshold,
+          ],
+        );
+        await client.query(
+          "DELETE FROM product_supplier_links WHERE variant_id=$1",
+          [product.variantId],
+        );
+        if (input.supplierId) {
+          await client.query(
+            `INSERT INTO product_supplier_links
+              (variant_id,supplier_id,preferred) VALUES ($1,$2,true)`,
+            [product.variantId, input.supplierId],
+          );
+        }
+        await client.query(
+          `INSERT INTO audit_logs
+            (organization_id,action,entity_type,entity_id,before_data,after_data)
+           VALUES ($1,'PRODUCT_UPDATED','product',$2,$3::jsonb,$4::jsonb)`,
+          [
+            DEFAULT_ORGANIZATION_ID,
+            id,
+            JSON.stringify({ name: product.name, sku: product.sku }),
+            JSON.stringify(input),
+          ],
+        );
+        await client.query(
+          `INSERT INTO outbox_events
+            (aggregate_type,aggregate_id,event_type,payload)
+           VALUES ('product',$1,'catalog.product.updated',$2::jsonb)`,
+          [id, JSON.stringify({ productId: id, variantId: product.variantId })],
+        );
+        return product.variantId;
+      });
+
+      const page = await this.list({
+        page: 1,
+        pageSize: 100,
+        search: input.sku,
+        stock: "all",
+      });
+      const updated = page.items.find((item) => item.variantId === variantId);
+      if (!updated) throw new Error("Updated product could not be loaded");
+      return updated;
+    } catch (error) {
+      if ((error as DatabaseError).code === "23505") {
+        throw new ConflictException("SKU ou code-barres déjà utilisé.");
       }
       throw error;
     }

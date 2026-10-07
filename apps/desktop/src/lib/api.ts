@@ -11,6 +11,7 @@ import type {
   CreateManualCheckInput,
   DashboardReport,
   UpdateInvoiceInput,
+  UpdateProductInput,
   CreateInvoiceReturnInput,
   AdjustInventoryInput,
   AuthUser,
@@ -237,6 +238,11 @@ export const api = {
   createProduct: (input: CreateProductInput) =>
     request<ProductListItem>("/products", {
       method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateProduct: (id: string, input: UpdateProductInput) =>
+    request<ProductListItem>(`/products/${id}`, {
+      method: "PATCH",
       body: JSON.stringify(input),
     }),
   deleteProduct: (id: string) =>

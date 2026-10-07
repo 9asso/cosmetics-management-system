@@ -19,6 +19,7 @@ vi.mock("../lib/api", () => ({
     products: vi.fn(),
     suppliers: vi.fn(),
     createProduct: vi.fn(),
+    updateProduct: vi.fn(),
     deleteProduct: vi.fn(),
     adjustInventory: vi.fn(),
     uploadProductMedia: vi.fn(),
@@ -69,6 +70,8 @@ function mount(canDelete: boolean) {
   });
   vi.mocked(api.suppliers).mockResolvedValue([]);
   vi.mocked(api.deleteProduct).mockResolvedValue({ deleted: true });
+  vi.mocked(api.updateProduct).mockResolvedValue(product);
+  vi.mocked(api.productStockLots).mockResolvedValue([]);
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -108,6 +111,28 @@ describe("product deletion", () => {
     const client = mount(false);
     expect(await screen.findByText("Sérum test")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Supprimer" })).toBeNull();
+    client.clear();
+  });
+
+  it("edits the product details from its product sheet", async () => {
+    const client = mount(true);
+    fireEvent.click(await screen.findByText("Sérum test"));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Modifier le produit" }),
+    );
+    fireEvent.change(screen.getByLabelText("Nom"), {
+      target: { value: "Sérum modifié" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Enregistrer le produit" }),
+    );
+
+    await waitFor(() =>
+      expect(api.updateProduct).toHaveBeenCalledWith(
+        product.id,
+        expect.objectContaining({ name: "Sérum modifié", sku: product.sku }),
+      ),
+    );
     client.clear();
   });
 });

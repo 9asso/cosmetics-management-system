@@ -16,12 +16,15 @@
     "format": "prettier --write .",
     "db:migrate": "pnpm --filter @cosmetics/api db:migrate",
     "import:catalog-demo": "node scripts/import-catalog-demo.mjs",
+    "import:onight-products": "node scripts/import-onight-products.mjs",
     "deploy:vps": "node scripts/deploy-vps.mjs"
   },
   "devDependencies": {
+    "@types/node": "^24.13.3",
     "@types/ssh2": "^1.15.6",
     "dotenv": "^17.4.2",
     "embedded-postgres": "17.10.0-beta.17",
+    "pg": "^8.23.0",
     "prettier": "^3.6.2",
     "ssh2": "^1.17.0",
     "turbo": "^2.5.6",

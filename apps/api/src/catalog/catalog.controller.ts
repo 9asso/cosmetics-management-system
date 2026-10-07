@@ -16,6 +16,8 @@ import {
   productListQuerySchema,
   type CreateProductInput,
   type ProductListQuery,
+  updateProductSchema,
+  type UpdateProductInput,
   updateStockLotSchema,
   type UpdateStockLotInput,
 } from "@cosmetics/contracts";
@@ -69,6 +71,15 @@ export class CatalogController {
     @Body(new ZodValidationPipe(productMediaSchema)) input: ProductMediaInput,
   ) {
     return this.catalog.updateMedia(id, input);
+  }
+
+  @Patch(":id")
+  @Roles("OWNER", "MANAGER", "WAREHOUSE")
+  update(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(updateProductSchema)) input: UpdateProductInput,
+  ) {
+    return this.catalog.update(id, input);
   }
 
   @Post()

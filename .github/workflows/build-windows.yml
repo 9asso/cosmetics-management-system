@@ -10,7 +10,7 @@ jobs:
   build-windows:
     runs-on: windows-2022
     env:
-      VITE_API_URL: http://162.35.107.230/api/v1
+      VITE_API_URL: https://onight-business.vercel.app/api/v1
       VITE_BASE_PATH: /
     steps:
       - uses: actions/checkout@v4
