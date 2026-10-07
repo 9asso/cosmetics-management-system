@@ -239,6 +239,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify(input),
     }),
+  deleteProduct: (id: string) =>
+    request<{ deleted: true }>(`/products/${id}`, { method: "DELETE" }),
   adjustInventory: (input: AdjustInventoryInput) =>
     request<InventoryAdjustmentResult>("/inventory/adjustments", {
       method: "POST",

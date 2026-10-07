@@ -12,6 +12,7 @@ import {
   PackagePlus,
   Search,
   SlidersHorizontal,
+  Trash2,
 } from "lucide-react";
 import { ErrorState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
@@ -80,11 +81,13 @@ function StockStatus({ product }: { product: ProductListItem }) {
 
 export function InventoryPage({
   canManage = true,
+  canDelete = false,
   canViewPurchasePrice = true,
   initialStock = "all",
   initialCreate = false,
 }: {
   canManage?: boolean;
+  canDelete?: boolean;
   canViewPurchasePrice?: boolean;
   initialStock?: "all" | "low" | "out";
   initialCreate?: boolean;
@@ -100,6 +103,8 @@ export function InventoryPage({
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
   const [selectedProduct, setSelectedProduct] =
+    useState<ProductListItem | null>(null);
+  const [deletingProduct, setDeletingProduct] =
     useState<ProductListItem | null>(null);
   const [page, setPage] = useState(1);
   const [imageReading, setImageReading] = useState(false);
@@ -159,6 +164,20 @@ export function InventoryPage({
       setShowCreate(false);
       setDraft(emptyProduct);
       setSkuToken(skuSuffix());
+    },
+  });
+  const remove = useMutation({
+    mutationFn: () => api.deleteProduct(deletingProduct!.id),
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["products"] }),
+        client.invalidateQueries({ queryKey: ["dashboard-summary"] }),
+        client.invalidateQueries({ queryKey: ["dashboard-analytics"] }),
+      ]);
+      if (selectedProduct?.id === deletingProduct?.id) {
+        setSelectedProduct(null);
+      }
+      setDeletingProduct(null);
     },
   });
 
@@ -456,16 +475,35 @@ export function InventoryPage({
                     <StockStatus product={product} />
                   </td>
                   <td>
-                    {canManage ? (
-                      <button
-                        className={ui("secondary-button compact")}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setAdjustProduct(product);
-                        }}
-                      >
-                        Ajuster
-                      </button>
+                    {canManage || canDelete ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {canManage && (
+                          <button
+                            className={ui("secondary-button compact")}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setAdjustProduct(product);
+                            }}
+                          >
+                            Ajuster
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            className={
+                              ui("secondary-button compact") +
+                              " border-rose-200 text-rose-700 hover:border-rose-400 dark:text-rose-300"
+                            }
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              remove.reset();
+                              setDeletingProduct(product);
+                            }}
+                          >
+                            <Trash2 size={14} /> Supprimer
+                          </button>
+                        )}
+                      </div>
                     ) : (
                       <span>Lecture seule</span>
                     )}
@@ -850,6 +888,48 @@ export function InventoryPage({
               </button>
             </footer>
           </form>
+        </Modal>
+      )}
+      {deletingProduct && (
+        <Modal
+          title="Supprimer le produit"
+          subtitle="Cette action nécessite votre confirmation."
+          onClose={() => !remove.isPending && setDeletingProduct(null)}
+        >
+          <div className="space-y-4 p-5 sm:p-6">
+            <p className="text-sm leading-relaxed">
+              Confirmez la suppression de{" "}
+              <strong>{deletingProduct.name}</strong>. Le produit disparaîtra du
+              catalogue et du stock, mais son historique restera conservé dans
+              les anciennes opérations.
+            </p>
+            {remove.isError && (
+              <p role="alert" className={ui("form-error")}>
+                {remove.error instanceof ApiRequestError
+                  ? remove.error.message
+                  : "Suppression impossible. Réessayez."}
+              </p>
+            )}
+            <footer className={ui("modal-actions")}>
+              <button
+                type="button"
+                className={ui("secondary-button")}
+                disabled={remove.isPending}
+                onClick={() => setDeletingProduct(null)}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className={ui("primary-button") + " bg-rose-700"}
+                disabled={remove.isPending}
+                onClick={() => remove.mutate()}
+              >
+                <Trash2 size={15} />
+                {remove.isPending ? "Suppression…" : "Confirmer la suppression"}
+              </button>
+            </footer>
+          </div>
         </Modal>
       )}
     </div>

@@ -590,4 +590,45 @@ export class CatalogService {
       throw error;
     }
   }
+
+  async remove(id: string): Promise<{ deleted: true }> {
+    return this.db.withTransaction(async (client) => {
+      const product = await client.query<{ id: string; name: string }>(
+        `SELECT id, name FROM products
+         WHERE id=$1 AND organization_id=$2 AND active=true
+         FOR UPDATE`,
+        [id, DEFAULT_ORGANIZATION_ID],
+      );
+      if (!product.rows[0]) {
+        throw new NotFoundException("Produit introuvable ou déjà supprimé.");
+      }
+
+      await client.query(
+        "UPDATE products SET active=false, retail_visible=false, updated_at=now() WHERE id=$1",
+        [id],
+      );
+      await client.query(
+        "UPDATE product_variants SET active=false, updated_at=now() WHERE product_id=$1",
+        [id],
+      );
+      await client.query(
+        `INSERT INTO audit_logs
+          (organization_id,action,entity_type,entity_id,before_data)
+         VALUES ($1,'PRODUCT_DELETED','product',$2,$3::jsonb)`,
+        [
+          DEFAULT_ORGANIZATION_ID,
+          id,
+          JSON.stringify({ name: product.rows[0].name }),
+        ],
+      );
+      await client.query(
+        `INSERT INTO outbox_events
+          (aggregate_type,aggregate_id,event_type,payload)
+         VALUES ('product',$1,'catalog.product.deleted',$2::jsonb)`,
+        [id, JSON.stringify({ productId: id })],
+      );
+
+      return { deleted: true };
+    });
+  }
 }

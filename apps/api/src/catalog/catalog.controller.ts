@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Post,
   Query,
@@ -76,5 +77,11 @@ export class CatalogController {
     @Body(new ZodValidationPipe(createProductSchema)) input: CreateProductInput,
   ) {
     return this.catalog.create(input);
+  }
+
+  @Delete(":id")
+  @Roles("OWNER")
+  remove(@Param("id", new ParseUUIDPipe()) id: string) {
+    return this.catalog.remove(id);
   }
 }

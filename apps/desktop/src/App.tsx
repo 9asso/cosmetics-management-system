@@ -603,6 +603,7 @@ export function App() {
             <InventoryPage
               key={navigationVersion}
               canManage={canManageStock}
+              canDelete={user.role === "OWNER"}
               canViewPurchasePrice={user.role !== "SALES_REP"}
               initialStock={navigationOptions.stock}
               initialCreate={navigationOptions.createProduct}
