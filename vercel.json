@@ -9,5 +9,8 @@
       "maxDuration": 60
     }
   },
-  "rewrites": [{ "source": "/:path*", "destination": "/index.html" }]
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
 }
