@@ -1,11 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "installCommand": "pnpm install --frozen-lockfile --config.node-linker=hoisted --force",
-  "buildCommand": "pnpm --filter @cosmetics/contracts build && VITE_API_URL=/api/v1 VITE_BASE_PATH=/ pnpm --filter @cosmetics/desktop build",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm build:vercel-api && VITE_API_URL=/api/v1 VITE_BASE_PATH=/ pnpm --filter @cosmetics/desktop build",
   "outputDirectory": "apps/desktop/dist",
   "functions": {
-    "api/[...path].ts": {
+    "api/[...path].js": {
       "maxDuration": 60
     }
   },

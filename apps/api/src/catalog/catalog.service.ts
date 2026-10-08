@@ -4,7 +4,6 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import sharp from "sharp";
 import type {
   CreateProductInput,
   ProductMediaInput,
@@ -71,6 +70,7 @@ export class CatalogService {
           "Images limitées à 5 Mo. Vidéos : MP4 ou WebM, 30 Mo maximum.",
         );
       try {
+        const { default: sharp } = await import("sharp");
         const source = sharp(bytes, { limitInputPixels: 25_000_000 });
         const metadata = await source.metadata();
         if (!["jpeg", "png", "webp"].includes(metadata.format ?? ""))
@@ -407,6 +407,7 @@ export class CatalogService {
       if (bytes.length > 5 * 1024 * 1024)
         throw new BadRequestException("Image limitée à 5 Mo.");
       try {
+        const { default: sharp } = await import("sharp");
         const source = sharp(bytes, { limitInputPixels: 25_000_000 });
         const metadata = await source.metadata();
         if (!["jpeg", "png", "webp"].includes(metadata.format ?? ""))
