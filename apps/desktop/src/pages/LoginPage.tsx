@@ -22,7 +22,7 @@ export function LoginPage({
   return (
     <main className={ui("login-page")}>
       <section className={ui("login-story")}>
-        <img src="http://162.35.107.230/images/beauty-hero.png" alt="" className="absolute inset-0 size-full object-cover object-center" />
+        <img src="/images/beauty-hero.png" alt="" className="absolute inset-0 size-full object-cover object-center" />
         <div className="pointer-events-none absolute inset-0 bg-linear-to-r from-white/95 via-white/65 to-transparent" />
         <div className={ui("login-brand")}>
           <img src={`${import.meta.env.BASE_URL}brand-onight.png`} alt="" />{" "}

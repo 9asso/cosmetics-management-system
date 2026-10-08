@@ -25,7 +25,7 @@ const dotenv = existsSync(resolve(root, ".env"))
   ? parse(readFileSync(resolve(root, ".env")))
   : {};
 
-const VPS_HOST     = dotenv.VPS_HOST     || "162.35.107.230";
+const VPS_HOST     = dotenv.VPS_HOST     || "";
 const VPS_USER     = dotenv.VPS_USER     || "root";
 const VPS_PASSWORD = dotenv.VPS_PASSWORD || "";
 
