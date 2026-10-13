@@ -122,6 +122,7 @@ describe("product deletion", () => {
     await waitFor(() =>
       expect(api.createProduct).toHaveBeenCalledWith(
         expect.objectContaining({ reference: "REF-NOUVEAU-SERUM" }),
+        expect.anything(),
       ),
     );
     expect(
