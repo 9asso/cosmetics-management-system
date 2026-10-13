@@ -13,7 +13,9 @@ import { registerConfirmation } from "./lib/confirmation";
 import {
   api,
   ApiRequestError,
+  flushAccessTokenPersistence,
   hasAccessToken,
+  restoreAccessToken,
   setAccessToken,
 } from "./lib/api";
 
@@ -28,7 +30,9 @@ vi.mock("./lib/api", () => {
   }
   return {
     ApiRequestError,
+    flushAccessTokenPersistence: vi.fn().mockResolvedValue(undefined),
     hasAccessToken: vi.fn(),
+    restoreAccessToken: vi.fn(),
     setAccessToken: vi.fn(),
     api: { me: vi.fn(), health: vi.fn(), login: vi.fn() },
   };
@@ -66,6 +70,10 @@ beforeEach(() => {
       clear: () => stored.clear(),
     },
   });
+  vi.mocked(restoreAccessToken).mockImplementation(async () =>
+    vi.mocked(hasAccessToken)(),
+  );
+  vi.mocked(flushAccessTokenPersistence).mockResolvedValue(undefined);
 });
 afterEach(() => {
   cleanup();
@@ -88,11 +96,21 @@ describe("local session recovery", () => {
       </QueryClientProvider>,
     );
     expect(await screen.findByText("Sales dashboard ready")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Produits & stock" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Historique des factures" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Clients & fournisseurs" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Commandes & livraisons" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Finances & dépenses" })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Produits & stock" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Historique des factures" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Clients & fournisseurs" }),
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Commandes & livraisons" }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Finances & dépenses" }),
+    ).toBeNull();
     expect(screen.queryByRole("button", { name: "Équipe & rôles" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Boutique" })).toBeNull();
     client.clear();
@@ -149,6 +167,24 @@ describe("local session recovery", () => {
     expect(await screen.findByText("Dashboard ready")).toBeTruthy();
     client.clear();
   });
+  it("restores a durable desktop session after WebView storage is empty", async () => {
+    vi.mocked(hasAccessToken).mockReturnValue(false);
+    vi.mocked(restoreAccessToken).mockResolvedValue(true);
+    vi.mocked(api.me).mockResolvedValue(user);
+    vi.mocked(api.health).mockResolvedValue({ status: "ok" });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <App />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByText("Restauration de votre session…")).toBeTruthy();
+    expect(await screen.findByText("Dashboard ready")).toBeTruthy();
+    expect(restoreAccessToken).toHaveBeenCalledTimes(1);
+    client.clear();
+  });
   it("replaces a cached auth error after a successful login", async () => {
     vi.mocked(hasAccessToken).mockReturnValue(false);
     vi.mocked(api.health).mockResolvedValue({ status: "ok" });
@@ -171,6 +207,7 @@ describe("local session recovery", () => {
         <App />
       </QueryClientProvider>,
     );
+    await screen.findByRole("button", { name: "Se connecter" });
     fireEvent.change(screen.getByLabelText("Adresse email"), {
       target: { value: user.email },
     });
@@ -201,6 +238,7 @@ describe("local session recovery", () => {
         <App />
       </QueryClientProvider>,
     );
+    await screen.findByRole("button", { name: "Se connecter" });
     expect(document.documentElement.classList.contains("dark")).toBe(false);
     expect(window.localStorage.getItem("onight-dashboard-theme")).toBe("dark");
     fireEvent.change(screen.getByLabelText("Adresse email"), {
@@ -215,6 +253,8 @@ describe("local session recovery", () => {
     registerConfirmation(async () => true);
     fireEvent.click(screen.getByRole("button", { name: "Se déconnecter" }));
     await screen.findByRole("button", { name: "Se connecter" });
+    expect(setAccessToken).toHaveBeenCalledWith("");
+    expect(flushAccessTokenPersistence).toHaveBeenCalledTimes(1);
     expect(document.documentElement.classList.contains("dark")).toBe(false);
     expect(window.localStorage.getItem("onight-dashboard-theme")).toBe("dark");
     client.clear();

@@ -42,7 +42,8 @@ import { ErrorState } from "./components/EmptyState";
 import {
   api,
   ApiRequestError,
-  hasAccessToken,
+  flushAccessTokenPersistence,
+  restoreAccessToken,
   setAccessToken,
 } from "./lib/api";
 
@@ -217,7 +218,8 @@ function initialDarkMode() {
 
 export function App() {
   const cache = useQueryClient();
-  const [authenticated, setAuthenticated] = useState(hasAccessToken());
+  const [authenticated, setAuthenticated] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [active, setActive] = useState<Section>(() =>
     sectionFromPath(window.location.pathname),
@@ -243,6 +245,20 @@ export function App() {
     retry: 1,
     refetchInterval: 30_000,
   });
+
+  useEffect(() => {
+    if (sessionReady) return;
+    let disposed = false;
+    void (async () => {
+      const restored = await restoreAccessToken();
+      if (disposed) return;
+      setAuthenticated(restored);
+      setSessionReady(true);
+    })();
+    return () => {
+      disposed = true;
+    };
+  }, [sessionReady]);
 
   useLayoutEffect(() => {
     document.documentElement.classList.toggle(
@@ -280,7 +296,10 @@ export function App() {
           detail:
             "Votre session restera connectée pour la prochaine ouverture.",
         });
-        if (confirmed) await appWindow.destroy();
+        if (confirmed) {
+          await flushAccessTokenPersistence();
+          await appWindow.destroy();
+        }
       });
       if (disposed) stop();
       else unlisten = stop;
@@ -348,6 +367,7 @@ export function App() {
     });
     if (!confirmed) return;
     setAccessToken("");
+    await flushAccessTokenPersistence();
     setAuthenticated(false);
     setUser(null);
     setActive("dashboard");
@@ -361,11 +381,19 @@ export function App() {
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
+  if (!sessionReady)
+    return (
+      <div className={ui("app-loading")}>
+        <span />
+        <strong>Restauration de votre session…</strong>
+      </div>
+    );
   if (!authenticated) {
     return (
       <LoginPage
         onLogin={(result) => {
           setAccessToken(result.accessToken);
+          setSessionReady(true);
           cache.setQueryData(["me"], result.user);
           setUser(result.user);
           setAuthenticated(true);

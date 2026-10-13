@@ -48,20 +48,77 @@ import { confirmChange, mutationConfirmation } from "./confirmation";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000/api/v1";
 const TOKEN_KEY = "cosmetics_access_token";
-let accessToken =
-  typeof window === "undefined"
-    ? ""
-    : (window.localStorage.getItem(TOKEN_KEY) ?? "");
+let persistenceTask = Promise.resolve();
+
+function browserToken() {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(TOKEN_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function storeBrowserToken(token: string) {
+  if (typeof window === "undefined") return;
+  try {
+    if (token) window.localStorage.setItem(TOKEN_KEY, token);
+    else window.localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // The durable desktop copy remains available when WebView storage fails.
+  }
+}
+
+function isTauriDesktop() {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+
+async function storeDesktopToken(token: string) {
+  if (!isTauriDesktop()) return;
+  const { invoke } = await import("@tauri-apps/api/core");
+  if (token) await invoke("save_session_token", { token });
+  else await invoke("clear_session_token");
+}
+
+let accessToken = browserToken();
 
 export function setAccessToken(token: string) {
   accessToken = token;
-  if (typeof window === "undefined") return;
-  if (token) window.localStorage.setItem(TOKEN_KEY, token);
-  else window.localStorage.removeItem(TOKEN_KEY);
+  storeBrowserToken(token);
+  persistenceTask = persistenceTask
+    .then(() => storeDesktopToken(token))
+    .catch(() => undefined);
 }
 
 export function hasAccessToken() {
   return Boolean(accessToken);
+}
+
+export async function restoreAccessToken() {
+  if (accessToken) {
+    storeBrowserToken(accessToken);
+    persistenceTask = persistenceTask
+      .then(() => storeDesktopToken(accessToken))
+      .catch(() => undefined);
+    await persistenceTask;
+    return true;
+  }
+  if (!isTauriDesktop()) return false;
+  try {
+    await persistenceTask;
+    const { invoke } = await import("@tauri-apps/api/core");
+    const saved = await invoke<string | null>("load_session_token");
+    if (!saved) return false;
+    accessToken = saved;
+    storeBrowserToken(saved);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function flushAccessTokenPersistence() {
+  return persistenceTask;
 }
 
 export class ApiRequestError extends Error {

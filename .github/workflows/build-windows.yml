@@ -24,6 +24,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @cosmetics/contracts build
+      - run: pnpm --filter @cosmetics/desktop test
       - run: pnpm --filter @cosmetics/desktop tauri build
       - uses: actions/upload-artifact@v4
         with:
