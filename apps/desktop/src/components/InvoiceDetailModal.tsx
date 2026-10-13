@@ -23,6 +23,7 @@ import { api } from "../lib/api";
 import { money } from "../lib/format";
 import { ui } from "../lib/ui";
 import { printInvoice } from "../lib/invoice-print";
+import { invoiceBrandSettings } from "../lib/branding";
 import {
   InvoiceEditModal,
   InvoicePaymentModal,
@@ -116,7 +117,10 @@ export function InvoiceDetailModal({
       if (!snapshot) {
         await api.recordInvoicePrint(kind, id);
       }
-      await printInvoice(docToPrint, brandSettings.data);
+      await printInvoice(
+        docToPrint,
+        invoiceBrandSettings(brandSettings.data, restricted),
+      );
       if (!snapshot) {
         await detail.refetch();
       }
@@ -135,7 +139,10 @@ export function InvoiceDetailModal({
     try {
       await api.recordInvoicePrint(kind, id);
       const { downloadInvoicePdf } = await import("../lib/invoice-pdf");
-      await downloadInvoicePdf(detail.data, brandSettings.data);
+      await downloadInvoicePdf(
+        detail.data,
+        invoiceBrandSettings(brandSettings.data, restricted),
+      );
       await detail.refetch();
     } catch (error) {
       setDownloadError(

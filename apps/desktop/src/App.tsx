@@ -55,6 +55,7 @@ import {
   type NavigationOptions,
 } from "./lib/navigation";
 import { confirmChange } from "./lib/confirmation";
+import { brandNameForRole } from "./lib/branding";
 
 const navigation: Array<{
   group: string;
@@ -233,6 +234,7 @@ export function App() {
   const [editProfile, setEditProfile] = useState(false);
   const [dashboardReportOpen, setDashboardReportOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(initialDarkMode);
+  const brandName = brandNameForRole(user?.role);
   const me = useQuery({
     queryKey: ["me"],
     queryFn: api.me,
@@ -275,6 +277,14 @@ export function App() {
   }, [darkMode, authenticated]);
 
   useEffect(() => {
+    document.title = `${brandName} Business — Gestion`;
+    if (!("__TAURI_INTERNALS__" in window)) return;
+    void import("@tauri-apps/api/window").then(({ getCurrentWindow }) =>
+      getCurrentWindow().setTitle(`${brandName} — Gestion commerciale`),
+    );
+  }, [brandName]);
+
+  useEffect(() => {
     if (me.data) setUser(me.data);
     if (me.error instanceof ApiRequestError && me.error.status === 401) {
       setAccessToken("");
@@ -292,7 +302,7 @@ export function App() {
       const stop = await appWindow.onCloseRequested(async (event) => {
         event.preventDefault();
         const confirmed = await confirmChange({
-          title: "Quitter ONight ?",
+          title: `Quitter ${brandName} ?`,
           detail:
             "Votre session restera connectée pour la prochaine ouverture.",
         });
@@ -308,7 +318,7 @@ export function App() {
       disposed = true;
       unlisten?.();
     };
-  }, []);
+  }, [brandName]);
 
   useEffect(() => {
     const followBrowserHistory = () => {
@@ -447,7 +457,7 @@ export function App() {
             alt=""
           />
           <div>
-            <strong>ONight</strong>
+            <strong>{brandName}</strong>
             <small>Espace de gestion</small>
           </div>
           <button
@@ -544,7 +554,7 @@ export function App() {
             <Menu size={20} />
           </button>
           <div className={ui("breadcrumb")}>
-            <span>ONight</span>
+            <span>{brandName}</span>
             <ChevronLeft size={13} />
             <strong>{pageTitles[active].title}</strong>
           </div>
