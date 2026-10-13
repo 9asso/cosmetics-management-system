@@ -218,6 +218,8 @@ describe("local session recovery", () => {
     await waitFor(() =>
       expect(screen.getByText("Dashboard ready")).toBeTruthy(),
     );
+    expect(setAccessToken).toHaveBeenCalledWith("local-test-token");
+    expect(flushAccessTokenPersistence).toHaveBeenCalledTimes(1);
     expect(client.getQueryData(["me"])).toEqual(user);
     client.clear();
   });
@@ -254,7 +256,7 @@ describe("local session recovery", () => {
     fireEvent.click(screen.getByRole("button", { name: "Se déconnecter" }));
     await screen.findByRole("button", { name: "Se connecter" });
     expect(setAccessToken).toHaveBeenCalledWith("");
-    expect(flushAccessTokenPersistence).toHaveBeenCalledTimes(1);
+    expect(flushAccessTokenPersistence).toHaveBeenCalledTimes(2);
     expect(document.documentElement.classList.contains("dark")).toBe(false);
     expect(window.localStorage.getItem("onight-dashboard-theme")).toBe("dark");
     client.clear();

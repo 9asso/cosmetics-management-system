@@ -391,8 +391,9 @@ export function App() {
   if (!authenticated) {
     return (
       <LoginPage
-        onLogin={(result) => {
+        onLogin={async (result) => {
           setAccessToken(result.accessToken);
+          await flushAccessTokenPersistence();
           setSessionReady(true);
           cache.setQueryData(["me"], result.user);
           setUser(result.user);
