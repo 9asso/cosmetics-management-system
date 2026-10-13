@@ -68,6 +68,7 @@ export class ApiRequestError extends Error {
   constructor(
     message: string,
     public readonly status: number,
+    public readonly details?: unknown,
   ) {
     super(message);
   }
@@ -116,6 +117,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiRequestError(
       message ?? "Une erreur inattendue est survenue.",
       response.status,
+      body,
     );
   }
   if (response.status === 204) return undefined as T;
@@ -224,6 +226,26 @@ export const api = {
     }),
   products: (query: Partial<ProductListQuery> = {}) =>
     request<Paginated<ProductListItem>>(`/products?${queryString(query)}`),
+  productConflicts: async (sku: string, barcode: string) => {
+    const terms = [...new Set([sku.trim(), barcode.trim()].filter(Boolean))];
+    const pages = await Promise.all(
+      terms.map((search) =>
+        request<Paginated<ProductListItem>>(
+          `/products?${queryString({ search, stock: "all", page: 1, pageSize: 100 })}`,
+        ),
+      ),
+    );
+    const matches = new Map<string, ProductListItem>();
+    for (const product of pages.flatMap((page) => page.items)) {
+      if (
+        product.sku === sku.trim() ||
+        (barcode.trim() !== "" && product.barcode === barcode.trim())
+      ) {
+        matches.set(product.id, product);
+      }
+    }
+    return [...matches.values()];
+  },
   productStockLots: (id: string) =>
     request<ProductStockLot[]>(`/products/${id}/lots`),
   updateStockLot: (

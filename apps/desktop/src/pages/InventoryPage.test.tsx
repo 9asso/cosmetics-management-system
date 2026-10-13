@@ -11,12 +11,21 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ProductListItem } from "@cosmetics/contracts";
 import { InventoryPage } from "./InventoryPage";
-import { api } from "../lib/api";
+import { api, ApiRequestError } from "../lib/api";
 
 vi.mock("../lib/api", () => ({
-  ApiRequestError: class extends Error {},
+  ApiRequestError: class extends Error {
+    constructor(
+      message: string,
+      public readonly status: number,
+      public readonly details?: unknown,
+    ) {
+      super(message);
+    }
+  },
   api: {
     products: vi.fn(),
+    productConflicts: vi.fn(),
     suppliers: vi.fn(),
     createProduct: vi.fn(),
     updateProduct: vi.fn(),
@@ -69,6 +78,7 @@ function mount(canDelete: boolean) {
     pageSize: 50,
   });
   vi.mocked(api.suppliers).mockResolvedValue([]);
+  vi.mocked(api.productConflicts).mockResolvedValue([]);
   vi.mocked(api.deleteProduct).mockResolvedValue({ deleted: true });
   vi.mocked(api.updateProduct).mockResolvedValue(product);
   vi.mocked(api.productStockLots).mockResolvedValue([]);
@@ -84,6 +94,45 @@ function mount(canDelete: boolean) {
 }
 
 describe("product deletion", () => {
+  it("shows the matching product and opens it directly for editing after a duplicate barcode", async () => {
+    const duplicate = { ...product, barcode: "6110000000012" };
+    vi.mocked(api.createProduct).mockRejectedValue(
+      new ApiRequestError("SKU or barcode already exists", 409),
+    );
+    const client = mount(true);
+    vi.mocked(api.productConflicts).mockResolvedValue([duplicate]);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Nouveau produit/ }),
+    );
+    fireEvent.change(screen.getByLabelText("Nom du produit"), {
+      target: { value: "Nouveau sérum" },
+    });
+    fireEvent.change(screen.getByLabelText("Marque"), {
+      target: { value: "ONight" },
+    });
+    fireEvent.change(screen.getByLabelText("Code-barres"), {
+      target: { value: duplicate.barcode },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ajouter le produit" }));
+
+    expect(
+      await screen.findByText("SKU ou code-barres déjà utilisé."),
+    ).toBeTruthy();
+    expect(await screen.findByText("Même code-barres")).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: `Modifier ${duplicate.name}` }),
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: "Fiche produit" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Enregistrer le produit" }),
+    ).toBeTruthy();
+    client.clear();
+  });
+
   it("asks an admin to confirm before deleting", async () => {
     const client = mount(true);
     fireEvent.click(await screen.findByRole("button", { name: "Supprimer" }));

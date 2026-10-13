@@ -9,7 +9,9 @@ import {
 } from "@cosmetics/contracts";
 import {
   ArrowDownToLine,
+  Eye,
   PackagePlus,
+  Pencil,
   Search,
   SlidersHorizontal,
   Trash2,
@@ -104,8 +106,18 @@ export function InventoryPage({
   const [exportError, setExportError] = useState("");
   const [selectedProduct, setSelectedProduct] =
     useState<ProductListItem | null>(null);
+  const [selectedProductStartsEditing, setSelectedProductStartsEditing] =
+    useState(false);
+  const [returnToCreateAfterProduct, setReturnToCreateAfterProduct] =
+    useState(false);
   const [deletingProduct, setDeletingProduct] =
     useState<ProductListItem | null>(null);
+  const [returnToCreateAfterDelete, setReturnToCreateAfterDelete] =
+    useState(false);
+  const [duplicateProducts, setDuplicateProducts] = useState<ProductListItem[]>(
+    [],
+  );
+  const [duplicateLookupPending, setDuplicateLookupPending] = useState(false);
   const [page, setPage] = useState(1);
   const [imageReading, setImageReading] = useState(false);
   const suppliers = useQuery({
@@ -154,8 +166,34 @@ export function InventoryPage({
       });
     },
   });
+  const loadProductConflicts = async (
+    input: CreateProductInput,
+    error?: unknown,
+  ) => {
+    setDuplicateLookupPending(true);
+    try {
+      const details =
+        error instanceof ApiRequestError &&
+        error.details &&
+        typeof error.details === "object"
+          ? (error.details as { conflicts?: ProductListItem[] })
+          : undefined;
+      const conflicts = Array.isArray(details?.conflicts)
+        ? details.conflicts
+        : await api.productConflicts(input.sku, input.barcode);
+      setDuplicateProducts(conflicts);
+    } catch {
+      setDuplicateProducts([]);
+    } finally {
+      setDuplicateLookupPending(false);
+    }
+  };
   const create = useMutation({
     mutationFn: api.createProduct,
+    onMutate: () => {
+      setDuplicateProducts([]);
+      setDuplicateLookupPending(false);
+    },
     onSuccess: async () => {
       await Promise.all([
         client.invalidateQueries({ queryKey: ["products"] }),
@@ -164,6 +202,12 @@ export function InventoryPage({
       setShowCreate(false);
       setDraft(emptyProduct);
       setSkuToken(skuSuffix());
+      setDuplicateProducts([]);
+    },
+    onError: async (error, input) => {
+      if (error instanceof ApiRequestError && error.status === 409) {
+        await loadProductConflicts(input, error);
+      }
     },
   });
   const remove = useMutation({
@@ -177,7 +221,15 @@ export function InventoryPage({
       if (selectedProduct?.id === deletingProduct?.id) {
         setSelectedProduct(null);
       }
+      setDuplicateProducts((current) =>
+        current.filter((product) => product.id !== deletingProduct?.id),
+      );
       setDeletingProduct(null);
+      if (returnToCreateAfterDelete) {
+        setReturnToCreateAfterDelete(false);
+        create.reset();
+        setShowCreate(true);
+      }
     },
   });
 
@@ -198,6 +250,23 @@ export function InventoryPage({
   const submit = (event: FormEvent) => {
     event.preventDefault();
     create.mutate(draft);
+  };
+
+  const openProduct = (
+    product: ProductListItem,
+    options: { edit?: boolean; returnToCreate?: boolean } = {},
+  ) => {
+    setSelectedProductStartsEditing(Boolean(options.edit));
+    setReturnToCreateAfterProduct(Boolean(options.returnToCreate));
+    if (options.returnToCreate) setShowCreate(false);
+    setSelectedProduct(product);
+  };
+
+  const openDelete = (product: ProductListItem, returnToCreate = false) => {
+    remove.reset();
+    setReturnToCreateAfterDelete(returnToCreate);
+    if (returnToCreate) setShowCreate(false);
+    setDeletingProduct(product);
   };
 
   const exportProducts = async () => {
@@ -421,7 +490,7 @@ export function InventoryPage({
                 <tr
                   key={product.variantId}
                   className="cursor-pointer"
-                  onClick={() => setSelectedProduct(product)}
+                  onClick={() => openProduct(product)}
                 >
                   <td>
                     <div className={ui("product-cell")}>
@@ -435,7 +504,7 @@ export function InventoryPage({
                           className="text-left hover:underline"
                           onClick={(event) => {
                             event.stopPropagation();
-                            setSelectedProduct(product);
+                            openProduct(product);
                           }}
                         >
                           <strong title={product.name}>{product.name}</strong>
@@ -496,8 +565,7 @@ export function InventoryPage({
                             }
                             onClick={(event) => {
                               event.stopPropagation();
-                              remove.reset();
-                              setDeletingProduct(product);
+                              openDelete(product);
                             }}
                           >
                             <Trash2 size={14} /> Supprimer
@@ -550,11 +618,20 @@ export function InventoryPage({
         <ProductDetailModal
           canManage={canManage}
           canViewPurchasePrice={canViewPurchasePrice}
+          initialEditing={selectedProductStartsEditing}
           product={
             products.data?.items.find((p) => p.id === selectedProduct.id) ??
             selectedProduct
           }
-          onClose={() => setSelectedProduct(null)}
+          onClose={() => {
+            setSelectedProduct(null);
+            setSelectedProductStartsEditing(false);
+            if (returnToCreateAfterProduct) {
+              setReturnToCreateAfterProduct(false);
+              setShowCreate(true);
+              void loadProductConflicts(draft);
+            }
+          }}
         />
       )}
 
@@ -573,11 +650,15 @@ export function InventoryPage({
                   minLength={2}
                   value={draft.name}
                   onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      name: e.target.value,
-                      sku: productSku(e.target.value, skuToken),
-                    })
+                    (() => {
+                      create.reset();
+                      setDuplicateProducts([]);
+                      setDraft({
+                        ...draft,
+                        name: e.target.value,
+                        sku: productSku(e.target.value, skuToken),
+                      });
+                    })()
                   }
                   placeholder="Ex. Sérum Éclat Vitamine C"
                 />
@@ -607,7 +688,11 @@ export function InventoryPage({
                 <input
                   value={draft.barcode}
                   onChange={(e) =>
-                    setDraft({ ...draft, barcode: e.target.value })
+                    (() => {
+                      create.reset();
+                      setDuplicateProducts([]);
+                      setDraft({ ...draft, barcode: e.target.value });
+                    })()
                   }
                   placeholder="6110000000012"
                 />
@@ -793,11 +878,120 @@ export function InventoryPage({
             {create.isError &&
               (!(create.error instanceof ApiRequestError) ||
                 create.error.status !== 499) && (
-                <p className={ui("form-error")}>
-                  {create.error instanceof ApiRequestError
-                    ? create.error.message
-                    : "Impossible d’ajouter ce produit."}
-                </p>
+                <div className="space-y-3">
+                  <p role="alert" className={ui("form-error")}>
+                    {create.error instanceof ApiRequestError &&
+                    create.error.status === 409
+                      ? "SKU ou code-barres déjà utilisé."
+                      : create.error instanceof ApiRequestError
+                        ? create.error.message
+                        : "Impossible d’ajouter ce produit."}
+                  </p>
+                  {create.error instanceof ApiRequestError &&
+                    create.error.status === 409 && (
+                      <section
+                        aria-label="Produits en conflit"
+                        className="space-y-2 rounded-2xl border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-700/60 dark:bg-amber-950/20"
+                      >
+                        <h3 className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                          Produits utilisant déjà ces identifiants
+                        </h3>
+                        {duplicateLookupPending && (
+                          <p className="text-xs text-muted">
+                            Recherche du produit existant…
+                          </p>
+                        )}
+                        {!duplicateLookupPending &&
+                          duplicateProducts.length === 0 && (
+                            <p className="text-xs text-muted">
+                              Aucun produit actif correspondant n’a été trouvé.
+                            </p>
+                          )}
+                        {duplicateProducts.map((product) => (
+                          <article
+                            key={product.id}
+                            className="flex flex-col gap-3 rounded-xl border border-line bg-white p-3 dark:bg-[#302b2f] sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div className="flex min-w-0 items-center gap-3">
+                              {product.imageUrl ? (
+                                <img
+                                  className="size-12 rounded-lg object-cover"
+                                  src={resolveMediaUrl(product.imageUrl)}
+                                  alt=""
+                                />
+                              ) : (
+                                <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-brand-soft font-bold text-brand">
+                                  {product.name.slice(0, 1)}
+                                </span>
+                              )}
+                              <div className="min-w-0">
+                                <strong className="block truncate text-sm">
+                                  {product.name}
+                                </strong>
+                                <p className="truncate text-xs text-muted">
+                                  {product.brand} · {product.sku}
+                                </p>
+                                <div className="mt-1 flex flex-wrap gap-1">
+                                  {product.sku === draft.sku.trim() && (
+                                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                                      Même SKU
+                                    </span>
+                                  )}
+                                  {draft.barcode.trim() !== "" &&
+                                    product.barcode ===
+                                      draft.barcode.trim() && (
+                                      <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                                        Même code-barres
+                                      </span>
+                                    )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              <button
+                                type="button"
+                                className={ui("secondary-button compact")}
+                                aria-label={`Voir ${product.name}`}
+                                onClick={() =>
+                                  openProduct(product, { returnToCreate: true })
+                                }
+                              >
+                                <Eye size={14} /> Voir
+                              </button>
+                              {canManage && (
+                                <button
+                                  type="button"
+                                  className={ui("secondary-button compact")}
+                                  aria-label={`Modifier ${product.name}`}
+                                  onClick={() =>
+                                    openProduct(product, {
+                                      edit: true,
+                                      returnToCreate: true,
+                                    })
+                                  }
+                                >
+                                  <Pencil size={14} /> Modifier
+                                </button>
+                              )}
+                              {canDelete && (
+                                <button
+                                  type="button"
+                                  className={
+                                    ui("secondary-button compact") +
+                                    " border-rose-200 text-rose-700 dark:text-rose-300"
+                                  }
+                                  aria-label={`Supprimer ${product.name}`}
+                                  onClick={() => openDelete(product, true)}
+                                >
+                                  <Trash2 size={14} /> Supprimer
+                                </button>
+                              )}
+                            </div>
+                          </article>
+                        ))}
+                      </section>
+                    )}
+                </div>
               )}
             <footer className={ui("modal-actions")}>
               <button
@@ -894,7 +1088,14 @@ export function InventoryPage({
         <Modal
           title="Supprimer le produit"
           subtitle="Cette action nécessite votre confirmation."
-          onClose={() => !remove.isPending && setDeletingProduct(null)}
+          onClose={() => {
+            if (remove.isPending) return;
+            setDeletingProduct(null);
+            if (returnToCreateAfterDelete) {
+              setReturnToCreateAfterDelete(false);
+              setShowCreate(true);
+            }
+          }}
         >
           <div className="space-y-4 p-5 sm:p-6">
             <p className="text-sm leading-relaxed">
@@ -915,7 +1116,13 @@ export function InventoryPage({
                 type="button"
                 className={ui("secondary-button")}
                 disabled={remove.isPending}
-                onClick={() => setDeletingProduct(null)}
+                onClick={() => {
+                  setDeletingProduct(null);
+                  if (returnToCreateAfterDelete) {
+                    setReturnToCreateAfterDelete(false);
+                    setShowCreate(true);
+                  }
+                }}
               >
                 Annuler
               </button>

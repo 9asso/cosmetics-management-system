@@ -77,21 +77,27 @@ export function ProductDetailModal({
   onClose,
   canManage = false,
   canViewPurchasePrice = true,
+  initialEditing = false,
 }: {
   product: ProductListItem;
   onClose: () => void;
   canManage?: boolean;
   canViewPurchasePrice?: boolean;
+  initialEditing?: boolean;
 }) {
   const [product, setProduct] = useState(initialProduct);
   useEffect(() => {
     setProduct(initialProduct);
     setDetailDraft(detailsFrom(initialProduct));
-  }, [initialProduct]);
+    setEditingDetails(initialEditing && canManage);
+    setEditingMedia(false);
+  }, [initialProduct, initialEditing, canManage]);
 
   const [activeImage, setActiveImage] = useState(0);
   const [editingMedia, setEditingMedia] = useState(false);
-  const [editingDetails, setEditingDetails] = useState(false);
+  const [editingDetails, setEditingDetails] = useState(
+    initialEditing && canManage,
+  );
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");

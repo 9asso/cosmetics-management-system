@@ -588,7 +588,25 @@ export class CatalogService {
       return created;
     } catch (error) {
       if ((error as DatabaseError).code === "23505") {
-        throw new ConflictException("SKU or barcode already exists");
+        const terms = [...new Set([input.sku, input.barcode].filter(Boolean))];
+        const pages = await Promise.all(
+          terms.map((search) =>
+            this.list({ page: 1, pageSize: 100, search, stock: "all" }),
+          ),
+        );
+        const matches = new Map<string, ProductListItem>();
+        for (const product of pages.flatMap((page) => page.items)) {
+          if (
+            product.sku === input.sku ||
+            (input.barcode !== "" && product.barcode === input.barcode)
+          ) {
+            matches.set(product.id, product);
+          }
+        }
+        throw new ConflictException({
+          message: "SKU ou code-barres déjà utilisé.",
+          conflicts: [...matches.values()],
+        });
       }
       throw error;
     }
@@ -711,9 +729,16 @@ export class CatalogService {
 
   async remove(id: string): Promise<{ deleted: true }> {
     return this.db.withTransaction(async (client) => {
-      const product = await client.query<{ id: string; name: string }>(
-        `SELECT id, name FROM products
-         WHERE id=$1 AND organization_id=$2 AND active=true
+      const product = await client.query<{
+        id: string;
+        name: string;
+        sku: string;
+        barcode: string | null;
+      }>(
+        `SELECT p.id, p.name, v.sku, v.barcode
+         FROM products p
+         JOIN product_variants v ON v.product_id=p.id AND v.active=true
+         WHERE p.id=$1 AND p.organization_id=$2 AND p.active=true
          FOR UPDATE`,
         [id, DEFAULT_ORGANIZATION_ID],
       );
@@ -726,7 +751,12 @@ export class CatalogService {
         [id],
       );
       await client.query(
-        "UPDATE product_variants SET active=false, updated_at=now() WHERE product_id=$1",
+        `UPDATE product_variants
+         SET active=false,
+             sku=left(sku,67) || '-DEL-' || left(replace(id::text,'-',''),8),
+             barcode=NULL,
+             updated_at=now()
+         WHERE product_id=$1`,
         [id],
       );
       await client.query(
@@ -736,7 +766,11 @@ export class CatalogService {
         [
           DEFAULT_ORGANIZATION_ID,
           id,
-          JSON.stringify({ name: product.rows[0].name }),
+          JSON.stringify({
+            name: product.rows[0].name,
+            sku: product.rows[0].sku,
+            barcode: product.rows[0].barcode,
+          }),
         ],
       );
       await client.query(
