@@ -42,6 +42,29 @@ type ProductRow = Omit<
 export class CatalogService {
   constructor(private readonly db: DatabaseService) {}
 
+  private async identifierConflicts(
+    sku: string,
+    barcode: string,
+    excludeProductId?: string,
+  ) {
+    const terms = [...new Set([sku, barcode].filter(Boolean))];
+    const pages = await Promise.all(
+      terms.map((search) =>
+        this.list({ page: 1, pageSize: 100, search, stock: "all" }),
+      ),
+    );
+    const matches = new Map<string, ProductListItem>();
+    for (const product of pages.flatMap((page) => page.items)) {
+      if (
+        product.id !== excludeProductId &&
+        (product.sku === sku || (barcode !== "" && product.barcode === barcode))
+      ) {
+        matches.set(product.id, product);
+      }
+    }
+    return [...matches.values()];
+  }
+
   async uploadMedia(bytes: Buffer) {
     if (
       !Buffer.isBuffer(bytes) ||
@@ -588,24 +611,13 @@ export class CatalogService {
       return created;
     } catch (error) {
       if ((error as DatabaseError).code === "23505") {
-        const terms = [...new Set([input.sku, input.barcode].filter(Boolean))];
-        const pages = await Promise.all(
-          terms.map((search) =>
-            this.list({ page: 1, pageSize: 100, search, stock: "all" }),
-          ),
+        const conflicts = await this.identifierConflicts(
+          input.sku,
+          input.barcode,
         );
-        const matches = new Map<string, ProductListItem>();
-        for (const product of pages.flatMap((page) => page.items)) {
-          if (
-            product.sku === input.sku ||
-            (input.barcode !== "" && product.barcode === input.barcode)
-          ) {
-            matches.set(product.id, product);
-          }
-        }
         throw new ConflictException({
           message: "SKU ou code-barres déjà utilisé.",
-          conflicts: [...matches.values()],
+          conflicts,
         });
       }
       throw error;
@@ -721,7 +733,15 @@ export class CatalogService {
       return updated;
     } catch (error) {
       if ((error as DatabaseError).code === "23505") {
-        throw new ConflictException("SKU ou code-barres déjà utilisé.");
+        const conflicts = await this.identifierConflicts(
+          input.sku,
+          input.barcode,
+          id,
+        );
+        throw new ConflictException({
+          message: "SKU ou code-barres déjà utilisé.",
+          conflicts,
+        });
       }
       throw error;
     }

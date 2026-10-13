@@ -20,5 +20,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @cosmetics/contracts build
+      - run: pnpm --filter @cosmetics/api build
       - run: pnpm --filter @cosmetics/desktop test
       - run: pnpm --filter @cosmetics/desktop build

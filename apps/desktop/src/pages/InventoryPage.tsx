@@ -617,6 +617,7 @@ export function InventoryPage({
       {selectedProduct && (
         <ProductDetailModal
           canManage={canManage}
+          canDelete={canDelete}
           canViewPurchasePrice={canViewPurchasePrice}
           initialEditing={selectedProductStartsEditing}
           product={
@@ -631,6 +632,15 @@ export function InventoryPage({
               setShowCreate(true);
               void loadProductConflicts(draft);
             }
+          }}
+          onOpenProduct={(target, edit) => {
+            setSelectedProductStartsEditing(edit);
+            setSelectedProduct(target);
+          }}
+          onDeleteProduct={(target) => {
+            setSelectedProduct(null);
+            setSelectedProductStartsEditing(false);
+            openDelete(target);
           }}
         />
       )}

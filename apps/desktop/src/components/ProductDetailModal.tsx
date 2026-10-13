@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api";
+import { api, ApiRequestError } from "../lib/api";
 import { ProductMediaEditor } from "./ProductMediaEditor";
 import {
   productTaxonomy,
@@ -19,6 +19,7 @@ import {
   PackageCheck,
   Pencil,
   Tag,
+  Trash2,
   X,
 } from "lucide-react";
 import { Modal } from "./Modal";
@@ -36,12 +37,12 @@ function detailsFrom(product: ProductListItem): UpdateProductInput {
     name: product.name,
     brand: product.brand,
     category: product.category,
-    subcategory: product.subcategory,
-    description: product.description,
-    sourceUrl: product.sourceUrl,
+    subcategory: product.subcategory ?? "",
+    description: product.description ?? "",
+    sourceUrl: product.sourceUrl ?? "",
     sku: product.sku,
-    barcode: product.barcode,
-    reference: product.reference,
+    barcode: product.barcode ?? "",
+    reference: product.reference ?? "",
     supplierId: product.supplierId ?? null,
     purchasePrice: product.purchasePrice,
     wholesalePrice: product.wholesalePrice,
@@ -76,14 +77,20 @@ export function ProductDetailModal({
   product: initialProduct,
   onClose,
   canManage = false,
+  canDelete = false,
   canViewPurchasePrice = true,
   initialEditing = false,
+  onOpenProduct,
+  onDeleteProduct,
 }: {
   product: ProductListItem;
   onClose: () => void;
   canManage?: boolean;
+  canDelete?: boolean;
   canViewPurchasePrice?: boolean;
   initialEditing?: boolean;
+  onOpenProduct?: (product: ProductListItem, edit: boolean) => void;
+  onDeleteProduct?: (product: ProductListItem) => void;
 }) {
   const [product, setProduct] = useState(initialProduct);
   useEffect(() => {
@@ -91,6 +98,10 @@ export function ProductDetailModal({
     setDetailDraft(detailsFrom(initialProduct));
     setEditingDetails(initialEditing && canManage);
     setEditingMedia(false);
+    setDetailError("");
+    setIdentifierConflict(false);
+    setDuplicateProducts([]);
+    setDuplicateLookupPending(false);
   }, [initialProduct, initialEditing, canManage]);
 
   const [activeImage, setActiveImage] = useState(0);
@@ -102,6 +113,11 @@ export function ProductDetailModal({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [detailError, setDetailError] = useState("");
+  const [identifierConflict, setIdentifierConflict] = useState(false);
+  const [duplicateProducts, setDuplicateProducts] = useState<ProductListItem[]>(
+    [],
+  );
+  const [duplicateLookupPending, setDuplicateLookupPending] = useState(false);
   const [detailDraft, setDetailDraft] = useState<UpdateProductInput>(() =>
     detailsFrom(initialProduct),
   );
@@ -270,6 +286,8 @@ export function ProductDetailModal({
   async function saveDetails() {
     setSaving(true);
     setDetailError("");
+    setIdentifierConflict(false);
+    setDuplicateProducts([]);
     try {
       const updated = await api.updateProduct(product.id, detailDraft);
       setProduct(updated);
@@ -281,9 +299,62 @@ export function ProductDetailModal({
         cache.invalidateQueries({ queryKey: ["dashboard-analytics"] }),
       ]);
     } catch (error) {
-      setDetailError(
-        error instanceof Error ? error.message : "Enregistrement impossible.",
-      );
+      if (error instanceof ApiRequestError && error.status === 409) {
+        setIdentifierConflict(true);
+        setDuplicateLookupPending(true);
+        try {
+          const details =
+            error.details && typeof error.details === "object"
+              ? (error.details as { conflicts?: ProductListItem[] })
+              : undefined;
+          const matches = Array.isArray(details?.conflicts)
+            ? details.conflicts
+            : await api.productConflicts(detailDraft.sku, detailDraft.barcode);
+          const conflicts = matches.filter((match) => match.id !== product.id);
+          setDuplicateProducts(conflicts);
+          const sameBarcode = conflicts.some(
+            (match) =>
+              detailDraft.barcode.trim() !== "" &&
+              match.barcode === detailDraft.barcode.trim(),
+          );
+          const sameSku = conflicts.some(
+            (match) => match.sku === detailDraft.sku.trim(),
+          );
+          setDetailError(
+            sameBarcode && sameSku
+              ? "Ce SKU et ce code-barres sont déjà utilisés par un autre produit."
+              : sameBarcode
+                ? `Le code-barres ${detailDraft.barcode.trim()} est déjà utilisé par un autre produit.`
+                : sameSku
+                  ? `Le SKU ${detailDraft.sku.trim()} est déjà utilisé par un autre produit.`
+                  : "Ce SKU ou ce code-barres est déjà utilisé par un autre produit.",
+          );
+        } catch {
+          setDetailError(
+            "Ce SKU ou ce code-barres est déjà utilisé par un autre produit.",
+          );
+        } finally {
+          setDuplicateLookupPending(false);
+        }
+      } else if (
+        error instanceof ApiRequestError &&
+        error.status === 400 &&
+        error.message === "Validation failed"
+      ) {
+        const details = error.details as
+          { issues?: Array<{ path?: string; message?: string }> } | undefined;
+        const issues = details?.issues
+          ?.map((issue) => issue.message)
+          .filter(Boolean)
+          .join(" · ");
+        setDetailError(
+          issues || "Certains champs sont invalides. Vérifiez le formulaire.",
+        );
+      } else {
+        setDetailError(
+          error instanceof Error ? error.message : "Enregistrement impossible.",
+        );
+      }
     } finally {
       setSaving(false);
     }
@@ -485,21 +556,25 @@ export function ProductDetailModal({
                 <input
                   required
                   value={detailDraft.sku}
-                  onChange={(event) =>
-                    setDetailDraft({ ...detailDraft, sku: event.target.value })
-                  }
+                  onChange={(event) => {
+                    setIdentifierConflict(false);
+                    setDuplicateProducts([]);
+                    setDetailDraft({ ...detailDraft, sku: event.target.value });
+                  }}
                 />
               </label>
               <label>
                 <span>Code-barres</span>
                 <input
                   value={detailDraft.barcode}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    setIdentifierConflict(false);
+                    setDuplicateProducts([]);
                     setDetailDraft({
                       ...detailDraft,
                       barcode: event.target.value,
-                    })
-                  }
+                    });
+                  }}
                 />
               </label>
               <label>
@@ -698,6 +773,91 @@ export function ProductDetailModal({
               <p role="alert" className={ui("form-error")}>
                 {detailError}
               </p>
+            )}
+            {identifierConflict && (
+              <section
+                aria-label="Produits en conflit"
+                className="space-y-2 rounded-2xl border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-700/60 dark:bg-amber-950/20"
+              >
+                <h3 className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                  Produits utilisant déjà cet identifiant
+                </h3>
+                {duplicateLookupPending && (
+                  <p className="text-xs text-muted">
+                    Recherche du produit existant…
+                  </p>
+                )}
+                {!duplicateLookupPending && duplicateProducts.length === 0 && (
+                  <p className="text-xs text-muted">
+                    Aucun produit actif correspondant n’a été trouvé.
+                  </p>
+                )}
+                {duplicateProducts.map((conflict) => (
+                  <article
+                    key={conflict.id}
+                    className="flex flex-col gap-3 rounded-xl border border-line bg-white p-3 dark:bg-[#302b2f] sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0">
+                      <strong className="block truncate text-sm">
+                        {conflict.name}
+                      </strong>
+                      <p className="truncate text-xs text-muted">
+                        {conflict.brand} · {conflict.sku}
+                      </p>
+                      <p className="mt-1 text-[10px] text-muted">
+                        Code-barres : {conflict.barcode || "Aucun"} · Stock :{" "}
+                        {conflict.onHand}
+                      </p>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {conflict.sku === detailDraft.sku.trim() && (
+                          <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                            Même SKU
+                          </span>
+                        )}
+                        {detailDraft.barcode.trim() !== "" &&
+                          conflict.barcode === detailDraft.barcode.trim() && (
+                            <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                              Même code-barres
+                            </span>
+                          )}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        className={ui("secondary-button compact")}
+                        aria-label={`Voir ${conflict.name}`}
+                        onClick={() => onOpenProduct?.(conflict, false)}
+                      >
+                        <Eye size={14} /> Voir
+                      </button>
+                      {canManage && (
+                        <button
+                          type="button"
+                          className={ui("secondary-button compact")}
+                          aria-label={`Modifier ${conflict.name}`}
+                          onClick={() => onOpenProduct?.(conflict, true)}
+                        >
+                          <Pencil size={14} /> Modifier
+                        </button>
+                      )}
+                      {canDelete && onDeleteProduct && (
+                        <button
+                          type="button"
+                          className={
+                            ui("secondary-button compact") +
+                            " border-rose-200 text-rose-700 dark:text-rose-300"
+                          }
+                          aria-label={`Supprimer ${conflict.name}`}
+                          onClick={() => onDeleteProduct(conflict)}
+                        >
+                          <Trash2 size={14} /> Supprimer
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </section>
             )}
             <footer className={ui("modal-actions")}>
               <button

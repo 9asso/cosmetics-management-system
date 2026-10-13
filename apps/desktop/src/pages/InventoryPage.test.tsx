@@ -193,4 +193,51 @@ describe("product deletion", () => {
     );
     client.clear();
   });
+
+  it("explains an edit barcode conflict and shows direct product actions", async () => {
+    const duplicate = {
+      ...product,
+      id: "10000000-0000-4000-8000-000000000002",
+      variantId: "20000000-0000-4000-8000-000000000002",
+      name: "Sérum déjà scanné",
+      sku: "SERUM-EXISTANT",
+      barcode: "6110000000012",
+      onHand: 9,
+      available: 9,
+    };
+    const client = mount(true);
+    vi.mocked(api.updateProduct).mockRejectedValue(
+      new ApiRequestError("SKU ou code-barres déjà utilisé.", 409, {
+        conflicts: [duplicate],
+      }),
+    );
+
+    fireEvent.click(await screen.findByText("Sérum test"));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Modifier le produit" }),
+    );
+    fireEvent.change(screen.getByLabelText("Code-barres"), {
+      target: { value: duplicate.barcode },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Enregistrer le produit" }),
+    );
+
+    expect(
+      await screen.findByText(
+        `Le code-barres ${duplicate.barcode} est déjà utilisé par un autre produit.`,
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText("Même code-barres")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: `Voir ${duplicate.name}` }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: `Modifier ${duplicate.name}` }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: `Supprimer ${duplicate.name}` }),
+    ).toBeTruthy();
+    client.clear();
+  });
 });
