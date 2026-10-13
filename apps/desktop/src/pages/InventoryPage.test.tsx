@@ -114,8 +114,16 @@ describe("product deletion", () => {
     fireEvent.change(screen.getByLabelText("Code-barres"), {
       target: { value: duplicate.barcode },
     });
+    fireEvent.change(screen.getByLabelText("Référence"), {
+      target: { value: "REF-NOUVEAU-SERUM" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Ajouter le produit" }));
 
+    await waitFor(() =>
+      expect(api.createProduct).toHaveBeenCalledWith(
+        expect.objectContaining({ reference: "REF-NOUVEAU-SERUM" }),
+      ),
+    );
     expect(
       await screen.findByText("SKU ou code-barres déjà utilisé."),
     ).toBeTruthy();

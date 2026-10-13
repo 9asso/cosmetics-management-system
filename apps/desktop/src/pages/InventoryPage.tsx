@@ -698,6 +698,16 @@ export function InventoryPage({
                 />
               </label>
               <label>
+                <span>Référence</span>
+                <input
+                  value={draft.reference}
+                  onChange={(e) =>
+                    setDraft({ ...draft, reference: e.target.value })
+                  }
+                  placeholder="Ex. REF-SERUM-30ML"
+                />
+              </label>
+              <label>
                 <span>Catégorie</span>
                 <select
                   value={draft.category}
