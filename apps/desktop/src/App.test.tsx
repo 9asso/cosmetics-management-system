@@ -98,7 +98,9 @@ describe("local session recovery", () => {
     expect(await screen.findByText("Sales dashboard ready")).toBeTruthy();
     expect(screen.getAllByText("Yamoura")).toHaveLength(2);
     expect(screen.queryByText("ONight")).toBeNull();
-    expect(document.title).toBe("Yamoura Business — Gestion");
+    await waitFor(() =>
+      expect(document.title).toBe("Yamoura Business — Gestion"),
+    );
     expect(
       screen.getByRole("button", { name: "Produits & stock" }),
     ).toBeTruthy();
