@@ -126,7 +126,9 @@ describe("product deletion", () => {
       ),
     );
     expect(
-      await screen.findByText("SKU ou code-barres déjà utilisé."),
+      await screen.findByText(
+        `Le code-barres ${duplicate.barcode} est déjà utilisé par le produit affiché ci-dessous.`,
+      ),
     ).toBeTruthy();
     expect(await screen.findByText("Même code-barres")).toBeTruthy();
     fireEvent.click(
@@ -138,6 +140,55 @@ describe("product deletion", () => {
     ).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Enregistrer le produit" }),
+    ).toBeTruthy();
+    client.clear();
+  });
+
+  it("shows an archived product that owns the scanned barcode", async () => {
+    const duplicate = {
+      ...product,
+      id: "10000000-0000-4000-8000-000000000003",
+      variantId: "20000000-0000-4000-8000-000000000003",
+      name: "Produit archivé avec code-barres",
+      sku: "ARCHIVE-880978",
+      barcode: "8809782555508",
+      active: false,
+    };
+    const client = mount(true);
+    vi.mocked(api.createProduct).mockRejectedValue(
+      new ApiRequestError(
+        `Le code-barres ${duplicate.barcode} est déjà utilisé par un autre produit.`,
+        409,
+        { conflicts: [duplicate], conflictFields: ["barcode"] },
+      ),
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Nouveau produit/ }),
+    );
+    fireEvent.change(screen.getByLabelText("Nom du produit"), {
+      target: { value: "Nouveau produit scanné" },
+    });
+    fireEvent.change(screen.getByLabelText("Marque"), {
+      target: { value: "Test" },
+    });
+    fireEvent.change(screen.getByLabelText("Code-barres"), {
+      target: { value: duplicate.barcode },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ajouter le produit" }));
+
+    expect(
+      await screen.findByText(
+        `Le code-barres ${duplicate.barcode} est déjà utilisé par le produit affiché ci-dessous.`,
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText(duplicate.name)).toBeTruthy();
+    expect(screen.getByText("Produit archivé")).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: `Modifier ${duplicate.name}` }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: `Supprimer ${duplicate.name}` }),
     ).toBeTruthy();
     client.clear();
   });

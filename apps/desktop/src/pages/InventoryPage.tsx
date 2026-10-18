@@ -74,11 +74,34 @@ function productSku(name: string, suffix: string) {
 }
 
 function StockStatus({ product }: { product: ProductListItem }) {
+  if (product.active === false)
+    return <StatusPill tone="neutral">Archivé</StatusPill>;
   if (product.onHand - product.reserved === 0)
     return <StatusPill tone="bad">Rupture</StatusPill>;
   if (product.onHand - product.reserved <= product.lowStockThreshold)
     return <StatusPill tone="warn">Stock faible</StatusPill>;
   return <StatusPill tone="good">Disponible</StatusPill>;
+}
+
+function conflictMessage(
+  error: unknown,
+  draft: CreateProductInput,
+  products: ProductListItem[],
+) {
+  const sameBarcode = products.some(
+    (product) =>
+      draft.barcode.trim() !== "" && product.barcode === draft.barcode.trim(),
+  );
+  const sameSku = products.some((product) => product.sku === draft.sku.trim());
+  if (sameBarcode && sameSku)
+    return "Ce SKU et ce code-barres sont déjà utilisés par un autre produit.";
+  if (sameBarcode)
+    return `Le code-barres ${draft.barcode.trim()} est déjà utilisé par le produit affiché ci-dessous.`;
+  if (sameSku)
+    return `Le SKU ${draft.sku.trim()} est déjà utilisé par le produit affiché ci-dessous.`;
+  return error instanceof ApiRequestError
+    ? error.message
+    : "SKU ou code-barres déjà utilisé.";
 }
 
 export function InventoryPage({
@@ -546,7 +569,7 @@ export function InventoryPage({
                   <td>
                     {canManage || canDelete ? (
                       <div className="flex flex-wrap gap-1.5">
-                        {canManage && (
+                        {canManage && product.active !== false && (
                           <button
                             className={ui("secondary-button compact")}
                             onClick={(event) => {
@@ -616,10 +639,12 @@ export function InventoryPage({
       </section>
       {selectedProduct && (
         <ProductDetailModal
-          canManage={canManage}
+          canManage={canManage && selectedProduct.active !== false}
           canDelete={canDelete}
           canViewPurchasePrice={canViewPurchasePrice}
-          initialEditing={selectedProductStartsEditing}
+          initialEditing={
+            selectedProductStartsEditing && selectedProduct.active !== false
+          }
           product={
             products.data?.items.find((p) => p.id === selectedProduct.id) ??
             selectedProduct
@@ -902,7 +927,7 @@ export function InventoryPage({
                   <p role="alert" className={ui("form-error")}>
                     {create.error instanceof ApiRequestError &&
                     create.error.status === 409
-                      ? "SKU ou code-barres déjà utilisé."
+                      ? conflictMessage(create.error, draft, duplicateProducts)
                       : create.error instanceof ApiRequestError
                         ? create.error.message
                         : "Impossible d’ajouter ce produit."}
@@ -924,7 +949,8 @@ export function InventoryPage({
                         {!duplicateLookupPending &&
                           duplicateProducts.length === 0 && (
                             <p className="text-xs text-muted">
-                              Aucun produit actif correspondant n’a été trouvé.
+                              Le conflit existe dans la base, mais sa fiche n’a
+                              pas pu être chargée.
                             </p>
                           )}
                         {duplicateProducts.map((product) => (
@@ -951,7 +977,16 @@ export function InventoryPage({
                                 <p className="truncate text-xs text-muted">
                                   {product.brand} · {product.sku}
                                 </p>
+                                <p className="mt-1 text-[10px] text-muted">
+                                  Code-barres : {product.barcode || "Aucun"} ·
+                                  Stock : {product.onHand}
+                                </p>
                                 <div className="mt-1 flex flex-wrap gap-1">
+                                  {product.active === false && (
+                                    <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-100">
+                                      Produit archivé
+                                    </span>
+                                  )}
                                   {product.sku === draft.sku.trim() && (
                                     <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
                                       Même SKU
@@ -978,7 +1013,7 @@ export function InventoryPage({
                               >
                                 <Eye size={14} /> Voir
                               </button>
-                              {canManage && (
+                              {canManage && product.active !== false && (
                                 <button
                                   type="button"
                                   className={ui("secondary-button compact")}
@@ -1120,9 +1155,10 @@ export function InventoryPage({
           <div className="space-y-4 p-5 sm:p-6">
             <p className="text-sm leading-relaxed">
               Confirmez la suppression de{" "}
-              <strong>{deletingProduct.name}</strong>. Le produit disparaîtra du
-              catalogue et du stock, mais son historique restera conservé dans
-              les anciennes opérations.
+              <strong>{deletingProduct.name}</strong>.{" "}
+              {deletingProduct.active === false
+                ? "Son SKU et son code-barres seront libérés pour pouvoir être réutilisés."
+                : "Le produit disparaîtra du catalogue et du stock, mais son historique restera conservé dans les anciennes opérations."}
             </p>
             {remove.isError && (
               <p role="alert" className={ui("form-error")}>

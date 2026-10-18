@@ -226,6 +226,7 @@ export interface ProductListItem {
   available: number;
   lowStockThreshold: number;
   retailVisible: boolean;
+  active?: boolean;
 }
 
 export interface ProductStockLot {

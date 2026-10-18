@@ -809,6 +809,11 @@ export function ProductDetailModal({
                         {conflict.onHand}
                       </p>
                       <div className="mt-1 flex flex-wrap gap-1">
+                        {conflict.active === false && (
+                          <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-100">
+                            Produit archivé
+                          </span>
+                        )}
                         {conflict.sku === detailDraft.sku.trim() && (
                           <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
                             Même SKU
@@ -831,7 +836,7 @@ export function ProductDetailModal({
                       >
                         <Eye size={14} /> Voir
                       </button>
-                      {canManage && (
+                      {canManage && conflict.active !== false && (
                         <button
                           type="button"
                           className={ui("secondary-button compact")}

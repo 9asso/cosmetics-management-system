@@ -47,22 +47,48 @@ export class CatalogService {
     barcode: string,
     excludeProductId?: string,
   ) {
-    const terms = [...new Set([sku, barcode].filter(Boolean))];
-    const pages = await Promise.all(
-      terms.map((search) =>
-        this.list({ page: 1, pageSize: 100, search, stock: "all" }),
-      ),
+    const page = await this.list(
+      { page: 1, pageSize: 100, search: "", stock: "all" },
+      false,
+      false,
+      { sku, barcode, excludeProductId },
     );
-    const matches = new Map<string, ProductListItem>();
-    for (const product of pages.flatMap((page) => page.items)) {
-      if (
-        product.id !== excludeProductId &&
-        (product.sku === sku || (barcode !== "" && product.barcode === barcode))
-      ) {
-        matches.set(product.id, product);
-      }
-    }
-    return [...matches.values()];
+    return page.items;
+  }
+
+  private async identifierConflictPayload(
+    error: DatabaseError,
+    sku: string,
+    barcode: string,
+    excludeProductId?: string,
+  ) {
+    const conflicts = await this.identifierConflicts(
+      sku,
+      barcode,
+      excludeProductId,
+    );
+    const sameBarcode =
+      error.constraint === "product_variants_barcode_unique" ||
+      conflicts.some(
+        (product) =>
+          barcode.trim() !== "" && product.barcode === barcode.trim(),
+      );
+    const sameSku =
+      error.constraint === "product_variants_sku_key" ||
+      conflicts.some((product) => product.sku === sku.trim());
+    const conflictFields = [
+      ...(sameSku ? (["sku"] as const) : []),
+      ...(sameBarcode ? (["barcode"] as const) : []),
+    ];
+    const message =
+      sameBarcode && sameSku
+        ? "Ce SKU et ce code-barres sont déjà utilisés par un autre produit."
+        : sameBarcode
+          ? `Le code-barres ${barcode.trim()} est déjà utilisé par un autre produit.`
+          : sameSku
+            ? `Le SKU ${sku.trim()} est déjà utilisé par un autre produit.`
+            : "SKU ou code-barres déjà utilisé.";
+    return { message, conflictFields, conflicts };
   }
 
   async uploadMedia(bytes: Buffer) {
@@ -219,7 +245,7 @@ export class CatalogService {
     );
     if (!result.rowCount) {
       const found = await this.db.query(
-        "SELECT 1 FROM products WHERE id=$1 AND organization_id=$2 AND active=true",
+        "SELECT 1 FROM products WHERE id=$1 AND organization_id=$2",
         [productId, DEFAULT_ORGANIZATION_ID],
       );
       if (!found.rowCount) throw new NotFoundException("Produit introuvable.");
@@ -327,16 +353,39 @@ export class CatalogService {
     query: ProductListQuery,
     retailOnly = false,
     hidePurchasePrice = false,
+    exactIdentifiers?: {
+      sku: string;
+      barcode: string;
+      excludeProductId?: string;
+    },
   ): Promise<Paginated<ProductListItem>> {
     const values: unknown[] = [DEFAULT_ORGANIZATION_ID, DEFAULT_LOCATION_ID];
-    const filters = [
-      "p.organization_id = $1",
-      "p.active = true",
-      "v.active = true",
-    ];
+    const filters = ["p.organization_id = $1"];
+    if (exactIdentifiers) {
+      values.push(
+        exactIdentifiers.sku.trim(),
+        exactIdentifiers.barcode.trim(),
+        exactIdentifiers.excludeProductId ?? null,
+      );
+      filters.push(`(
+        ($3 <> '' AND v.sku = $3)
+        OR ($4 <> '' AND COALESCE(v.barcode, '') = $4)
+      )`);
+      filters.push("($5::uuid IS NULL OR p.id <> $5::uuid)");
+    } else if (query.search && !retailOnly) {
+      values.push(query.search.toLowerCase());
+      const exactIndex = values.length;
+      filters.push(`(
+        (p.active = true AND v.active = true)
+        OR lower(v.sku) = $${exactIndex}
+        OR lower(COALESCE(v.barcode, '')) = $${exactIndex}
+      )`);
+    } else {
+      filters.push("p.active = true", "v.active = true");
+    }
     if (retailOnly) filters.push("p.retail_visible = true");
 
-    if (query.search) {
+    if (query.search && !exactIdentifiers) {
       values.push(`%${query.search.toLowerCase()}%`);
       const index = values.length;
       filters.push(`(
@@ -391,6 +440,7 @@ export class CatalogService {
         (COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0))::int AS available,
         v.low_stock_threshold AS "lowStockThreshold",
         p.retail_visible AS "retailVisible",
+        (p.active AND v.active) AS active,
         COUNT(*) OVER()::text AS "totalCount"
       FROM products p
       JOIN product_variants v ON v.product_id = p.id
@@ -398,7 +448,7 @@ export class CatalogService {
       LEFT JOIN product_supplier_links psl ON psl.variant_id = v.id AND psl.preferred = true
       LEFT JOIN suppliers s ON s.id = psl.supplier_id
       WHERE ${filters.join(" AND ")}
-      ORDER BY ${retailOnly ? "(p.image_url <> '') DESC, p.updated_at DESC" : "(COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0)) ASC, p.brand ASC, p.name ASC, v.id"}
+      ORDER BY ${retailOnly ? "(p.image_url <> '') DESC, p.updated_at DESC" : "(p.active AND v.active) DESC, (COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0)) ASC, p.brand ASC, p.name ASC, v.id"}
       LIMIT $${limitIndex} OFFSET $${offsetIndex}`,
       values,
     );
@@ -611,14 +661,13 @@ export class CatalogService {
       return created;
     } catch (error) {
       if ((error as DatabaseError).code === "23505") {
-        const conflicts = await this.identifierConflicts(
-          input.sku,
-          input.barcode,
+        throw new ConflictException(
+          await this.identifierConflictPayload(
+            error as DatabaseError,
+            input.sku,
+            input.barcode,
+          ),
         );
-        throw new ConflictException({
-          message: "SKU ou code-barres déjà utilisé.",
-          conflicts,
-        });
       }
       throw error;
     }
@@ -733,15 +782,14 @@ export class CatalogService {
       return updated;
     } catch (error) {
       if ((error as DatabaseError).code === "23505") {
-        const conflicts = await this.identifierConflicts(
-          input.sku,
-          input.barcode,
-          id,
+        throw new ConflictException(
+          await this.identifierConflictPayload(
+            error as DatabaseError,
+            input.sku,
+            input.barcode,
+            id,
+          ),
         );
-        throw new ConflictException({
-          message: "SKU ou code-barres déjà utilisé.",
-          conflicts,
-        });
       }
       throw error;
     }
@@ -757,9 +805,11 @@ export class CatalogService {
       }>(
         `SELECT p.id, p.name, v.sku, v.barcode
          FROM products p
-         JOIN product_variants v ON v.product_id=p.id AND v.active=true
-         WHERE p.id=$1 AND p.organization_id=$2 AND p.active=true
-         FOR UPDATE`,
+         JOIN product_variants v ON v.product_id=p.id
+         WHERE p.id=$1 AND p.organization_id=$2
+         ORDER BY v.active DESC
+         LIMIT 1
+         FOR UPDATE OF p, v`,
         [id, DEFAULT_ORGANIZATION_ID],
       );
       if (!product.rows[0]) {
