@@ -150,7 +150,7 @@ export function TeamPage({
                     </td>
                     <td>
                       {protectedAdmin ? (
-                        <span className="inline-flex items-center gap-1.5 text-[10px] text-muted">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] text-muted">
                           <ShieldCheck size={14} /> Compte protégé
                         </span>
                       ) : (

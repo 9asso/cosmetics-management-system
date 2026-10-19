@@ -101,7 +101,7 @@ export function SearchablePopup<T>({
         <span
           id={listId}
           role="listbox"
-          className="absolute left-0 top-full z-40 mt-1 max-h-72 w-full overflow-auto rounded-xl border border-line bg-white p-1 shadow-xl dark:bg-[#282428]"
+          className="absolute left-0 top-full z-40 mt-1 max-h-72 w-full overflow-auto rounded-xl border border-line bg-white p-1 shadow-xl dark:bg-card"
         >
           {visibleItems.map((item) => {
             const id = getId(item);
@@ -121,7 +121,7 @@ export function SearchablePopup<T>({
                 }}
               >
                 {getImage && (
-                  <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface text-[9px] text-muted">
+                  <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface text-[10px] text-muted">
                     {image ? (
                       <img
                         src={image}
@@ -138,7 +138,7 @@ export function SearchablePopup<T>({
                     {getLabel(item)}
                   </strong>
                   {getDetail && (
-                    <small className="block truncate text-[10px] text-muted">
+                    <small className="block truncate text-[11px] text-muted">
                       {getDetail(item)}
                     </small>
                   )}

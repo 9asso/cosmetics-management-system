@@ -956,7 +956,7 @@ export function InventoryPage({
                         {duplicateProducts.map((product) => (
                           <article
                             key={product.id}
-                            className="flex flex-col gap-3 rounded-xl border border-line bg-white p-3 dark:bg-[#302b2f] sm:flex-row sm:items-center sm:justify-between"
+                            className="flex flex-col gap-3 rounded-xl border border-line bg-white p-3 dark:bg-card-muted sm:flex-row sm:items-center sm:justify-between"
                           >
                             <div className="flex min-w-0 items-center gap-3">
                               {product.imageUrl ? (
@@ -977,25 +977,25 @@ export function InventoryPage({
                                 <p className="truncate text-xs text-muted">
                                   {product.brand} · {product.sku}
                                 </p>
-                                <p className="mt-1 text-[10px] text-muted">
+                                <p className="mt-1 text-[11px] text-muted">
                                   Code-barres : {product.barcode || "Aucun"} ·
                                   Stock : {product.onHand}
                                 </p>
                                 <div className="mt-1 flex flex-wrap gap-1">
                                   {product.active === false && (
-                                    <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-100">
+                                    <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-100">
                                       Produit archivé
                                     </span>
                                   )}
                                   {product.sku === draft.sku.trim() && (
-                                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700">
                                       Même SKU
                                     </span>
                                   )}
                                   {draft.barcode.trim() !== "" &&
                                     product.barcode ===
                                       draft.barcode.trim() && (
-                                      <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                                      <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700">
                                         Même code-barres
                                       </span>
                                     )}

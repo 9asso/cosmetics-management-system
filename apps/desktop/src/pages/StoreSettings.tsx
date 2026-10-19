@@ -60,7 +60,7 @@ function Choice({
       className={`flex items-start gap-3 rounded-xl border p-3.5 text-left transition-all disabled:cursor-not-allowed disabled:opacity-45 ${
         selected
           ? "border-brand bg-brand-soft/70 shadow-sm ring-2 ring-brand/15"
-          : "border-line bg-white hover:border-brand/50 dark:bg-[#2d282c]"
+          : "border-line bg-white hover:border-brand/50 dark:bg-card"
       }`}
     >
       <span
@@ -70,7 +70,7 @@ function Choice({
       </span>
       <span className="min-w-0 flex-1">
         <strong className="block text-xs text-ink">{title}</strong>
-        <small className="mt-0.5 block text-[11px] leading-snug text-muted">
+        <small className="mt-0.5 block text-[12px] leading-snug text-muted">
           {detail}
         </small>
       </span>
@@ -250,20 +250,20 @@ export function StorefrontSettingsPanel() {
             {demo ? "Mode démo" : "En ligne"}
           </StatusPill>
         </div>
-        <div className="bg-[#241a1f] px-4 py-2 text-center text-[10px] font-semibold text-white">
+        <div className="bg-[#241a1f] px-4 py-2 text-center text-[11px] font-semibold text-white">
           Livraison offerte dès {integer.format(draft.freeShippingThreshold)}{" "}
           MAD d’achats
         </div>
         <div className="space-y-3 p-4">
           <div className="rounded-xl bg-brand-soft/70 p-3">
-            <p className="flex items-center gap-1.5 text-[11px] text-ink">
+            <p className="flex items-center gap-1.5 text-[12px] text-ink">
               <Truck size={14} className="text-brand" /> Plus que{" "}
               <strong>
                 {money.format(Math.max(0, draft.freeShippingThreshold - 200))}
               </strong>{" "}
               pour la livraison offerte
             </p>
-            <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-white dark:bg-[#2d282c]">
+            <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-white dark:bg-card">
               <i
                 className="block h-full rounded-full bg-brand"
                 style={{
@@ -271,11 +271,11 @@ export function StorefrontSettingsPanel() {
                 }}
               />
             </span>
-            <small className="mt-1.5 block text-[10px] text-muted">
+            <small className="mt-1.5 block text-[11px] text-muted">
               Exemple pour un panier de 200 MAD
             </small>
           </div>
-          <dl className="space-y-1.5 text-[11px] [&>div]:flex [&>div]:justify-between [&_dt]:text-muted [&_dd]:font-semibold">
+          <dl className="space-y-1.5 text-[12px] [&>div]:flex [&>div]:justify-between [&_dt]:text-muted [&_dd]:font-semibold">
             <div>
               <dt>Livraison</dt>
               <dd>
@@ -614,7 +614,7 @@ export function DiscountCodesPanel() {
                     <strong className="block text-xs">
                       Aucun code de réduction
                     </strong>
-                    <small className="text-[11px] text-muted">
+                    <small className="text-[12px] text-muted">
                       Créez un code pour vos clientes fidèles ou vos campagnes
                       Instagram.
                     </small>

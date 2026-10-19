@@ -196,7 +196,7 @@ function InvoiceSettingsPanel() {
                 {draft.phones || "Téléphones"}
               </span>
             </div>
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-brand shadow-sm dark:bg-[#352f34]">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-brand shadow-sm dark:bg-card-muted">
               <ReceiptText size={19} />
             </span>
           </div>
@@ -208,7 +208,7 @@ function InvoiceSettingsPanel() {
           <p className="text-xs italic text-muted">
             {draft.returnPolicy || "Conditions de retour"}
           </p>
-          <small className="block pt-3 text-[10px] text-muted">
+          <small className="block pt-3 text-[11px] text-muted">
             Aperçu du pied de facture
           </small>
         </div>

@@ -1,26 +1,30 @@
-@import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Quicksand", system-ui, sans-serif;
+  --font-sans: "Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif;
   --color-brand: #ff848f;
   --color-brand-secondary: #ff848f;
-  /* --color-brand-secondary: #ff9f84; */
   --color-brand-soft: #fff0f3;
-  --color-ink: #4c4c4c;
-  --color-muted: #82747d;
-  --color-line: #eee7eb;
-  --color-surface: #fcfafb;
-  --shadow-sm: 0 3px 15px rgb(60 28 41 / 0.035);
+  --color-ink: #3f3a3e;
+  --color-muted: #746b71;
+  --color-line: #e8e1e5;
+  --color-app: #f6f4f5;
+  --color-surface: #fbfafb;
+  --color-card: #ffffff;
+  --color-card-muted: #f5f1f3;
+  --shadow-sm: 0 2px 10px rgb(48 35 42 / 0.045);
 }
 
 .dark {
   color-scheme: dark;
-  --color-brand-soft: #39272b;
-  --color-ink: #f7f3f5;
-  --color-muted: #b9adb3;
-  --color-line: #40383d;
-  --color-surface: #211e21;
-  --shadow-sm: 0 3px 18px rgb(0 0 0 / 0.18);
+  --color-brand-soft: #35272c;
+  --color-ink: #f5f2f4;
+  --color-muted: #c2b9bf;
+  --color-line: #3a353b;
+  --color-app: #151416;
+  --color-surface: #1c1a1d;
+  --color-card: #242126;
+  --color-card-muted: #2b272c;
+  --shadow-sm: 0 2px 12px rgb(0 0 0 / 0.16);
 }

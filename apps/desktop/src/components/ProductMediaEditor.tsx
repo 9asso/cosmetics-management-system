@@ -85,7 +85,7 @@ export function ProductMediaEditor({
         {value.images.map((url, index) => (
           <div
             key={url}
-            className="rounded-xl border border-line bg-white p-2 dark:bg-[#302b2f]"
+            className="rounded-xl border border-line bg-white p-2 dark:bg-card-muted"
           >
             <img
               src={resolveMediaUrl(url)}
@@ -95,7 +95,7 @@ export function ProductMediaEditor({
             <button
               type="button"
               aria-pressed={index === 0}
-              className="mt-2 w-full rounded-md bg-brand-soft p-1.5 text-[10px] font-bold text-brand"
+              className="mt-2 w-full rounded-md bg-brand-soft p-1.5 text-[11px] font-bold text-brand"
               onClick={() =>
                 onChange({
                   ...value,
@@ -111,7 +111,7 @@ export function ProductMediaEditor({
             <button
               type="button"
               aria-label={`Retirer l’image ${index + 1}`}
-              className="mt-1 w-full p-1 text-[10px] text-muted"
+              className="mt-1 w-full p-1 text-[11px] text-muted"
               onClick={() =>
                 onChange({
                   ...value,

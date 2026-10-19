@@ -189,14 +189,14 @@ export function InvoiceDetailModal({
       )}
       {value && (
         <div className="space-y-5 p-5 sm:p-6">
-          <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-[#282428]">
-            <div className="flex flex-wrap items-start justify-between gap-4 bg-linear-to-r from-brand-soft/80 via-white to-pink-50 dark:from-[#392830] dark:via-[#282428] dark:to-[#302630] px-5 py-5 sm:px-6">
+          <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-card">
+            <div className="flex flex-wrap items-start justify-between gap-4 bg-linear-to-r from-brand-soft/80 via-white to-pink-50 dark:from-card dark:via-card dark:to-card px-5 py-5 sm:px-6">
               <div className="flex items-center gap-3">
                 <span className="grid size-11 place-items-center rounded-xl bg-linear-to-br from-brand to-brand-secondary text-white shadow-sm">
                   <ReceiptText size={21} />
                 </span>
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[.18em] text-brand">
+                  <p className="text-[10px] font-bold uppercase tracking-[.18em] text-brand">
                     {kind === "sale"
                       ? surface === "order"
                         ? "Commande client"
@@ -210,12 +210,12 @@ export function InvoiceDetailModal({
               </div>
               <div className="text-right">
                 <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold ${statusStyle(value.status)}`}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold ${statusStyle(value.status)}`}
                 >
                   <i className="size-1.5 rounded-full bg-current" />
                   {documentStatuses[value.status] ?? value.status}
                 </span>
-                <p className="mt-2 flex items-center justify-end gap-1.5 text-[10px] text-muted">
+                <p className="mt-2 flex items-center justify-end gap-1.5 text-[11px] text-muted">
                   <CalendarDays size={13} />
                   {new Date(value.issuedAt).toLocaleString("fr-FR", {
                     dateStyle: "long",
@@ -226,7 +226,7 @@ export function InvoiceDetailModal({
             </div>
             <div className="grid border-t border-line md:grid-cols-[1.1fr_.9fr]">
               <div className="p-5 sm:p-6 md:border-r md:border-line">
-                <p className="text-[9px] font-bold uppercase tracking-widest text-muted">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
                   {kind === "sale" ? "Client" : "Fournisseur"} · coordonnées
                   enregistrées à l’émission
                 </p>
@@ -242,7 +242,7 @@ export function InvoiceDetailModal({
                     <h3 className="text-base font-bold text-ink">
                       {value.partnerName}
                     </h3>
-                    <div className="mt-3 grid gap-2 text-[11px] text-muted">
+                    <div className="mt-3 grid gap-2 text-[12px] text-muted">
                       <p className="flex items-start gap-2">
                         <Phone
                           size={14}
@@ -275,7 +275,7 @@ export function InvoiceDetailModal({
                 </div>
               </div>
               <div className="bg-surface p-5 sm:p-6">
-                <p className="text-[9px] font-bold uppercase tracking-widest text-muted">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
                   Canal &amp; règlement
                 </p>
                 <p className="mt-4 flex items-center gap-2 text-xs font-bold text-ink">
@@ -288,25 +288,25 @@ export function InvoiceDetailModal({
                 </p>
                 <div className="mt-5 flex items-end justify-between gap-3">
                   <div>
-                    <small className="text-[9px] text-muted">
+                    <small className="text-[10px] text-muted">
                       Montant réglé
                     </small>
                     <strong className="mt-1 block text-lg text-ink">
                       {money.format(value.amountPaid)}
                     </strong>
                   </div>
-                  <span className="text-[10px] font-bold text-brand">
+                  <span className="text-[11px] font-bold text-brand">
                     {paidProgress}%
                   </span>
                 </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-white dark:bg-[#171518]">
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-white dark:bg-app">
                   <i
                     className="block h-full rounded-full bg-linear-to-r from-brand to-brand-secondary transition-all"
                     style={{ width: `${paidProgress}%` }}
                   />
                 </div>
                 {!isCancelled && (
-                  <p className="mt-3 text-[10px] text-muted">
+                  <p className="mt-3 text-[11px] text-muted">
                     Reste à régler :{" "}
                     <strong className="text-ink">
                       {money.format(balance)}
@@ -317,15 +317,15 @@ export function InvoiceDetailModal({
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-[#282428]">
+          <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-card">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
               <div>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-brand">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-brand">
                   Contenu
                 </p>
                 <h3 className="mt-1 text-sm font-bold">Articles du document</h3>
               </div>
-              <span className="rounded-lg bg-brand-soft px-2.5 py-1 text-[10px] font-bold text-brand">
+              <span className="rounded-lg bg-brand-soft px-2.5 py-1 text-[11px] font-bold text-brand">
                 {value.items.length} ligne(s)
               </span>
             </div>
@@ -369,7 +369,7 @@ export function InvoiceDetailModal({
             <div>
               {value.notes ? (
                 <div className="rounded-2xl border border-brand/10 bg-brand-soft/55 p-4">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-brand">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-brand">
                     Note interne
                   </p>
                   <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-ink">
@@ -408,10 +408,10 @@ export function InvoiceDetailModal({
             </dl>
           </section>
 
-          <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-[#282428]">
+          <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-card">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
               <div>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-brand">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-brand">
                   Règlements
                 </p>
                 <h3 className="mt-1 text-sm font-bold">
@@ -422,7 +422,7 @@ export function InvoiceDetailModal({
             </div>
             {value.payments.length === 0 ? (
               <div className="flex items-center gap-3 p-5 text-xs text-muted">
-                <span className="grid size-9 place-items-center rounded-xl bg-stone-100 dark:bg-[#302b2f]">
+                <span className="grid size-9 place-items-center rounded-xl bg-stone-100 dark:bg-card-muted">
                   <CreditCard size={16} />
                 </span>
                 Aucun paiement enregistré.
@@ -442,7 +442,7 @@ export function InvoiceDetailModal({
                       {paymentMethods[payment.method] ?? payment.method}
                     </span>
                     <span
-                      className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-bold ${payment.status === "COMPLETED" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" : payment.status === "PENDING" ? "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300" : "bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300"}`}
+                      className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${payment.status === "COMPLETED" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" : payment.status === "PENDING" ? "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300" : "bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300"}`}
                     >
                       <CheckCircle2 size={11} />
                       {paymentStatuses[payment.status] ?? payment.status}
@@ -460,9 +460,9 @@ export function InvoiceDetailModal({
           </section>
 
           {value.returns.length > 0 && (
-            <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-[#282428]">
+            <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-card">
               <div className="border-b border-line px-4 py-3">
-                <p className="text-[9px] font-bold uppercase tracking-widest text-brand">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-brand">
                   Retours
                 </p>
                 <h3 className="mt-1 text-sm font-bold">
@@ -485,10 +485,10 @@ export function InvoiceDetailModal({
             </section>
           )}
 
-          <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-[#282428]">
+          <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-card">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
               <div>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-brand">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-brand">
                   Traçabilité
                 </p>
                 <h3 className="mt-1 text-sm font-bold">
@@ -596,7 +596,7 @@ export function InvoiceDetailModal({
             </button>
             <button
               type="button"
-              className="rounded-lg border border-line px-5 py-2 text-xs font-bold text-ink hover:bg-stone-50 dark:hover:bg-[#302b2f]"
+              className="rounded-lg border border-line px-5 py-2 text-xs font-bold text-ink hover:bg-stone-50 dark:hover:bg-card-muted"
               onClick={onClose}
             >
               Fermer

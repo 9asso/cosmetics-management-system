@@ -63,12 +63,12 @@ function Detail({
   hint?: string;
 }) {
   return (
-    <div className="rounded-xl border border-line bg-white p-3 dark:bg-[#302b2f]">
-      <dt className="text-[9px] font-bold uppercase tracking-wider text-muted">
+    <div className="rounded-xl border border-line bg-white p-3 dark:bg-card-muted">
+      <dt className="text-[10px] font-bold uppercase tracking-wider text-muted">
         {label}
       </dt>
       <dd className="mt-1.5 break-words text-xs font-bold text-ink">{value}</dd>
-      {hint && <p className="mt-1 text-[10px] text-muted">{hint}</p>}
+      {hint && <p className="mt-1 text-[11px] text-muted">{hint}</p>}
     </div>
   );
 }
@@ -383,8 +383,8 @@ export function ProductDetailModal({
     >
       <div className="p-5 sm:p-6">
         <section className="grid overflow-hidden rounded-2xl border border-line bg-surface md:grid-cols-[260px_1fr]">
-          <div className="relative grid min-h-60 place-items-center overflow-hidden bg-linear-to-br from-brand-soft via-white to-pink-50 dark:from-[#392830] dark:via-[#282428] dark:to-[#302630] p-6">
-            <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-brand shadow-sm dark:bg-[#302b2f]/90">
+          <div className="relative grid min-h-60 place-items-center overflow-hidden bg-linear-to-br from-brand-soft via-white to-pink-50 dark:from-card dark:via-card dark:to-card p-6">
+            <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-brand shadow-sm dark:bg-card-muted/90">
               {categories[product.category]} ·{" "}
               {product.subcategory || "Non classé"}
             </span>
@@ -416,7 +416,7 @@ export function ProductDetailModal({
                     aria-label={`Voir l’image ${index + 1}${index === 0 ? ", à la une" : ""}`}
                     aria-pressed={activeImage === index}
                     onClick={() => setActiveImage(index)}
-                    className={`size-12 overflow-hidden rounded-lg border-2 bg-white dark:bg-[#302b2f] ${activeImage === index ? "border-brand" : "border-line"}`}
+                    className={`size-12 overflow-hidden rounded-lg border-2 bg-white dark:bg-card-muted ${activeImage === index ? "border-brand" : "border-line"}`}
                   >
                     <img
                       src={resolveMediaUrl(url)}
@@ -442,12 +442,12 @@ export function ProductDetailModal({
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span
-                  className={`rounded-full px-2.5 py-1 text-[9px] font-bold ${stockTone}`}
+                  className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${stockTone}`}
                 >
                   {stockLabel}
                 </span>
                 <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-bold ${product.retailVisible ? "bg-brand-soft text-brand" : "bg-stone-100 dark:bg-[#302b2f] text-muted"}`}
+                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ${product.retailVisible ? "bg-brand-soft text-brand" : "bg-stone-100 dark:bg-card-muted text-muted"}`}
                 >
                   {product.retailVisible ? (
                     <Eye size={12} />
@@ -459,7 +459,7 @@ export function ProductDetailModal({
                     : "Masqué en boutique"}
                 </span>
               </div>
-              <p className="mt-5 text-[10px] font-bold uppercase tracking-[.18em] text-brand">
+              <p className="mt-5 text-[11px] font-bold uppercase tracking-[.18em] text-brand">
                 {product.brand}
               </p>
               <h2 className="mt-1 text-2xl font-bold tracking-tight text-ink">
@@ -470,7 +470,7 @@ export function ProductDetailModal({
                   "Aucune description renseignée pour ce produit."}
               </p>
             </div>
-            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 border-t border-line pt-4 text-[10px] text-muted">
+            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 border-t border-line pt-4 text-[11px] text-muted">
               <span className="inline-flex items-center gap-1.5">
                 <Tag size={14} className="text-brand" />
                 Réf. {product.reference || "—"}
@@ -795,7 +795,7 @@ export function ProductDetailModal({
                 {duplicateProducts.map((conflict) => (
                   <article
                     key={conflict.id}
-                    className="flex flex-col gap-3 rounded-xl border border-line bg-white p-3 dark:bg-[#302b2f] sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 rounded-xl border border-line bg-white p-3 dark:bg-card-muted sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="min-w-0">
                       <strong className="block truncate text-sm">
@@ -804,24 +804,24 @@ export function ProductDetailModal({
                       <p className="truncate text-xs text-muted">
                         {conflict.brand} · {conflict.sku}
                       </p>
-                      <p className="mt-1 text-[10px] text-muted">
+                      <p className="mt-1 text-[11px] text-muted">
                         Code-barres : {conflict.barcode || "Aucun"} · Stock :{" "}
                         {conflict.onHand}
                       </p>
                       <div className="mt-1 flex flex-wrap gap-1">
                         {conflict.active === false && (
-                          <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-100">
+                          <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-100">
                             Produit archivé
                           </span>
                         )}
                         {conflict.sku === detailDraft.sku.trim() && (
-                          <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                          <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700">
                             Même SKU
                           </span>
                         )}
                         {detailDraft.barcode.trim() !== "" &&
                           conflict.barcode === detailDraft.barcode.trim() && (
-                            <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                            <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700">
                               Même code-barres
                             </span>
                           )}
@@ -922,39 +922,39 @@ export function ProductDetailModal({
         )}
 
         <section className="mt-5 grid gap-3 sm:grid-cols-3">
-          <article className="rounded-2xl border border-line bg-white p-4 shadow-sm dark:bg-[#302b2f] dark:shadow-none">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted">
+          <article className="rounded-2xl border border-line bg-white p-4 shadow-sm dark:bg-card-muted dark:shadow-none">
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted">
               <Boxes size={16} className="text-brand" />
               Stock physique
             </div>
             <strong className="mt-2 block text-2xl text-ink">
               {product.onHand}
             </strong>
-            <small className="text-[10px] text-muted">
+            <small className="text-[11px] text-muted">
               {product.reserved} unité(s) réservée(s)
             </small>
           </article>
           <article
             className={`rounded-2xl border border-line p-4 ${stockTone}`}
           >
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
               <PackageCheck size={16} />
               Disponible
             </div>
             <strong className="mt-2 block text-2xl">{product.available}</strong>
-            <small className="text-[10px] opacity-75">
+            <small className="text-[11px] opacity-75">
               Alerte à {product.lowStockThreshold} unité(s)
             </small>
           </article>
           <article className="rounded-2xl border border-brand/10 bg-brand-soft/60 p-4 text-brand">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
               <CircleDollarSign size={16} />
               Prix boutique
             </div>
             <strong className="mt-2 block text-2xl">
               {money.format(effectiveRetailPrice)}
             </strong>
-            <small className="text-[10px] text-muted">
+            <small className="text-[11px] text-muted">
               {product.compareAtPrice === null
                 ? activeLots.length > 1 && minRetail !== maxRetail
                   ? `De ${money.format(minRetail)} à ${money.format(maxRetail)}`
@@ -967,7 +967,7 @@ export function ProductDetailModal({
         <section className="mt-5 rounded-2xl border border-line bg-surface p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-brand">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-brand">
                 Tarification
               </p>
               <h3 className="mt-1 text-sm font-bold">Prix et marge unitaire</h3>
@@ -1021,7 +1021,7 @@ export function ProductDetailModal({
 
         <section className="mt-5 rounded-2xl border border-line bg-surface p-4 sm:p-5">
           <div className="mb-3">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-brand">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-brand">
               Lots actuellement en stock
             </p>
             <h3 className="mt-1 text-sm font-bold">
@@ -1053,12 +1053,12 @@ export function ProductDetailModal({
                       key={lot.id}
                       className={
                         isEditing
-                          ? "bg-brand-soft/25 dark:bg-[#392e35]"
+                          ? "bg-brand-soft/25 dark:bg-brand-soft"
                           : "hover:bg-black/2 dark:hover:bg-white/2"
                       }
                     >
                       <td className="py-2">
-                        <small className="text-[11px] font-semibold block text-muted">
+                        <small className="text-[12px] font-semibold block text-muted">
                           {lot.source} ·{" "}
                           {lot.supplierName && `${lot.supplierName}${" · "}`}
                           {new Date(lot.receivedOn).toLocaleDateString(
@@ -1099,10 +1099,10 @@ export function ProductDetailModal({
                                   ),
                                 }))
                               }
-                              className="w-24 rounded-lg border border-line bg-white px-2 py-1 text-xs font-bold text-ink shadow-xs focus:border-brand focus:outline-hidden dark:bg-[#282428]"
+                              className="w-24 rounded-lg border border-line bg-white px-2 py-1 text-xs font-bold text-ink shadow-xs focus:border-brand focus:outline-hidden dark:bg-card"
                               aria-label="Prix grossiste du lot"
                             />
-                            <span className="text-[10px] text-muted">MAD</span>
+                            <span className="text-[11px] text-muted">MAD</span>
                           </div>
                         ) : (
                           <span className="font-semibold text-ink">
@@ -1134,10 +1134,10 @@ export function ProductDetailModal({
                                   ),
                                 }))
                               }
-                              className="w-24 rounded-lg border border-line bg-white px-2 py-1 text-xs font-bold text-ink shadow-xs focus:border-brand focus:outline-hidden dark:bg-[#282428]"
+                              className="w-24 rounded-lg border border-line bg-white px-2 py-1 text-xs font-bold text-ink shadow-xs focus:border-brand focus:outline-hidden dark:bg-card"
                               aria-label="Prix boutique du lot"
                             />
-                            <span className="text-[10px] text-muted">MAD</span>
+                            <span className="text-[11px] text-muted">MAD</span>
                           </div>
                         ) : (
                           <span className="font-semibold text-ink">
@@ -1169,7 +1169,7 @@ export function ProductDetailModal({
                                 type="button"
                                 disabled={isSaving}
                                 onClick={cancelEditLot}
-                                className="inline-flex items-center rounded-lg border border-line bg-white p-1 text-xs font-medium text-muted hover:bg-stone-50 dark:bg-[#282428] dark:hover:bg-[#342e34]"
+                                className="inline-flex items-center rounded-lg border border-line bg-white p-1 text-xs font-medium text-muted hover:bg-stone-50 dark:bg-card dark:hover:bg-card-muted"
                                 title="Annuler"
                               >
                                 <X size={13} />
@@ -1179,7 +1179,7 @@ export function ProductDetailModal({
                             <button
                               type="button"
                               onClick={() => startEditLot(lot)}
-                              className="inline-flex items-center gap-1 rounded-lg border border-line bg-white px-2 py-1 text-xs font-bold text-brand hover:border-brand/40 hover:bg-brand-soft/30 dark:bg-[#282428]"
+                              className="inline-flex items-center gap-1 rounded-lg border border-line bg-white px-2 py-1 text-xs font-bold text-brand hover:border-brand/40 hover:bg-brand-soft/30 dark:bg-card"
                               title="Modifier les prix de ce lot"
                             >
                               <Pencil size={11} />
@@ -1232,14 +1232,14 @@ export function ProductDetailModal({
               {lotError}
             </p>
           )}
-          <p className="mt-3 text-[10px] text-muted">
+          <p className="mt-3 text-[11px] text-muted">
             Les sorties sont imputées aux lots les plus anciens (FIFO). Chaque
             nouvelle réception conserve ses trois prix.
           </p>
         </section>
 
         <footer className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
-          <span className="text-[10px] text-muted">
+          <span className="text-[11px] text-muted">
             Dernières données synchronisées avec le stock partagé.
           </span>
           <button

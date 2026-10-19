@@ -328,7 +328,7 @@ export function FinancePage({
           </button>
         ))}
       </section>
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-white p-4 text-xs dark:bg-[#282428]">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-white p-4 text-xs dark:bg-card">
         <p>
           <strong>Règlements du mois :</strong> reçus{" "}
           {totals ? money.format(totals.monthIncoming) : "—"} · versés aux
