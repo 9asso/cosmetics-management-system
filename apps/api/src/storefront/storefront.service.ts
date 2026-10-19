@@ -1,7 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import type { CreateRetailOrderInput, RetailOrderResult } from '@cosmetics/contracts';
+import { computeDiscount, type CreateRetailOrderInput, type RetailOrderResult } from '@cosmetics/contracts';
+import { storefrontScopeFilter } from '../catalog/catalog.service.js';
 import { DEFAULT_LOCATION_ID, DEFAULT_ORGANIZATION_ID } from '../constants.js';
 import { DatabaseService } from '../database/database.service.js';
+import { StoreSettingsService } from './store-settings.service.js';
 
 type VariantRow = {
   id: string;
@@ -15,9 +17,21 @@ type VariantRow = {
 
 @Injectable()
 export class StorefrontService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly settings: StoreSettingsService,
+  ) {}
 
-  createOrder(input: CreateRetailOrderInput): Promise<RetailOrderResult> {
+  async createOrder(input: CreateRetailOrderInput): Promise<RetailOrderResult> {
+    // Read outside the order transaction so a database without migration 017 falls back to defaults.
+    const settings = await this.settings.settings();
+    if (settings.catalogSource === 'DEMO') {
+      throw new BadRequestException('La boutique est en mode aperçu : les commandes sont fermées.');
+    }
+    const discount = input.discountCode ? await this.settings.findUsableCode(input.discountCode) : undefined;
+    if (input.discountCode && !discount) {
+      throw new BadRequestException('Ce code de réduction n’est pas valide ou a expiré.');
+    }
     return this.db.withTransaction(async (client) => {
       const requested = new Map<string, number>();
       for (const item of input.items) {
@@ -31,7 +45,7 @@ export class StorefrontService {
          FROM product_variants v
          JOIN products p ON p.id = v.product_id
          JOIN inventory_balances b ON b.variant_id = v.id AND b.location_id = $2
-         WHERE p.organization_id = $1 AND p.retail_visible = true
+         WHERE p.organization_id = $1 AND ${storefrontScopeFilter(settings.productScope)}
            AND p.active = true AND v.active = true AND v.id = ANY($3::uuid[])
          ORDER BY v.id FOR UPDATE OF b`,
         [DEFAULT_ORGANIZATION_ID, DEFAULT_LOCATION_ID, variantIds],
@@ -62,14 +76,24 @@ export class StorefrontService {
         (sum, variant) => sum + Number(variant.retailPrice) * requested.get(variant.id)!,
         0,
       );
-      const shippingTotal = subtotal >= 500 ? 0 : 35;
-      const grandTotal = subtotal + shippingTotal;
+      if (discount && subtotal < discount.minSubtotal) {
+        throw new BadRequestException(
+          `Le code ${discount.code} s’applique dès ${discount.minSubtotal} MAD d’achats.`,
+        );
+      }
+      const discountTotal = discount ? computeDiscount(discount, subtotal) : 0;
+      // Free shipping is earned on the subtotal before any discount code.
+      const shippingTotal = subtotal >= settings.freeShippingThreshold ? 0 : settings.shippingFee;
+      const grandTotal = subtotal - discountTotal + shippingTotal;
+      const notes = [input.customer.notes, discount ? `Code de réduction : ${discount.code}` : '']
+        .filter(Boolean)
+        .join('\n');
       const orderNumber = `WEB-${Date.now().toString(36).toUpperCase()}`;
       const order = await client.query<{ id: string }>(
         `INSERT INTO sales_orders
           (organization_id, location_id, customer_id, order_number, channel, status,
-           subtotal, shipping_total, grand_total, amount_paid, notes, placed_at)
-         VALUES ($1, $2, $3, $4, 'RETAIL_WEB', 'ORDERED', $5, $6, $7, 0, $8, now())
+           subtotal, discount_total, shipping_total, grand_total, amount_paid, notes, placed_at)
+         VALUES ($1, $2, $3, $4, 'RETAIL_WEB', 'ORDERED', $5, $6, $7, $8, 0, $9, now())
          RETURNING id`,
         [
           DEFAULT_ORGANIZATION_ID,
@@ -77,12 +101,17 @@ export class StorefrontService {
           customer.rows[0]!.id,
           orderNumber,
           subtotal,
+          discountTotal,
           shippingTotal,
           grandTotal,
-          input.customer.notes,
+          notes,
         ],
       );
       const orderId = order.rows[0]!.id;
+      // A usable code means migration 017 is in place, so its column exists.
+      if (discount) {
+        await client.query('UPDATE sales_orders SET discount_code = $2 WHERE id = $1', [orderId, discount.code]);
+      }
 
       for (const variant of variants.rows) {
         const quantity = requested.get(variant.id)!;
@@ -132,6 +161,7 @@ export class StorefrontService {
         status: 'ORDERED',
         paymentMethod: 'COD',
         subtotal,
+        discountTotal,
         shippingTotal,
         grandTotal,
         currency: 'MAD',

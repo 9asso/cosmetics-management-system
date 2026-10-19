@@ -20,4 +20,12 @@ describe('mutation confirmations', () => {
     expect(mutationConfirmation('/customers/test', 'DELETE').detail).toContain('conservés');
     expect(mutationConfirmation('/orders/test/status', 'PATCH', '{"status":"DELIVERED"}').detail).toContain('encaissé');
   });
+  it('describes storefront settings and discount code changes', () => {
+    const live = mutationConfirmation('/settings/storefront', 'PATCH', JSON.stringify({ catalogSource: 'LIVE', productScope: 'IN_STOCK', freeShippingThreshold: 1000, shippingFee: 35 }));
+    expect(live.detail).toContain('tous les produits en stock');
+    expect(live.detail).toContain('1000 MAD');
+    expect(mutationConfirmation('/settings/storefront', 'PATCH', JSON.stringify({ catalogSource: 'DEMO' })).destructive).toBe(true);
+    expect(mutationConfirmation('/settings/discount-codes', 'POST', JSON.stringify({ code: 'ete25', type: 'PERCENT', value: 25, minSubtotal: 300, active: true })).title).toBe('Créer le code ETE25 ?');
+    expect(mutationConfirmation('/settings/discount-codes/id', 'DELETE').title).toBe('Supprimer ce code de réduction ?');
+  });
 });

@@ -1,13 +1,51 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { BrandSettings } from "@cosmetics/contracts";
-import { Building2, ReceiptText, Save } from "lucide-react";
+import { Building2, ReceiptText, Save, Store, TicketPercent } from "lucide-react";
 import { ErrorState } from "../components/EmptyState";
 import { api, ApiRequestError } from "../lib/api";
 import { defaultBrandSettings } from "../lib/brand-settings";
 import { ui } from "../lib/ui";
+import { DiscountCodesPanel, StorefrontSettingsPanel } from "./StoreSettings";
+
+const tabs = [
+  { id: "store", label: "Boutique en ligne", icon: Store },
+  { id: "codes", label: "Codes de réduction", icon: TicketPercent },
+  { id: "invoice", label: "Facture", icon: ReceiptText },
+] as const;
 
 export function SettingsPage() {
+  const [tab, setTab] = useState<(typeof tabs)[number]["id"]>("store");
+  return (
+    <div className={ui("page-stack")}>
+      <div
+        className={`${ui("segmented")} w-fit max-w-full overflow-x-auto`}
+        role="tablist"
+        aria-label="Paramètres"
+      >
+        {tabs.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            className={ui(tab === id ? "active" : "")}
+            onClick={() => setTab(id)}
+          >
+            <Icon size={14} /> {label}
+          </button>
+        ))}
+      </div>
+      <div role="tabpanel">
+        {tab === "store" && <StorefrontSettingsPanel />}
+        {tab === "codes" && <DiscountCodesPanel />}
+        {tab === "invoice" && <InvoiceSettingsPanel />}
+      </div>
+    </div>
+  );
+}
+
+function InvoiceSettingsPanel() {
   const cache = useQueryClient();
   const [draft, setDraft] = useState<BrandSettings>(defaultBrandSettings);
   const [saved, setSaved] = useState(false);

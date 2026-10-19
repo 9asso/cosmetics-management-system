@@ -43,6 +43,9 @@ import type {
   InvoiceQuery,
   BrandSettings,
   UpdateStockLotInput,
+  StorefrontSettings,
+  DiscountCodeInput,
+  DiscountCodeItem,
 } from "@cosmetics/contracts";
 import { confirmChange, mutationConfirmation } from "./confirmation";
 
@@ -195,6 +198,29 @@ export const api = {
     request<BrandSettings>("/settings/brand", {
       method: "PATCH",
       body: JSON.stringify(input),
+    }),
+  storefrontSettings: () =>
+    request<StorefrontSettings>("/settings/storefront"),
+  updateStorefrontSettings: (input: StorefrontSettings) =>
+    request<StorefrontSettings>("/settings/storefront", {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  discountCodes: () =>
+    request<DiscountCodeItem[]>("/settings/discount-codes"),
+  createDiscountCode: (input: DiscountCodeInput) =>
+    request<DiscountCodeItem>("/settings/discount-codes", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateDiscountCode: (id: string, input: DiscountCodeInput) =>
+    request<DiscountCodeItem>(`/settings/discount-codes/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  deleteDiscountCode: (id: string) =>
+    request<{ deleted: true }>(`/settings/discount-codes/${id}`, {
+      method: "DELETE",
     }),
   uploadProductMedia: (file: File) =>
     request<{ url: string; type: "image" | "video" }>("/products/media", {

@@ -182,9 +182,10 @@ const pageTitles: Record<
     description: "Contrôlez les accès et responsabilités de chaque membre.",
   },
   settings: {
-    eyebrow: "Identité commerciale",
+    eyebrow: "Configuration",
     title: "Paramètres",
-    description: "Personnalisez les coordonnées et messages de vos factures.",
+    description:
+      "Boutique en ligne, livraison, codes de réduction et factures.",
   },
 };
 

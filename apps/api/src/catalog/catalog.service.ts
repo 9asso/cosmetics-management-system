@@ -11,11 +11,22 @@ import type {
   ProductListItem,
   ProductListQuery,
   ProductStockLot,
+  StoreProductScope,
   UpdateProductInput,
   UpdateStockLotInput,
 } from "@cosmetics/contracts";
 import type { DatabaseError } from "pg";
 import { DEFAULT_LOCATION_ID, DEFAULT_ORGANIZATION_ID } from "../constants.js";
+
+/**
+ * SQL predicate (aliases p, v, b) for products the storefront may show and sell.
+ * IN_STOCK also requires a retail price so wholesale-only items never sell at 0 MAD.
+ */
+export function storefrontScopeFilter(scope: StoreProductScope) {
+  return scope === "IN_STOCK"
+    ? "(COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0)) > 0 AND v.retail_price > 0"
+    : "p.retail_visible = true";
+}
 import { DatabaseService } from "../database/database.service.js";
 
 type ProductRow = Omit<
@@ -349,9 +360,13 @@ export class CatalogService {
     });
   }
 
+  /**
+   * `retailScope` lists the public storefront catalogue: products switched
+   * "Visible dans la boutique" (VISIBLE) or every product in stock (IN_STOCK).
+   */
   async list(
     query: ProductListQuery,
-    retailOnly = false,
+    retailScope: StoreProductScope | false = false,
     hidePurchasePrice = false,
     exactIdentifiers?: {
       sku: string;
@@ -372,7 +387,7 @@ export class CatalogService {
         OR ($4 <> '' AND COALESCE(v.barcode, '') = $4)
       )`);
       filters.push("($5::uuid IS NULL OR p.id <> $5::uuid)");
-    } else if (query.search && !retailOnly) {
+    } else if (query.search && !retailScope) {
       values.push(query.search.toLowerCase());
       const exactIndex = values.length;
       filters.push(`(
@@ -383,7 +398,7 @@ export class CatalogService {
     } else {
       filters.push("p.active = true", "v.active = true");
     }
-    if (retailOnly) filters.push("p.retail_visible = true");
+    if (retailScope) filters.push(storefrontScopeFilter(retailScope));
 
     if (query.search && !exactIdentifiers) {
       values.push(`%${query.search.toLowerCase()}%`);
@@ -448,14 +463,16 @@ export class CatalogService {
       LEFT JOIN product_supplier_links psl ON psl.variant_id = v.id AND psl.preferred = true
       LEFT JOIN suppliers s ON s.id = psl.supplier_id
       WHERE ${filters.join(" AND ")}
-      ORDER BY ${retailOnly ? "(p.image_url <> '') DESC, p.updated_at DESC" : "(p.active AND v.active) DESC, (COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0)) ASC, p.brand ASC, p.name ASC, v.id"}
+      ORDER BY ${retailScope ? "(p.image_url <> '') DESC, p.updated_at DESC" : "(p.active AND v.active) DESC, (COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0)) ASC, p.brand ASC, p.name ASC, v.id"}
       LIMIT $${limitIndex} OFFSET $${offsetIndex}`,
       values,
     );
 
     const items = result.rows.map(({ totalCount: _total, ...row }) => ({
       ...row,
-      purchasePrice: hidePurchasePrice ? 0 : Number(row.purchasePrice),
+      // Shoppers never see costs or suppliers.
+      ...(retailScope ? { supplierId: null, supplierName: "" } : {}),
+      purchasePrice: hidePurchasePrice || retailScope ? 0 : Number(row.purchasePrice),
       wholesalePrice: Number(row.wholesalePrice),
       retailPrice: Number(row.retailPrice),
       compareAtPrice:

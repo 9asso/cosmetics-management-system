@@ -88,7 +88,7 @@ describe.skipIf(!url)("local commerce integration (rolled back)", () => {
       (
         await catalog.list(
           { page: 1, pageSize: 100, search: product.sku, stock: "all" },
-          true,
+          "VISIBLE",
         )
       ).items[0]?.imageUrl,
     ).toBe(product.imageUrl);

@@ -20,6 +20,20 @@ export function mutationConfirmation(path: string, method: string, body?: string
     const labels: Record<string,string> = {DEPOSITED:'déposé',CLEARED:'réglé par la banque',BOUNCED:'rejeté',CANCELLED:'annulé'};
     return {title: `Marquer ce chèque comme ${labels[String(value.status)]} ?`, detail: value.status === 'CLEARED' ? 'Confirmez uniquement après vérification du règlement bancaire. Le solde de la facture sera réduit.' : 'Le solde de la facture ne sera pas réduit. Le changement sera conservé dans le journal.', destructive: ['BOUNCED','CANCELLED'].includes(String(value.status))};
   }
+  if (path === '/settings/storefront') {
+    const scope = value.productScope === 'IN_STOCK' ? 'tous les produits en stock' : 'les produits marqués « Visible dans la boutique »';
+    return value.catalogSource === 'DEMO'
+      ? {title:'Passer la boutique en mode démo ?',detail:'Les clients verront des produits de démonstration et ne pourront plus commander jusqu’au retour aux produits réels.',destructive:true}
+      : {title:'Mettre à jour la boutique en ligne ?',detail:`Produits affichés : ${scope}. Livraison ${value.shippingFee} MAD, offerte dès ${value.freeShippingThreshold} MAD. Le site sera mis à jour immédiatement.`};
+  }
+  if (path.startsWith('/settings/discount-codes')) {
+    const code = String(value.code ?? '').toUpperCase();
+    if (method === 'DELETE') return {title:'Supprimer ce code de réduction ?',detail:'Les clients ne pourront plus l’utiliser. Les commandes déjà passées avec ce code ne changent pas.',destructive:true};
+    const amount = value.type === 'PERCENT' ? `-${value.value} %` : `-${value.value} MAD`;
+    return method === 'POST'
+      ? {title:`Créer le code ${code} ?`,detail:`${amount}${Number(value.minSubtotal) > 0 ? ` dès ${value.minSubtotal} MAD d’achats` : ''}. Il sera utilisable sur la boutique ${value.active ? 'immédiatement' : 'dès son activation'}.`}
+      : {title:`Modifier le code ${code} ?`,detail:value.active ? `${amount}. Les nouvelles conditions s’appliquent aux prochaines commandes.` : 'Le code sera désactivé : les clients ne pourront plus l’utiliser.',destructive:value.active === false};
+  }
   if (path.endsWith('/void')) return {title:'Annuler cette dépense ?',detail:`Motif : ${value.reason}. Elle sera exclue des totaux et conservée dans l’historique.`,destructive:true};
   if (path === '/finance/expenses') return {title:'Enregistrer cette dépense ?',detail:`${value.name} · ${value.amount} MAD · ${value.incurredOn}.`};
   if (path.includes('/lots/')) {
