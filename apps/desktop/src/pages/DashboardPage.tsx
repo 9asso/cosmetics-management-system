@@ -642,6 +642,7 @@ export function DashboardPage({
   const periods = analytics.data?.periods ?? [];
   const revenue = periods.reduce((sum, period) => sum + period.revenue, 0);
   const margin = periods.reduce((sum, period) => sum + period.grossMargin, 0);
+  const periodExpenses = periods.reduce((sum, period) => sum + (period.expenses ?? 0), 0);
   const orderCount = periods.reduce(
     (sum, period) => sum + period.orderCount,
     0,
@@ -654,9 +655,9 @@ export function DashboardPage({
   const averageOrder = orderCount ? revenue / orderCount : 0;
   const marginRate = revenue ? (margin / revenue) * 100 : 0;
   const rangeCopy = {
-    year: { detail: "12 mois", button: "Année" },
-    month: { detail: "30 jours", button: "Mois" },
-    week: { detail: "7 jours", button: "Semaine" },
+    year: { detail: "Année en cours", button: "Année" },
+    month: { detail: "Mois en cours", button: "Mois" },
+    week: { detail: "Semaine en cours", button: "Semaine" },
   } satisfies Record<
     DashboardAnalyticsRange,
     { detail: string; button: string }
@@ -708,10 +709,24 @@ export function DashboardPage({
       tone: "gold",
     },
     {
-      label: "Encaissements reçus",
-      value: value ? money.format(value.incomeReceived) : "—",
+      label: "Caisse / Disponible",
+      value: value ? money.format(value.cashAvailable) : "—",
       icon: CircleDollarSign,
-      detail: "Paiements clients réellement encaissés",
+      detail: "Solde global · encaissements moins décaissements",
+      tone: "green",
+    },
+    {
+      label: "Total dépenses",
+      value: analytics.data ? money.format(periodExpenses) : "—",
+      icon: WalletCards,
+      detail: rangeCopy[range].detail,
+      tone: "rose",
+    },
+    {
+      label: "Bénéfice net",
+      value: analytics.data ? money.format(margin - periodExpenses) : "—",
+      icon: Scale,
+      detail: `${rangeCopy[range].detail} · marge moins dépenses`,
       tone: "green",
     },
     {

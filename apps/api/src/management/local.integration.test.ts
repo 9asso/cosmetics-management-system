@@ -114,10 +114,17 @@ describe.skipIf(!url)("local commerce integration (rolled back)", () => {
       after.periods.reduce((sum, row) => sum + row.grossMargin, 0) -
         before.periods.reduce((sum, row) => sum + row.grossMargin, 0),
     ).toBe(20);
-    expect(after.periods).toHaveLength(12);
-    expect((await dashboard.analytics("year")).periods).toHaveLength(12);
-    expect((await dashboard.analytics("month")).periods).toHaveLength(30);
-    expect((await dashboard.analytics("week")).periods).toHaveLength(7);
+    const calendar = (await client.query(`SELECT
+      EXTRACT(MONTH FROM now() AT TIME ZONE 'Africa/Casablanca')::int AS months,
+      EXTRACT(DAY FROM now() AT TIME ZONE 'Africa/Casablanca')::int AS days,
+      EXTRACT(ISODOW FROM now() AT TIME ZONE 'Africa/Casablanca')::int AS weekdays`)).rows[0];
+    expect(after.periods).toHaveLength(calendar.months);
+    expect(after.periods[0]?.period).toMatch(/-01$/);
+    expect((await dashboard.analytics("year")).periods).toHaveLength(calendar.months);
+    const month = await dashboard.analytics("month");
+    expect(month.periods).toHaveLength(calendar.days);
+    expect(month.periods[0]?.period).toMatch(/-01$/);
+    expect((await dashboard.analytics("week")).periods).toHaveLength(calendar.weekdays);
     await client.query(
       `INSERT INTO payments (organization_id, customer_id, direction, method, status, amount, reference)
       SELECT organization_id, customer_id, 'IN', 'CASH', 'COMPLETED', 1, order_number FROM sales_orders WHERE id = $1`,

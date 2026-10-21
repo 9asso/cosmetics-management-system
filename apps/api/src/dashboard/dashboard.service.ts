@@ -20,19 +20,16 @@ export class DashboardService {
     const config = {
       year: {
         grain: "month" as const,
-        count: 12,
         interval: "1 month",
         format: "YYYY-MM",
       },
       month: {
         grain: "day" as const,
-        count: 30,
         interval: "1 day",
         format: "YYYY-MM-DD",
       },
       week: {
         grain: "day" as const,
-        count: 7,
         interval: "1 day",
         format: "YYYY-MM-DD",
       },
@@ -48,34 +45,30 @@ export class DashboardService {
       discountTotal: string;
       shippingTotal: string;
       taxTotal: string;
+      expenses: string;
     }>(
       `WITH buckets AS (
         SELECT generate_series(
-          date_trunc('${config.grain}', now() AT TIME ZONE 'Africa/Casablanca') - ($2::int - 1) * interval '${config.interval}',
+          date_trunc($2::text, now() AT TIME ZONE 'Africa/Casablanca'),
           date_trunc('${config.grain}', now() AT TIME ZONE 'Africa/Casablanca'), interval '${config.interval}') AS period
       ), eligible AS (
-        SELECT so.id, so.channel,
-          date_trunc('${config.grain}', COALESCE(so.placed_at, so.created_at) AT TIME ZONE 'Africa/Casablanca') AS period,
-          so.grand_total, so.discount_total, so.shipping_total, so.tax_total,
-          COALESCE((SELECT SUM((i.quantity - i.returned_quantity) * i.unit_multiplier)
-            FROM sales_order_items i WHERE i.sales_order_id = so.id), 0)::int AS units,
-          COALESCE((SELECT SUM(
-            (i.unit_price - i.unit_cost_snapshot) * (i.quantity - i.returned_quantity) * i.unit_multiplier)
-          FROM sales_order_items i WHERE i.sales_order_id = so.id), 0) - so.discount_total AS margin
-        FROM sales_orders so WHERE so.organization_id = $1
-          AND so.status IN ('CONFIRMED', 'PARTIALLY_PAID', 'PAID', 'DELIVERED', 'FULFILLED')
-          AND COALESCE(so.placed_at, so.created_at) <= now()
+        SELECT f.*,f.revenue AS grand_total,
+          date_trunc('${config.grain}',f.occurred_at AT TIME ZONE 'Africa/Casablanca') AS period
+        FROM dashboard_sales_facts f WHERE f.organization_id=$1 AND f.occurred_at<=now()
       ) SELECT to_char(b.period, '${config.format}') AS period,
         COALESCE(SUM(e.grand_total), 0)::text AS revenue,
         COALESCE(SUM(e.grand_total) FILTER (WHERE e.channel IN ('WHOLESALE_DESKTOP','MANUAL')), 0)::text AS "wholesaleRevenue",
         COALESCE(SUM(e.grand_total) FILTER (WHERE e.channel = 'RETAIL_WEB'), 0)::text AS "retailRevenue",
         COALESCE(SUM(e.margin), 0)::text AS "grossMargin",
-        COUNT(e.id)::int AS "orderCount",COALESCE(SUM(e.units),0)::int AS "unitsSold",
+        COALESCE(SUM(e.order_count),0)::int AS "orderCount",COALESCE(SUM(e.units),0)::int AS "unitsSold",
         COALESCE(SUM(e.discount_total),0)::text AS "discountTotal",
         COALESCE(SUM(e.shipping_total),0)::text AS "shippingTotal",
-        COALESCE(SUM(e.tax_total),0)::text AS "taxTotal"
+        COALESCE(SUM(e.tax_total),0)::text AS "taxTotal",
+        (SELECT COALESCE(SUM(x.amount),0) FROM expenses x WHERE x.organization_id=$1 AND x.voided_at IS NULL
+          AND date_trunc('${config.grain}',x.incurred_on::timestamp)=b.period
+          AND x.incurred_on<=(now() AT TIME ZONE 'Africa/Casablanca')::date)::text AS expenses
       FROM buckets b LEFT JOIN eligible e ON e.period = b.period GROUP BY b.period ORDER BY b.period`,
-      [DEFAULT_ORGANIZATION_ID, config.count],
+      [DEFAULT_ORGANIZATION_ID, range],
     );
     const activity = await this.db.query<
       DashboardAnalytics["activity"][number]
@@ -164,13 +157,15 @@ export class DashboardService {
           AND p.active = true
           AND COALESCE(NULLIF(BTRIM(p.image_url),''),NULLIF(BTRIM(p.images->>0),'')) IS NOT NULL
           AND date_trunc('${config.grain}',COALESCE(so.placed_at,so.created_at) AT TIME ZONE 'Africa/Casablanca') >=
-            date_trunc('${config.grain}',now() AT TIME ZONE 'Africa/Casablanca') - ($2::int - 1) * interval '${config.interval}'
+            date_trunc($2::text,now() AT TIME ZONE 'Africa/Casablanca')
+          AND COALESCE(so.placed_at,so.created_at)<=now()
+          AND so.legacy_kind IS DISTINCT FROM 'OPENING_DEBT'
         GROUP BY p.id,v.id,p.name,p.brand,v.sku,p.image_url,p.images,segment
       ), ranked AS (
         SELECT *,row_number() OVER (PARTITION BY segment ORDER BY "unitsSold" DESC,revenue DESC,"productId")::int AS rank
         FROM totals
       ) SELECT * FROM ranked WHERE rank <= 5 ORDER BY segment,rank`,
-      [DEFAULT_ORGANIZATION_ID, config.count],
+      [DEFAULT_ORGANIZATION_ID, range],
     );
     const topCustomers = await this.db.query<
       DashboardAnalytics["customers"]["topWholesale"][number] & {
@@ -193,14 +188,16 @@ export class DashboardService {
         WHERE so.organization_id=$1
           AND so.status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
           AND date_trunc('${config.grain}',COALESCE(so.placed_at,so.created_at) AT TIME ZONE 'Africa/Casablanca') >=
-            date_trunc('${config.grain}',now() AT TIME ZONE 'Africa/Casablanca') - ($2::int - 1) * interval '${config.interval}'
+            date_trunc($2::text,now() AT TIME ZONE 'Africa/Casablanca')
+          AND COALESCE(so.placed_at,so.created_at)<=now()
+          AND so.legacy_kind IS DISTINCT FROM 'OPENING_DEBT'
         GROUP BY COALESCE(so.customer_id::text,so.id::text),
           COALESCE(c.name,so.partner_snapshot->>'name','Client'),city,segment
       ), ranked AS (
         SELECT *,row_number() OVER (PARTITION BY segment ORDER BY revenue DESC,"orderCount" DESC,"customerId")::int AS rank
         FROM totals
       ) SELECT * FROM ranked WHERE rank <= 5 ORDER BY segment,rank`,
-      [DEFAULT_ORGANIZATION_ID, config.count],
+      [DEFAULT_ORGANIZATION_ID, range],
     );
     const topCities = await this.db.query<
       DashboardAnalytics["customers"]["topCities"][number]
@@ -214,11 +211,13 @@ export class DashboardService {
         WHERE so.organization_id=$1
           AND so.status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
           AND date_trunc('${config.grain}',COALESCE(so.placed_at,so.created_at) AT TIME ZONE 'Africa/Casablanca') >=
-            date_trunc('${config.grain}',now() AT TIME ZONE 'Africa/Casablanca') - ($2::int - 1) * interval '${config.interval}'
+            date_trunc($2::text,now() AT TIME ZONE 'Africa/Casablanca')
+          AND COALESCE(so.placed_at,so.created_at)<=now()
+          AND so.legacy_kind IS DISTINCT FROM 'OPENING_DEBT'
       ) SELECT city,SUM(grand_total)::float AS revenue,COUNT(*)::int AS "orderCount",
         COUNT(DISTINCT customer_id)::int AS "customerCount"
       FROM eligible GROUP BY city ORDER BY revenue DESC,"orderCount" DESC,city LIMIT 5`,
-      [DEFAULT_ORGANIZATION_ID, config.count],
+      [DEFAULT_ORGANIZATION_ID, range],
     );
     return {
       range,
@@ -233,6 +232,7 @@ export class DashboardService {
         discountTotal: Number(row.discountTotal),
         shippingTotal: Number(row.shippingTotal),
         taxTotal: Number(row.taxTotal),
+        expenses: Number(row.expenses),
       })),
       activity: activity.rows,
       products: {
@@ -260,20 +260,15 @@ export class DashboardService {
   async summary(): Promise<DashboardSummary> {
     const result = await this.db.query<SummaryRow>(
       `SELECT
-        COALESCE((SELECT SUM(grand_total) FROM sales_orders
-          WHERE organization_id = $1 AND status IN ('CONFIRMED', 'PARTIALLY_PAID', 'PAID', 'DELIVERED', 'FULFILLED')), 0)::text AS revenue,
-        COALESCE((SELECT SUM(COALESCE((SELECT SUM((soi.unit_price - soi.unit_cost_snapshot) *
-          (soi.quantity - soi.returned_quantity) * soi.unit_multiplier)
-          FROM sales_order_items soi WHERE soi.sales_order_id=so.id),0)-so.discount_total)
-          FROM sales_orders so WHERE so.organization_id = $1
-          AND so.status IN ('CONFIRMED', 'PARTIALLY_PAID', 'PAID', 'DELIVERED', 'FULFILLED')), 0)::text AS "grossMargin",
-        COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id = $1 AND voided_at IS NULL), 0)::text AS expenses,
-        (COALESCE((SELECT SUM(COALESCE((SELECT SUM((soi.unit_price - soi.unit_cost_snapshot) *
-          (soi.quantity - soi.returned_quantity) * soi.unit_multiplier)
-          FROM sales_order_items soi WHERE soi.sales_order_id=so.id),0)-so.discount_total)
-          FROM sales_orders so WHERE so.organization_id = $1
-          AND so.status IN ('CONFIRMED', 'PARTIALLY_PAID', 'PAID', 'DELIVERED', 'FULFILLED')), 0)
-          - COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id = $1 AND voided_at IS NULL), 0))::text AS "netProfit",
+        COALESCE((SELECT SUM(revenue) FROM dashboard_sales_facts WHERE organization_id=$1),0)::text AS revenue,
+        COALESCE((SELECT SUM(margin) FROM dashboard_sales_facts WHERE organization_id=$1),0)::text AS "grossMargin",
+        COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id=$1 AND voided_at IS NULL),0)::text AS expenses,
+        (COALESCE((SELECT SUM(margin) FROM dashboard_sales_facts WHERE organization_id=$1),0)
+          -COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id=$1 AND voided_at IS NULL),0))::text AS "netProfit",
+        (COALESCE((SELECT opening_cash_balance FROM organizations WHERE id=$1),0)
+          +COALESCE((SELECT SUM(CASE direction WHEN 'IN' THEN amount ELSE -amount END) FROM payments
+            WHERE organization_id=$1 AND status='COMPLETED'),0)
+          -COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id=$1 AND voided_at IS NULL),0))::text AS "cashAvailable",
         COALESCE((SELECT SUM(b.on_hand * v.purchase_price)
           FROM inventory_balances b JOIN product_variants v ON v.id = b.variant_id
           WHERE b.location_id = $2), 0)::text AS "inventoryValue",
@@ -285,7 +280,7 @@ export class DashboardService {
           LEFT JOIN inventory_balances b ON b.variant_id=v.id AND b.location_id=$2
           WHERE p.organization_id=$1 AND p.active=true AND v.active=true AND COALESCE(b.on_hand,0)-COALESCE(b.reserved,0)=0),0)::text AS "outOfStockCount",
         COALESCE((SELECT SUM(grand_total - amount_paid) FROM sales_orders
-          WHERE organization_id = $1 AND status IN ('CONFIRMED', 'PARTIALLY_PAID', 'DELIVERED', 'FULFILLED')), 0)::text AS "customerReceivables",
+          WHERE organization_id = $1 AND legacy_payment_method IS DISTINCT FROM 'Cheque' AND status IN ('CONFIRMED', 'PARTIALLY_PAID', 'DELIVERED', 'FULFILLED')), 0)::text AS "customerReceivables",
         COALESCE((SELECT SUM(amount) FROM payments
           WHERE organization_id=$1 AND direction='IN' AND status='COMPLETED'),0)::text AS "incomeReceived",
         COALESCE((SELECT SUM(total - amount_paid) FROM purchase_orders
@@ -321,32 +316,24 @@ export class DashboardService {
       expenseCount: string;
     }>(
       `SELECT
-        COALESCE((SELECT SUM(grand_total) FROM sales_orders
-          WHERE organization_id=$1 AND status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
-          AND (COALESCE(placed_at,created_at) AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "salesRevenue",
-        COALESCE((SELECT SUM(COALESCE((SELECT SUM((i.unit_price-i.unit_cost_snapshot)*
-          (i.quantity-i.returned_quantity)*i.unit_multiplier) FROM sales_order_items i
-          WHERE i.sales_order_id=s.id),0)-s.discount_total)
-          FROM sales_orders s WHERE s.organization_id=$1
-          AND s.status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
-          AND (COALESCE(s.placed_at,s.created_at) AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "grossMargin",
+        COALESCE((SELECT SUM(revenue) FROM dashboard_sales_facts WHERE organization_id=$1
+          AND (occurred_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "salesRevenue",
+        COALESCE((SELECT SUM(margin) FROM dashboard_sales_facts WHERE organization_id=$1
+          AND (occurred_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "grossMargin",
         COALESCE((SELECT SUM(amount) FROM payments WHERE organization_id=$1 AND direction='IN' AND status='COMPLETED'
           AND (paid_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "incomeReceived",
         COALESCE((SELECT SUM(amount) FROM payments WHERE organization_id=$1 AND direction='OUT' AND status='COMPLETED'
-          AND sales_order_id IS NOT NULL AND (paid_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "customerRefunds",
+          AND (sales_order_id IS NOT NULL OR return_id IS NOT NULL) AND (paid_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "customerRefunds",
         COALESCE((SELECT SUM(total) FROM purchase_orders WHERE organization_id=$1 AND status IN ('RECEIVED','PARTIALLY_RECEIVED')
           AND (COALESCE(ordered_at,created_at) AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS purchases,
         COALESCE((SELECT SUM(amount) FROM payments WHERE organization_id=$1 AND direction='OUT' AND status='COMPLETED'
           AND purchase_order_id IS NOT NULL AND (paid_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "supplierPayments",
         COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id=$1 AND voided_at IS NULL
           AND incurred_on BETWEEN $2::date AND $3::date),0)::text AS expenses,
-        COALESCE((SELECT COUNT(*) FROM sales_orders
-          WHERE organization_id=$1 AND status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
-          AND (COALESCE(placed_at,created_at) AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "salesCount",
-        COALESCE((SELECT SUM((i.quantity-i.returned_quantity)*i.unit_multiplier)
-          FROM sales_order_items i JOIN sales_orders s ON s.id=i.sales_order_id
-          WHERE s.organization_id=$1 AND s.status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
-          AND (COALESCE(s.placed_at,s.created_at) AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "unitsSold",
+        COALESCE((SELECT SUM(order_count) FROM dashboard_sales_facts WHERE organization_id=$1
+          AND (occurred_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "salesCount",
+        COALESCE((SELECT SUM(units) FROM dashboard_sales_facts WHERE organization_id=$1
+          AND (occurred_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "unitsSold",
         COALESCE((SELECT COUNT(*) FROM purchase_orders WHERE organization_id=$1
           AND status IN ('RECEIVED','PARTIALLY_RECEIVED')
           AND (COALESCE(ordered_at,created_at) AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "purchaseCount",
@@ -359,7 +346,7 @@ export class DashboardService {
         SELECT id,'sale' AS kind,order_number AS number,COALESCE(partner_snapshot->>'name','Client') AS partner,
           grand_total::float AS amount,amount_paid::float AS "paidAmount",status,
           (COALESCE(placed_at,created_at) AT TIME ZONE 'Africa/Casablanca')::date::text AS "occurredOn"
-        FROM sales_orders WHERE organization_id=$1 AND status NOT IN ('DRAFT','ORDERED','CANCELED','CANCELLED','REFUNDED')
+        FROM sales_orders WHERE organization_id=$1 AND legacy_kind IS DISTINCT FROM 'OPENING_DEBT' AND status NOT IN ('DRAFT','ORDERED','CANCELED','CANCELLED','REFUNDED')
         UNION ALL
         SELECT id,'purchase',order_number,COALESCE(partner_snapshot->>'name','Fournisseur'),total::float,amount_paid::float,status,
           (COALESCE(ordered_at,created_at) AT TIME ZONE 'Africa/Casablanca')::date::text
@@ -396,13 +383,10 @@ export class DashboardService {
         SELECT generate_series(date_trunc('${reportConfig.grain}',$2::timestamp),
           date_trunc('${reportConfig.grain}',$3::timestamp),interval '${reportConfig.interval}') AS period
       ), sales AS (
-        SELECT date_trunc('${reportConfig.grain}',COALESCE(s.placed_at,s.created_at) AT TIME ZONE 'Africa/Casablanca') AS period,
-          SUM(s.grand_total) AS revenue,
-          SUM(COALESCE((SELECT SUM((i.unit_price-i.unit_cost_snapshot)*(i.quantity-i.returned_quantity)*i.unit_multiplier)
-            FROM sales_order_items i WHERE i.sales_order_id=s.id),0)-s.discount_total) AS margin
-        FROM sales_orders s WHERE s.organization_id=$1
-          AND s.status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
-          AND (COALESCE(s.placed_at,s.created_at) AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date
+        SELECT date_trunc('${reportConfig.grain}',f.occurred_at AT TIME ZONE 'Africa/Casablanca') AS period,
+          SUM(f.revenue) AS revenue,SUM(f.margin) AS margin
+        FROM dashboard_sales_facts f WHERE f.organization_id=$1
+          AND (f.occurred_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date
         GROUP BY period
       ), cash AS (
         SELECT date_trunc('${reportConfig.grain}',paid_at AT TIME ZONE 'Africa/Casablanca') AS period,

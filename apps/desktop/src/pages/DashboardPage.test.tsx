@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { DashboardPage } from "./DashboardPage";
@@ -17,6 +17,7 @@ vi.mock("../lib/api", () => ({
       customerReceivables: 30,
       supplierPayables: 20,
       incomeReceived: 90,
+      cashAvailable: 12.5,
       ordersToProcess: 3,
       reservedUnits: 7,
       dueChecks: 1,
@@ -167,6 +168,21 @@ vi.mock("recharts", () => ({
 }));
 afterEach(cleanup);
 describe("actionable dashboard navigation", () => {
+  it("shows available cash separately from receipts and labels calendar periods", async () => {
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <DashboardPage role="OWNER" onNavigate={() => {}} />
+      </QueryClientProvider>,
+    );
+    const cash = await screen.findByText("Caisse / Disponible");
+    await waitFor(() => expect(cash.closest("article")?.textContent).toContain("12,50"));
+    expect(screen.queryByText("Encaissements reçus")).toBeNull();
+    expect(screen.getAllByText(/Mois en cours/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Total dépenses")).toBeTruthy();
+    expect(screen.getByText("Bénéfice net")).toBeTruthy();
+    client.clear();
+  });
   it("opens every alert destination directly", async () => {
     const navigate = vi.fn();
     const client = new QueryClient();

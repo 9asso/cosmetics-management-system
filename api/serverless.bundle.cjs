@@ -2031,10 +2031,10 @@ var require_controller_decorator = __commonJS({
   "node_modules/.pnpm/@nestjs+common@11.2.3_reflect-metadata@0.2.2_rxjs@7.8.2/node_modules/@nestjs/common/decorators/core/controller.decorator.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.Controller = Controller10;
+    exports2.Controller = Controller11;
     var constants_1 = require_constants2();
     var shared_utils_1 = require_shared_utils();
-    function Controller10(prefixOrOptions) {
+    function Controller11(prefixOrOptions) {
       const defaultPath = "/";
       const [path, host, scopeOptions, versionOptions] = (0, shared_utils_1.isUndefined)(prefixOrOptions) ? [defaultPath, void 0, void 0, void 0] : (0, shared_utils_1.isString)(prefixOrOptions) || Array.isArray(prefixOrOptions) ? [prefixOrOptions, void 0, void 0, void 0] : [
         prefixOrOptions.path || defaultPath,
@@ -2203,11 +2203,11 @@ var require_injectable_decorator = __commonJS({
   "node_modules/.pnpm/@nestjs+common@11.2.3_reflect-metadata@0.2.2_rxjs@7.8.2/node_modules/@nestjs/common/decorators/core/injectable.decorator.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.Injectable = Injectable11;
+    exports2.Injectable = Injectable12;
     exports2.mixin = mixin;
     var uid_1 = require_dist();
     var constants_1 = require_constants2();
-    function Injectable11(options) {
+    function Injectable12(options) {
       return (target) => {
         Reflect.defineMetadata(constants_1.INJECTABLE_WATERMARK, true, target);
         Reflect.defineMetadata(constants_1.SCOPE_OPTIONS_METADATA, options, target);
@@ -2217,7 +2217,7 @@ var require_injectable_decorator = __commonJS({
       Object.defineProperty(mixinClass, "name", {
         value: (0, uid_1.uid)(21)
       });
-      Injectable11()(mixinClass);
+      Injectable12()(mixinClass);
       return mixinClass;
     }
   }
@@ -2596,9 +2596,9 @@ var require_route_params_decorator = __commonJS({
     exports2.UploadedFile = UploadedFile;
     exports2.UploadedFiles = UploadedFiles;
     exports2.Query = Query7;
-    exports2.Body = Body7;
+    exports2.Body = Body8;
     exports2.RawBody = RawBody;
-    exports2.Param = Param6;
+    exports2.Param = Param8;
     exports2.HostParam = HostParam;
     var constants_1 = require_constants2();
     var route_paramtypes_enum_1 = require_route_paramtypes_enum();
@@ -2647,13 +2647,13 @@ var require_route_params_decorator = __commonJS({
     function Query7(property, ...pipes) {
       return createPipesRouteParamDecorator(route_paramtypes_enum_1.RouteParamtypes.QUERY)(property, ...pipes);
     }
-    function Body7(property, ...pipes) {
+    function Body8(property, ...pipes) {
       return createPipesRouteParamDecorator(route_paramtypes_enum_1.RouteParamtypes.BODY)(property, ...pipes);
     }
     function RawBody(...pipes) {
       return createPipesRouteParamDecorator(route_paramtypes_enum_1.RouteParamtypes.RAW_BODY)(void 0, ...pipes);
     }
-    function Param6(property, ...pipes) {
+    function Param8(property, ...pipes) {
       return createPipesRouteParamDecorator(route_paramtypes_enum_1.RouteParamtypes.PARAM)(property, ...pipes);
     }
     function HostParam(property) {
@@ -3187,7 +3187,7 @@ var require_conflict_exception = __commonJS({
     exports2.ConflictException = void 0;
     var http_status_enum_1 = require_http_status_enum();
     var http_exception_1 = require_http_exception();
-    var ConflictException4 = class extends http_exception_1.HttpException {
+    var ConflictException5 = class extends http_exception_1.HttpException {
       /**
        * Instantiate a `ConflictException` Exception.
        *
@@ -3217,7 +3217,7 @@ var require_conflict_exception = __commonJS({
         super(http_exception_1.HttpException.createBody(objectOrError, description, http_status_enum_1.HttpStatus.CONFLICT), http_status_enum_1.HttpStatus.CONFLICT, httpExceptionOptions);
       }
     };
-    exports2.ConflictException = ConflictException4;
+    exports2.ConflictException = ConflictException5;
   }
 });
 
@@ -3607,7 +3607,7 @@ var require_not_found_exception = __commonJS({
     exports2.NotFoundException = void 0;
     var http_status_enum_1 = require_http_status_enum();
     var http_exception_1 = require_http_exception();
-    var NotFoundException7 = class extends http_exception_1.HttpException {
+    var NotFoundException9 = class extends http_exception_1.HttpException {
       /**
        * Instantiate a `NotFoundException` Exception.
        *
@@ -3637,7 +3637,7 @@ var require_not_found_exception = __commonJS({
         super(http_exception_1.HttpException.createBody(objectOrError, description, http_status_enum_1.HttpStatus.NOT_FOUND), http_status_enum_1.HttpStatus.NOT_FOUND, httpExceptionOptions);
       }
     };
-    exports2.NotFoundException = NotFoundException7;
+    exports2.NotFoundException = NotFoundException9;
   }
 });
 
@@ -3817,7 +3817,7 @@ var require_service_unavailable_exception = __commonJS({
     exports2.ServiceUnavailableException = void 0;
     var http_status_enum_1 = require_http_status_enum();
     var http_exception_1 = require_http_exception();
-    var ServiceUnavailableException = class extends http_exception_1.HttpException {
+    var ServiceUnavailableException2 = class extends http_exception_1.HttpException {
       /**
        * Instantiate a `ServiceUnavailableException` Exception.
        *
@@ -3847,7 +3847,7 @@ var require_service_unavailable_exception = __commonJS({
         super(http_exception_1.HttpException.createBody(objectOrError, description, http_status_enum_1.HttpStatus.SERVICE_UNAVAILABLE), http_status_enum_1.HttpStatus.SERVICE_UNAVAILABLE, httpExceptionOptions);
       }
     };
-    exports2.ServiceUnavailableException = ServiceUnavailableException;
+    exports2.ServiceUnavailableException = ServiceUnavailableException2;
   }
 });
 
@@ -7002,7 +7002,7 @@ var require_parse_uuid_pipe = __commonJS({
     var http_status_enum_1 = require_http_status_enum();
     var http_error_by_code_util_1 = require_http_error_by_code_util();
     var shared_utils_1 = require_shared_utils();
-    var ParseUUIDPipe3 = ParseUUIDPipe_1 = class ParseUUIDPipe {
+    var ParseUUIDPipe4 = ParseUUIDPipe_1 = class ParseUUIDPipe {
       constructor(options) {
         this.options = options;
         options = options || {};
@@ -7027,19 +7027,19 @@ var require_parse_uuid_pipe = __commonJS({
         return pattern?.test(str);
       }
     };
-    exports2.ParseUUIDPipe = ParseUUIDPipe3;
-    ParseUUIDPipe3.uuidRegExps = {
+    exports2.ParseUUIDPipe = ParseUUIDPipe4;
+    ParseUUIDPipe4.uuidRegExps = {
       3: /^[0-9A-F]{8}-[0-9A-F]{4}-3[0-9A-F]{3}-[0-9A-F]{4}-[0-9A-F]{12}$/i,
       4: /^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i,
       5: /^[0-9A-F]{8}-[0-9A-F]{4}-5[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i,
       7: /^[0-9A-F]{8}-[0-9A-F]{4}-7[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i,
       all: /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i
     };
-    exports2.ParseUUIDPipe = ParseUUIDPipe3 = ParseUUIDPipe_1 = tslib_1.__decorate([
+    exports2.ParseUUIDPipe = ParseUUIDPipe4 = ParseUUIDPipe_1 = tslib_1.__decorate([
       (0, injectable_decorator_1.Injectable)(),
       tslib_1.__param(0, (0, optional_decorator_1.Optional)()),
       tslib_1.__metadata("design:paramtypes", [Object])
-    ], ParseUUIDPipe3);
+    ], ParseUUIDPipe4);
   }
 });
 
@@ -69630,7 +69630,7 @@ var require_config_service = __commonJS({
     }) : function(o, v) {
       o["default"] = v;
     });
-    var __decorate30 = exports2 && exports2.__decorate || function(decorators, target, key, desc) {
+    var __decorate32 = exports2 && exports2.__decorate || function(decorators, target, key, desc) {
       var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
       if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
       else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
@@ -69655,10 +69655,10 @@ var require_config_service = __commonJS({
         return result;
       };
     })();
-    var __metadata21 = exports2 && exports2.__metadata || function(k, v) {
+    var __metadata23 = exports2 && exports2.__metadata || function(k, v) {
       if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
     };
-    var __param10 = exports2 && exports2.__param || function(paramIndex, decorator) {
+    var __param11 = exports2 && exports2.__param || function(paramIndex, decorator) {
       return function(target, key) {
         decorator(target, key, paramIndex);
       };
@@ -69819,11 +69819,11 @@ var require_config_service = __commonJS({
       }
     };
     exports2.ConfigService = ConfigService2;
-    exports2.ConfigService = ConfigService2 = __decorate30([
+    exports2.ConfigService = ConfigService2 = __decorate32([
       (0, common_1.Injectable)(),
-      __param10(0, (0, common_1.Optional)()),
-      __param10(0, (0, common_1.Inject)(config_constants_1.CONFIGURATION_TOKEN)),
-      __metadata21("design:paramtypes", [Object])
+      __param11(0, (0, common_1.Optional)()),
+      __param11(0, (0, common_1.Inject)(config_constants_1.CONFIGURATION_TOKEN)),
+      __metadata23("design:paramtypes", [Object])
     ], ConfigService2);
   }
 });
@@ -69832,7 +69832,7 @@ var require_config_service = __commonJS({
 var require_config_host_module = __commonJS({
   "node_modules/.pnpm/@nestjs+config@4.0.4_@nestjs+common@11.2.3_reflect-metadata@0.2.2_rxjs@7.8.2__rxjs@7.8.2/node_modules/@nestjs/config/dist/config-host.module.js"(exports2) {
     "use strict";
-    var __decorate30 = exports2 && exports2.__decorate || function(decorators, target, key, desc) {
+    var __decorate32 = exports2 && exports2.__decorate || function(decorators, target, key, desc) {
       var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
       if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
       else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
@@ -69846,7 +69846,7 @@ var require_config_host_module = __commonJS({
     var ConfigHostModule = class ConfigHostModule {
     };
     exports2.ConfigHostModule = ConfigHostModule;
-    exports2.ConfigHostModule = ConfigHostModule = __decorate30([
+    exports2.ConfigHostModule = ConfigHostModule = __decorate32([
       (0, common_1.Global)(),
       (0, common_1.Module)({
         providers: [
@@ -69950,7 +69950,7 @@ var require_config_module = __commonJS({
     }) : function(o, v) {
       o["default"] = v;
     });
-    var __decorate30 = exports2 && exports2.__decorate || function(decorators, target, key, desc) {
+    var __decorate32 = exports2 && exports2.__decorate || function(decorators, target, key, desc) {
       var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
       if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
       else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
@@ -70150,7 +70150,7 @@ var require_config_module = __commonJS({
     };
     exports2.ConfigModule = ConfigModule2;
     ConfigModule2._envVariablesLoaded = new Promise((resolve) => ConfigModule_1.environmentVariablesLoadedSignal = resolve);
-    exports2.ConfigModule = ConfigModule2 = ConfigModule_1 = __decorate30([
+    exports2.ConfigModule = ConfigModule2 = ConfigModule_1 = __decorate32([
       (0, common_1.Module)({
         imports: [config_host_module_1.ConfigHostModule],
         providers: [
@@ -94958,8 +94958,15 @@ var createRetailOrderSchema = external_exports.object({
     variantId: uuidSchema,
     quantity: external_exports.coerce.number().int().min(1).max(50)
   })).min(1).max(30),
-  paymentMethod: external_exports.literal("COD").default("COD")
+  paymentMethod: external_exports.literal("COD").default("COD"),
+  discountCode: external_exports.string().trim().toUpperCase().max(40).optional()
 });
+function computeDiscount(discount, subtotal) {
+  if (subtotal < discount.minSubtotal)
+    return 0;
+  const amount = discount.type === "PERCENT" ? subtotal * discount.value / 100 : discount.value;
+  return Math.round(Math.min(amount, subtotal) * 100) / 100;
+}
 
 // packages/contracts/dist/settings.js
 var brandSettingsSchema = external_exports.object({
@@ -94968,6 +94975,36 @@ var brandSettingsSchema = external_exports.object({
   phones: external_exports.string().trim().min(2).max(120),
   thankYouText: external_exports.string().trim().min(2).max(200),
   returnPolicy: external_exports.string().trim().min(2).max(300)
+});
+
+// packages/contracts/dist/storefront.js
+var storeCatalogSources = ["LIVE", "DEMO"];
+var storeProductScopes = ["VISIBLE", "IN_STOCK"];
+var storefrontSettingsSchema = external_exports.object({
+  /** LIVE shows the real catalogue; DEMO shows sample products with ordering disabled. */
+  catalogSource: external_exports.enum(storeCatalogSources),
+  /** VISIBLE: products switched "Visible dans la boutique"; IN_STOCK: every product with stock. */
+  productScope: external_exports.enum(storeProductScopes),
+  freeShippingThreshold: moneySchema,
+  shippingFee: moneySchema
+});
+var defaultStorefrontSettings = {
+  catalogSource: "LIVE",
+  productScope: "VISIBLE",
+  freeShippingThreshold: 500,
+  shippingFee: 35
+};
+var discountCodeSchema = external_exports.object({
+  code: external_exports.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{2,40}$/, "Le code doit contenir 2 \xE0 40 lettres, chiffres, tirets ou soulign\xE9s."),
+  type: external_exports.enum(["PERCENT", "FIXED"]),
+  value: external_exports.coerce.number().finite().positive("La valeur doit \xEAtre sup\xE9rieure \xE0 0.").max(999999),
+  minSubtotal: moneySchema.default(0),
+  /** Last day the code can be used (inclusive), or null for no end date. */
+  expiresOn: external_exports.iso.date().nullable().default(null),
+  active: external_exports.boolean().default(true)
+}).refine((value) => value.type !== "PERCENT" || value.value <= 100, {
+  message: "Un pourcentage ne peut pas d\xE9passer 100 %.",
+  path: ["value"]
 });
 
 // apps/api/dist/auth/auth.decorators.js
@@ -95225,7 +95262,7 @@ var FinanceService = FinanceService_1 = class FinanceService2 {
   async summary() {
     await this.generateRecurringExpenses();
     const result = await this.db.query(`SELECT
-      (SELECT COALESCE(SUM(GREATEST(0,grand_total-amount_paid)),0)::float FROM sales_orders WHERE organization_id=$1 AND status IN ${eligibleSales}) AS receivables,
+      (SELECT COALESCE(SUM(GREATEST(0,grand_total-amount_paid)),0)::float FROM sales_orders WHERE organization_id=$1 AND legacy_payment_method IS DISTINCT FROM 'Cheque' AND status IN ${eligibleSales}) AS receivables,
       (SELECT COALESCE(SUM(GREATEST(0,total-amount_paid)),0)::float FROM purchase_orders WHERE organization_id=$1 AND status IN ('RECEIVED','PARTIALLY_RECEIVED')) AS payables,
       (SELECT COUNT(*)::int FROM payments WHERE organization_id=$1 AND method='CHECK' AND status='PENDING') AS "pendingChecks",
       (SELECT COALESCE(SUM(amount),0)::float FROM payments WHERE organization_id=$1 AND method='CHECK' AND status='PENDING') AS "pendingCheckAmount",
@@ -95253,6 +95290,7 @@ var FinanceService = FinanceService_1 = class FinanceService2 {
       FROM ${sale ? "sales_orders" : "purchase_orders"} d
       CROSS JOIN LATERAL (SELECT COALESCE(SUM(amount),0) AS pending FROM payments WHERE ${sale ? "sales_order_id" : "purchase_order_id"}=d.id AND status='PENDING' AND method='CHECK') p
       WHERE d.organization_id=$1 AND d.status IN ${sale ? eligibleSales : "('RECEIVED','PARTIALLY_RECEIVED')"}
+      ${sale ? "AND d.legacy_payment_method IS DISTINCT FROM 'Cheque'" : ""}
       AND ${sale ? "grand_total" : "total"} > amount_paid AND (d.order_number ILIKE $2 OR d.partner_snapshot->>'name' ILIKE $2)
       ORDER BY COALESCE(${sale ? "placed_at" : "ordered_at"},d.created_at), d.id`, [DEFAULT_ORGANIZATION_ID, `%${query.search}%`], query);
   }
@@ -95641,7 +95679,7 @@ FinanceModule = __decorate6([
 ], FinanceModule);
 
 // apps/api/dist/app.module.js
-var import_common30 = __toESM(require_common(), 1);
+var import_common32 = __toESM(require_common(), 1);
 var import_config2 = __toESM(require_config2(), 1);
 
 // apps/api/dist/auth/auth.module.js
@@ -95971,10 +96009,28 @@ var __decorate11 = function(decorators, target, key, desc) {
 var __metadata9 = function(k, v) {
   if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+function storefrontScopeFilter(scope) {
+  return scope === "IN_STOCK" ? "(COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0)) > 0 AND v.retail_price > 0" : "p.retail_visible = true";
+}
 var CatalogService = class CatalogService2 {
   db;
   constructor(db) {
     this.db = db;
+  }
+  async identifierConflicts(sku, barcode, excludeProductId) {
+    const page = await this.list({ page: 1, pageSize: 100, search: "", stock: "all" }, false, false, { sku, barcode, excludeProductId });
+    return page.items;
+  }
+  async identifierConflictPayload(error61, sku, barcode, excludeProductId) {
+    const conflicts = await this.identifierConflicts(sku, barcode, excludeProductId);
+    const sameBarcode = error61.constraint === "product_variants_barcode_unique" || conflicts.some((product) => barcode.trim() !== "" && product.barcode === barcode.trim());
+    const sameSku = error61.constraint === "product_variants_sku_key" || conflicts.some((product) => product.sku === sku.trim());
+    const conflictFields = [
+      ...sameSku ? ["sku"] : [],
+      ...sameBarcode ? ["barcode"] : []
+    ];
+    const message = sameBarcode && sameSku ? "Ce SKU et ce code-barres sont d\xE9j\xE0 utilis\xE9s par un autre produit." : sameBarcode ? `Le code-barres ${barcode.trim()} est d\xE9j\xE0 utilis\xE9 par un autre produit.` : sameSku ? `Le SKU ${sku.trim()} est d\xE9j\xE0 utilis\xE9 par un autre produit.` : "SKU ou code-barres d\xE9j\xE0 utilis\xE9.";
+    return { message, conflictFields, conflicts };
   }
   async uploadMedia(bytes) {
     if (!Buffer.isBuffer(bytes) || !bytes.length || bytes.length > 30 * 1024 * 1024)
@@ -96079,7 +96135,7 @@ var CatalogService = class CatalogService2 {
       WHERE LEAST(quantity,GREATEST(0,"onHand"-newer_quantity)) > 0
       ORDER BY created_at,id`, [productId, DEFAULT_ORGANIZATION_ID]);
     if (!result.rowCount) {
-      const found = await this.db.query("SELECT 1 FROM products WHERE id=$1 AND organization_id=$2 AND active=true", [productId, DEFAULT_ORGANIZATION_ID]);
+      const found = await this.db.query("SELECT 1 FROM products WHERE id=$1 AND organization_id=$2", [productId, DEFAULT_ORGANIZATION_ID]);
       if (!found.rowCount)
         throw new import_common12.NotFoundException("Produit introuvable.");
     }
@@ -96146,16 +96202,34 @@ var CatalogService = class CatalogService2 {
       return updated;
     });
   }
-  async list(query, retailOnly = false, hidePurchasePrice = false) {
+  /**
+   * `retailScope` lists the public storefront catalogue: products switched
+   * "Visible dans la boutique" (VISIBLE) or every product in stock (IN_STOCK).
+   */
+  async list(query, retailScope = false, hidePurchasePrice = false, exactIdentifiers) {
     const values = [DEFAULT_ORGANIZATION_ID, DEFAULT_LOCATION_ID];
-    const filters = [
-      "p.organization_id = $1",
-      "p.active = true",
-      "v.active = true"
-    ];
-    if (retailOnly)
-      filters.push("p.retail_visible = true");
-    if (query.search) {
+    const filters = ["p.organization_id = $1"];
+    if (exactIdentifiers) {
+      values.push(exactIdentifiers.sku.trim(), exactIdentifiers.barcode.trim(), exactIdentifiers.excludeProductId ?? null);
+      filters.push(`(
+        ($3 <> '' AND v.sku = $3)
+        OR ($4 <> '' AND COALESCE(v.barcode, '') = $4)
+      )`);
+      filters.push("($5::uuid IS NULL OR p.id <> $5::uuid)");
+    } else if (query.search && !retailScope) {
+      values.push(query.search.toLowerCase());
+      const exactIndex = values.length;
+      filters.push(`(
+        (p.active = true AND v.active = true)
+        OR lower(v.sku) = $${exactIndex}
+        OR lower(COALESCE(v.barcode, '')) = $${exactIndex}
+      )`);
+    } else {
+      filters.push("p.active = true", "v.active = true");
+    }
+    if (retailScope)
+      filters.push(storefrontScopeFilter(retailScope));
+    if (query.search && !exactIdentifiers) {
       values.push(`%${query.search.toLowerCase()}%`);
       const index = values.length;
       filters.push(`(
@@ -96206,6 +96280,7 @@ var CatalogService = class CatalogService2 {
         (COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0))::int AS available,
         v.low_stock_threshold AS "lowStockThreshold",
         p.retail_visible AS "retailVisible",
+        (p.active AND v.active) AS active,
         COUNT(*) OVER()::text AS "totalCount"
       FROM products p
       JOIN product_variants v ON v.product_id = p.id
@@ -96213,11 +96288,13 @@ var CatalogService = class CatalogService2 {
       LEFT JOIN product_supplier_links psl ON psl.variant_id = v.id AND psl.preferred = true
       LEFT JOIN suppliers s ON s.id = psl.supplier_id
       WHERE ${filters.join(" AND ")}
-      ORDER BY ${retailOnly ? "(p.image_url <> '') DESC, p.updated_at DESC" : "(COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0)) ASC, p.brand ASC, p.name ASC, v.id"}
+      ORDER BY ${retailScope ? "(p.image_url <> '') DESC, p.updated_at DESC" : "(p.active AND v.active) DESC, (COALESCE(b.on_hand, 0) - COALESCE(b.reserved, 0)) ASC, p.brand ASC, p.name ASC, v.id"}
       LIMIT $${limitIndex} OFFSET $${offsetIndex}`, values);
     const items = result.rows.map(({ totalCount: _total, ...row }) => ({
       ...row,
-      purchasePrice: hidePurchasePrice ? 0 : Number(row.purchasePrice),
+      // Shoppers never see costs or suppliers.
+      ...retailScope ? { supplierId: null, supplierName: "" } : {},
+      purchasePrice: hidePurchasePrice || retailScope ? 0 : Number(row.purchasePrice),
       wholesalePrice: Number(row.wholesalePrice),
       retailPrice: Number(row.retailPrice),
       compareAtPrice: row.compareAtPrice === null ? null : Number(row.compareAtPrice)
@@ -96358,7 +96435,7 @@ var CatalogService = class CatalogService2 {
       return created;
     } catch (error61) {
       if (error61.code === "23505") {
-        throw new import_common12.ConflictException("SKU or barcode already exists");
+        throw new import_common12.ConflictException(await this.identifierConflictPayload(error61, input2.sku, input2.barcode));
       }
       throw error61;
     }
@@ -96438,27 +96515,40 @@ var CatalogService = class CatalogService2 {
       return updated;
     } catch (error61) {
       if (error61.code === "23505") {
-        throw new import_common12.ConflictException("SKU ou code-barres d\xE9j\xE0 utilis\xE9.");
+        throw new import_common12.ConflictException(await this.identifierConflictPayload(error61, input2.sku, input2.barcode, id));
       }
       throw error61;
     }
   }
   async remove(id) {
     return this.db.withTransaction(async (client) => {
-      const product = await client.query(`SELECT id, name FROM products
-         WHERE id=$1 AND organization_id=$2 AND active=true
-         FOR UPDATE`, [id, DEFAULT_ORGANIZATION_ID]);
+      const product = await client.query(`SELECT p.id, p.name, v.sku, v.barcode
+         FROM products p
+         JOIN product_variants v ON v.product_id=p.id
+         WHERE p.id=$1 AND p.organization_id=$2
+         ORDER BY v.active DESC
+         LIMIT 1
+         FOR UPDATE OF p, v`, [id, DEFAULT_ORGANIZATION_ID]);
       if (!product.rows[0]) {
         throw new import_common12.NotFoundException("Produit introuvable ou d\xE9j\xE0 supprim\xE9.");
       }
       await client.query("UPDATE products SET active=false, retail_visible=false, updated_at=now() WHERE id=$1", [id]);
-      await client.query("UPDATE product_variants SET active=false, updated_at=now() WHERE product_id=$1", [id]);
+      await client.query(`UPDATE product_variants
+         SET active=false,
+             sku=left(sku,67) || '-DEL-' || left(replace(id::text,'-',''),8),
+             barcode=NULL,
+             updated_at=now()
+         WHERE product_id=$1`, [id]);
       await client.query(`INSERT INTO audit_logs
           (organization_id,action,entity_type,entity_id,before_data)
          VALUES ($1,'PRODUCT_DELETED','product',$2,$3::jsonb)`, [
         DEFAULT_ORGANIZATION_ID,
         id,
-        JSON.stringify({ name: product.rows[0].name })
+        JSON.stringify({
+          name: product.rows[0].name,
+          sku: product.rows[0].sku,
+          barcode: product.rows[0].barcode
+        })
       ]);
       await client.query(`INSERT INTO outbox_events
           (aggregate_type,aggregate_id,event_type,payload)
@@ -96709,49 +96799,41 @@ var DashboardService = class DashboardService2 {
     const config2 = {
       year: {
         grain: "month",
-        count: 12,
         interval: "1 month",
         format: "YYYY-MM"
       },
       month: {
         grain: "day",
-        count: 30,
         interval: "1 day",
         format: "YYYY-MM-DD"
       },
       week: {
         grain: "day",
-        count: 7,
         interval: "1 day",
         format: "YYYY-MM-DD"
       }
     }[range];
     const periods = await this.db.query(`WITH buckets AS (
         SELECT generate_series(
-          date_trunc('${config2.grain}', now() AT TIME ZONE 'Africa/Casablanca') - ($2::int - 1) * interval '${config2.interval}',
+          date_trunc($2::text, now() AT TIME ZONE 'Africa/Casablanca'),
           date_trunc('${config2.grain}', now() AT TIME ZONE 'Africa/Casablanca'), interval '${config2.interval}') AS period
       ), eligible AS (
-        SELECT so.id, so.channel,
-          date_trunc('${config2.grain}', COALESCE(so.placed_at, so.created_at) AT TIME ZONE 'Africa/Casablanca') AS period,
-          so.grand_total, so.discount_total, so.shipping_total, so.tax_total,
-          COALESCE((SELECT SUM((i.quantity - i.returned_quantity) * i.unit_multiplier)
-            FROM sales_order_items i WHERE i.sales_order_id = so.id), 0)::int AS units,
-          COALESCE((SELECT SUM(
-            (i.unit_price - i.unit_cost_snapshot) * (i.quantity - i.returned_quantity) * i.unit_multiplier)
-          FROM sales_order_items i WHERE i.sales_order_id = so.id), 0) - so.discount_total AS margin
-        FROM sales_orders so WHERE so.organization_id = $1
-          AND so.status IN ('CONFIRMED', 'PARTIALLY_PAID', 'PAID', 'DELIVERED', 'FULFILLED')
-          AND COALESCE(so.placed_at, so.created_at) <= now()
+        SELECT f.*,f.revenue AS grand_total,
+          date_trunc('${config2.grain}',f.occurred_at AT TIME ZONE 'Africa/Casablanca') AS period
+        FROM dashboard_sales_facts f WHERE f.organization_id=$1 AND f.occurred_at<=now()
       ) SELECT to_char(b.period, '${config2.format}') AS period,
         COALESCE(SUM(e.grand_total), 0)::text AS revenue,
         COALESCE(SUM(e.grand_total) FILTER (WHERE e.channel IN ('WHOLESALE_DESKTOP','MANUAL')), 0)::text AS "wholesaleRevenue",
         COALESCE(SUM(e.grand_total) FILTER (WHERE e.channel = 'RETAIL_WEB'), 0)::text AS "retailRevenue",
         COALESCE(SUM(e.margin), 0)::text AS "grossMargin",
-        COUNT(e.id)::int AS "orderCount",COALESCE(SUM(e.units),0)::int AS "unitsSold",
+        COALESCE(SUM(e.order_count),0)::int AS "orderCount",COALESCE(SUM(e.units),0)::int AS "unitsSold",
         COALESCE(SUM(e.discount_total),0)::text AS "discountTotal",
         COALESCE(SUM(e.shipping_total),0)::text AS "shippingTotal",
-        COALESCE(SUM(e.tax_total),0)::text AS "taxTotal"
-      FROM buckets b LEFT JOIN eligible e ON e.period = b.period GROUP BY b.period ORDER BY b.period`, [DEFAULT_ORGANIZATION_ID, config2.count]);
+        COALESCE(SUM(e.tax_total),0)::text AS "taxTotal",
+        (SELECT COALESCE(SUM(x.amount),0) FROM expenses x WHERE x.organization_id=$1 AND x.voided_at IS NULL
+          AND date_trunc('${config2.grain}',x.incurred_on::timestamp)=b.period
+          AND x.incurred_on<=(now() AT TIME ZONE 'Africa/Casablanca')::date)::text AS expenses
+      FROM buckets b LEFT JOIN eligible e ON e.period = b.period GROUP BY b.period ORDER BY b.period`, [DEFAULT_ORGANIZATION_ID, range]);
     const activity = await this.db.query(`SELECT * FROM (
         SELECT id::text, 'Vente \xB7 ' || order_number AS title, channel || ' \xB7 ' || status AS detail,
           COALESCE(placed_at, created_at)::text AS "occurredAt"
@@ -96818,12 +96900,14 @@ var DashboardService = class DashboardService2 {
           AND p.active = true
           AND COALESCE(NULLIF(BTRIM(p.image_url),''),NULLIF(BTRIM(p.images->>0),'')) IS NOT NULL
           AND date_trunc('${config2.grain}',COALESCE(so.placed_at,so.created_at) AT TIME ZONE 'Africa/Casablanca') >=
-            date_trunc('${config2.grain}',now() AT TIME ZONE 'Africa/Casablanca') - ($2::int - 1) * interval '${config2.interval}'
+            date_trunc($2::text,now() AT TIME ZONE 'Africa/Casablanca')
+          AND COALESCE(so.placed_at,so.created_at)<=now()
+          AND so.legacy_kind IS DISTINCT FROM 'OPENING_DEBT'
         GROUP BY p.id,v.id,p.name,p.brand,v.sku,p.image_url,p.images,segment
       ), ranked AS (
         SELECT *,row_number() OVER (PARTITION BY segment ORDER BY "unitsSold" DESC,revenue DESC,"productId")::int AS rank
         FROM totals
-      ) SELECT * FROM ranked WHERE rank <= 5 ORDER BY segment,rank`, [DEFAULT_ORGANIZATION_ID, config2.count]);
+      ) SELECT * FROM ranked WHERE rank <= 5 ORDER BY segment,rank`, [DEFAULT_ORGANIZATION_ID, range]);
     const topCustomers = await this.db.query(`WITH totals AS (
         SELECT COALESCE(so.customer_id::text,so.id::text) AS "customerId",
           COALESCE(c.name,so.partner_snapshot->>'name','Client') AS name,
@@ -96839,13 +96923,15 @@ var DashboardService = class DashboardService2 {
         WHERE so.organization_id=$1
           AND so.status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
           AND date_trunc('${config2.grain}',COALESCE(so.placed_at,so.created_at) AT TIME ZONE 'Africa/Casablanca') >=
-            date_trunc('${config2.grain}',now() AT TIME ZONE 'Africa/Casablanca') - ($2::int - 1) * interval '${config2.interval}'
+            date_trunc($2::text,now() AT TIME ZONE 'Africa/Casablanca')
+          AND COALESCE(so.placed_at,so.created_at)<=now()
+          AND so.legacy_kind IS DISTINCT FROM 'OPENING_DEBT'
         GROUP BY COALESCE(so.customer_id::text,so.id::text),
           COALESCE(c.name,so.partner_snapshot->>'name','Client'),city,segment
       ), ranked AS (
         SELECT *,row_number() OVER (PARTITION BY segment ORDER BY revenue DESC,"orderCount" DESC,"customerId")::int AS rank
         FROM totals
-      ) SELECT * FROM ranked WHERE rank <= 5 ORDER BY segment,rank`, [DEFAULT_ORGANIZATION_ID, config2.count]);
+      ) SELECT * FROM ranked WHERE rank <= 5 ORDER BY segment,rank`, [DEFAULT_ORGANIZATION_ID, range]);
     const topCities = await this.db.query(`WITH eligible AS (
         SELECT so.id,so.customer_id,so.grand_total,
           CASE WHEN POSITION(',' IN COALESCE(c.address,so.partner_snapshot->>'address','')) > 0
@@ -96855,10 +96941,12 @@ var DashboardService = class DashboardService2 {
         WHERE so.organization_id=$1
           AND so.status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
           AND date_trunc('${config2.grain}',COALESCE(so.placed_at,so.created_at) AT TIME ZONE 'Africa/Casablanca') >=
-            date_trunc('${config2.grain}',now() AT TIME ZONE 'Africa/Casablanca') - ($2::int - 1) * interval '${config2.interval}'
+            date_trunc($2::text,now() AT TIME ZONE 'Africa/Casablanca')
+          AND COALESCE(so.placed_at,so.created_at)<=now()
+          AND so.legacy_kind IS DISTINCT FROM 'OPENING_DEBT'
       ) SELECT city,SUM(grand_total)::float AS revenue,COUNT(*)::int AS "orderCount",
         COUNT(DISTINCT customer_id)::int AS "customerCount"
-      FROM eligible GROUP BY city ORDER BY revenue DESC,"orderCount" DESC,city LIMIT 5`, [DEFAULT_ORGANIZATION_ID, config2.count]);
+      FROM eligible GROUP BY city ORDER BY revenue DESC,"orderCount" DESC,city LIMIT 5`, [DEFAULT_ORGANIZATION_ID, range]);
     return {
       range,
       grain: config2.grain,
@@ -96871,7 +96959,8 @@ var DashboardService = class DashboardService2 {
         grossMargin: Number(row.grossMargin),
         discountTotal: Number(row.discountTotal),
         shippingTotal: Number(row.shippingTotal),
-        taxTotal: Number(row.taxTotal)
+        taxTotal: Number(row.taxTotal),
+        expenses: Number(row.expenses)
       })),
       activity: activity.rows,
       products: {
@@ -96889,20 +96978,15 @@ var DashboardService = class DashboardService2 {
   }
   async summary() {
     const result = await this.db.query(`SELECT
-        COALESCE((SELECT SUM(grand_total) FROM sales_orders
-          WHERE organization_id = $1 AND status IN ('CONFIRMED', 'PARTIALLY_PAID', 'PAID', 'DELIVERED', 'FULFILLED')), 0)::text AS revenue,
-        COALESCE((SELECT SUM(COALESCE((SELECT SUM((soi.unit_price - soi.unit_cost_snapshot) *
-          (soi.quantity - soi.returned_quantity) * soi.unit_multiplier)
-          FROM sales_order_items soi WHERE soi.sales_order_id=so.id),0)-so.discount_total)
-          FROM sales_orders so WHERE so.organization_id = $1
-          AND so.status IN ('CONFIRMED', 'PARTIALLY_PAID', 'PAID', 'DELIVERED', 'FULFILLED')), 0)::text AS "grossMargin",
-        COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id = $1 AND voided_at IS NULL), 0)::text AS expenses,
-        (COALESCE((SELECT SUM(COALESCE((SELECT SUM((soi.unit_price - soi.unit_cost_snapshot) *
-          (soi.quantity - soi.returned_quantity) * soi.unit_multiplier)
-          FROM sales_order_items soi WHERE soi.sales_order_id=so.id),0)-so.discount_total)
-          FROM sales_orders so WHERE so.organization_id = $1
-          AND so.status IN ('CONFIRMED', 'PARTIALLY_PAID', 'PAID', 'DELIVERED', 'FULFILLED')), 0)
-          - COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id = $1 AND voided_at IS NULL), 0))::text AS "netProfit",
+        COALESCE((SELECT SUM(revenue) FROM dashboard_sales_facts WHERE organization_id=$1),0)::text AS revenue,
+        COALESCE((SELECT SUM(margin) FROM dashboard_sales_facts WHERE organization_id=$1),0)::text AS "grossMargin",
+        COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id=$1 AND voided_at IS NULL),0)::text AS expenses,
+        (COALESCE((SELECT SUM(margin) FROM dashboard_sales_facts WHERE organization_id=$1),0)
+          -COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id=$1 AND voided_at IS NULL),0))::text AS "netProfit",
+        (COALESCE((SELECT opening_cash_balance FROM organizations WHERE id=$1),0)
+          +COALESCE((SELECT SUM(CASE direction WHEN 'IN' THEN amount ELSE -amount END) FROM payments
+            WHERE organization_id=$1 AND status='COMPLETED'),0)
+          -COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id=$1 AND voided_at IS NULL),0))::text AS "cashAvailable",
         COALESCE((SELECT SUM(b.on_hand * v.purchase_price)
           FROM inventory_balances b JOIN product_variants v ON v.id = b.variant_id
           WHERE b.location_id = $2), 0)::text AS "inventoryValue",
@@ -96914,7 +96998,7 @@ var DashboardService = class DashboardService2 {
           LEFT JOIN inventory_balances b ON b.variant_id=v.id AND b.location_id=$2
           WHERE p.organization_id=$1 AND p.active=true AND v.active=true AND COALESCE(b.on_hand,0)-COALESCE(b.reserved,0)=0),0)::text AS "outOfStockCount",
         COALESCE((SELECT SUM(grand_total - amount_paid) FROM sales_orders
-          WHERE organization_id = $1 AND status IN ('CONFIRMED', 'PARTIALLY_PAID', 'DELIVERED', 'FULFILLED')), 0)::text AS "customerReceivables",
+          WHERE organization_id = $1 AND legacy_payment_method IS DISTINCT FROM 'Cheque' AND status IN ('CONFIRMED', 'PARTIALLY_PAID', 'DELIVERED', 'FULFILLED')), 0)::text AS "customerReceivables",
         COALESCE((SELECT SUM(amount) FROM payments
           WHERE organization_id=$1 AND direction='IN' AND status='COMPLETED'),0)::text AS "incomeReceived",
         COALESCE((SELECT SUM(total - amount_paid) FROM purchase_orders
@@ -96932,32 +97016,24 @@ var DashboardService = class DashboardService2 {
   }
   async report(dateFrom, dateTo) {
     const totals = await this.db.query(`SELECT
-        COALESCE((SELECT SUM(grand_total) FROM sales_orders
-          WHERE organization_id=$1 AND status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
-          AND (COALESCE(placed_at,created_at) AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "salesRevenue",
-        COALESCE((SELECT SUM(COALESCE((SELECT SUM((i.unit_price-i.unit_cost_snapshot)*
-          (i.quantity-i.returned_quantity)*i.unit_multiplier) FROM sales_order_items i
-          WHERE i.sales_order_id=s.id),0)-s.discount_total)
-          FROM sales_orders s WHERE s.organization_id=$1
-          AND s.status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
-          AND (COALESCE(s.placed_at,s.created_at) AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "grossMargin",
+        COALESCE((SELECT SUM(revenue) FROM dashboard_sales_facts WHERE organization_id=$1
+          AND (occurred_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "salesRevenue",
+        COALESCE((SELECT SUM(margin) FROM dashboard_sales_facts WHERE organization_id=$1
+          AND (occurred_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "grossMargin",
         COALESCE((SELECT SUM(amount) FROM payments WHERE organization_id=$1 AND direction='IN' AND status='COMPLETED'
           AND (paid_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "incomeReceived",
         COALESCE((SELECT SUM(amount) FROM payments WHERE organization_id=$1 AND direction='OUT' AND status='COMPLETED'
-          AND sales_order_id IS NOT NULL AND (paid_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "customerRefunds",
+          AND (sales_order_id IS NOT NULL OR return_id IS NOT NULL) AND (paid_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "customerRefunds",
         COALESCE((SELECT SUM(total) FROM purchase_orders WHERE organization_id=$1 AND status IN ('RECEIVED','PARTIALLY_RECEIVED')
           AND (COALESCE(ordered_at,created_at) AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS purchases,
         COALESCE((SELECT SUM(amount) FROM payments WHERE organization_id=$1 AND direction='OUT' AND status='COMPLETED'
           AND purchase_order_id IS NOT NULL AND (paid_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "supplierPayments",
         COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id=$1 AND voided_at IS NULL
           AND incurred_on BETWEEN $2::date AND $3::date),0)::text AS expenses,
-        COALESCE((SELECT COUNT(*) FROM sales_orders
-          WHERE organization_id=$1 AND status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
-          AND (COALESCE(placed_at,created_at) AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "salesCount",
-        COALESCE((SELECT SUM((i.quantity-i.returned_quantity)*i.unit_multiplier)
-          FROM sales_order_items i JOIN sales_orders s ON s.id=i.sales_order_id
-          WHERE s.organization_id=$1 AND s.status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
-          AND (COALESCE(s.placed_at,s.created_at) AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "unitsSold",
+        COALESCE((SELECT SUM(order_count) FROM dashboard_sales_facts WHERE organization_id=$1
+          AND (occurred_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "salesCount",
+        COALESCE((SELECT SUM(units) FROM dashboard_sales_facts WHERE organization_id=$1
+          AND (occurred_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "unitsSold",
         COALESCE((SELECT COUNT(*) FROM purchase_orders WHERE organization_id=$1
           AND status IN ('RECEIVED','PARTIALLY_RECEIVED')
           AND (COALESCE(ordered_at,created_at) AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date),0)::text AS "purchaseCount",
@@ -96967,7 +97043,7 @@ var DashboardService = class DashboardService2 {
         SELECT id,'sale' AS kind,order_number AS number,COALESCE(partner_snapshot->>'name','Client') AS partner,
           grand_total::float AS amount,amount_paid::float AS "paidAmount",status,
           (COALESCE(placed_at,created_at) AT TIME ZONE 'Africa/Casablanca')::date::text AS "occurredOn"
-        FROM sales_orders WHERE organization_id=$1 AND status NOT IN ('DRAFT','ORDERED','CANCELED','CANCELLED','REFUNDED')
+        FROM sales_orders WHERE organization_id=$1 AND legacy_kind IS DISTINCT FROM 'OPENING_DEBT' AND status NOT IN ('DRAFT','ORDERED','CANCELED','CANCELLED','REFUNDED')
         UNION ALL
         SELECT id,'purchase',order_number,COALESCE(partner_snapshot->>'name','Fournisseur'),total::float,amount_paid::float,status,
           (COALESCE(ordered_at,created_at) AT TIME ZONE 'Africa/Casablanca')::date::text
@@ -96983,13 +97059,10 @@ var DashboardService = class DashboardService2 {
         SELECT generate_series(date_trunc('${reportConfig.grain}',$2::timestamp),
           date_trunc('${reportConfig.grain}',$3::timestamp),interval '${reportConfig.interval}') AS period
       ), sales AS (
-        SELECT date_trunc('${reportConfig.grain}',COALESCE(s.placed_at,s.created_at) AT TIME ZONE 'Africa/Casablanca') AS period,
-          SUM(s.grand_total) AS revenue,
-          SUM(COALESCE((SELECT SUM((i.unit_price-i.unit_cost_snapshot)*(i.quantity-i.returned_quantity)*i.unit_multiplier)
-            FROM sales_order_items i WHERE i.sales_order_id=s.id),0)-s.discount_total) AS margin
-        FROM sales_orders s WHERE s.organization_id=$1
-          AND s.status IN ('CONFIRMED','PARTIALLY_PAID','PAID','DELIVERED','FULFILLED')
-          AND (COALESCE(s.placed_at,s.created_at) AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date
+        SELECT date_trunc('${reportConfig.grain}',f.occurred_at AT TIME ZONE 'Africa/Casablanca') AS period,
+          SUM(f.revenue) AS revenue,SUM(f.margin) AS margin
+        FROM dashboard_sales_facts f WHERE f.organization_id=$1
+          AND (f.occurred_at AT TIME ZONE 'Africa/Casablanca')::date BETWEEN $2::date AND $3::date
         GROUP BY period
       ), cash AS (
         SELECT date_trunc('${reportConfig.grain}',paid_at AT TIME ZONE 'Africa/Casablanca') AS period,
@@ -98370,12 +98443,12 @@ ManagementModule = __decorate25([
 ], ManagementModule);
 
 // apps/api/dist/storefront/storefront.module.js
-var import_common29 = __toESM(require_common(), 1);
+var import_common31 = __toESM(require_common(), 1);
 
-// apps/api/dist/storefront/storefront.controller.js
+// apps/api/dist/storefront/store-settings.controller.js
 var import_common28 = __toESM(require_common(), 1);
 
-// apps/api/dist/storefront/storefront.service.js
+// apps/api/dist/storefront/store-settings.service.js
 var import_common27 = __toESM(require_common(), 1);
 var __decorate26 = function(decorators, target, key, desc) {
   var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -98386,12 +98459,270 @@ var __decorate26 = function(decorators, target, key, desc) {
 var __metadata19 = function(k, v) {
   if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var StorefrontService = class StorefrontService2 {
+var settingsColumns = `store_catalog_source AS "catalogSource",
+  store_product_scope AS "productScope",
+  store_free_shipping_threshold::float AS "freeShippingThreshold",
+  store_shipping_fee::float AS "shippingFee"`;
+var codeColumns = `d.id, d.code, d.type, d.value::float AS value,
+  d.min_subtotal::float AS "minSubtotal",
+  to_char(d.expires_on, 'YYYY-MM-DD') AS "expiresOn", d.active,
+  d.created_at AS "createdAt",
+  (SELECT COUNT(*)::int FROM sales_orders o
+    WHERE o.organization_id = d.organization_id AND o.discount_code = d.code
+      AND o.status <> 'CANCELED') AS "usageCount"`;
+var storefrontMigrationPending = (error61) => ["42703", "42P01"].includes(error61?.code ?? "");
+var migrationRequired = () => new import_common27.ServiceUnavailableException("La base de donn\xE9es doit \xEAtre mise \xE0 jour (migration 017_storefront_settings) avant d\u2019utiliser ces r\xE9glages.");
+var usableCode = `d.active = true
+  AND (d.expires_on IS NULL OR d.expires_on >= (now() AT TIME ZONE 'Africa/Casablanca')::date)`;
+var StoreSettingsService = class StoreSettingsService2 {
   db;
   constructor(db) {
     this.db = db;
   }
-  createOrder(input2) {
+  async settings(client = this.db) {
+    try {
+      const result = await client.query(`SELECT ${settingsColumns} FROM organizations WHERE id = $1`, [DEFAULT_ORGANIZATION_ID]);
+      if (!result.rows[0])
+        throw new import_common27.NotFoundException("Organisation introuvable.");
+      return result.rows[0];
+    } catch (error61) {
+      if (storefrontMigrationPending(error61) && client === this.db)
+        return defaultStorefrontSettings;
+      throw error61;
+    }
+  }
+  async updateSettings(input2, actorId) {
+    input2 = storefrontSettingsSchema.parse(input2);
+    return this.requireMigration(() => this.db.withTransaction(async (client) => {
+      const before = await client.query(`SELECT ${settingsColumns} FROM organizations WHERE id = $1 FOR UPDATE`, [DEFAULT_ORGANIZATION_ID]);
+      if (!before.rows[0])
+        throw new import_common27.NotFoundException("Organisation introuvable.");
+      const result = await client.query(`UPDATE organizations SET store_catalog_source = $2, store_product_scope = $3,
+           store_free_shipping_threshold = $4, store_shipping_fee = $5, updated_at = now()
+         WHERE id = $1 RETURNING ${settingsColumns}`, [
+        DEFAULT_ORGANIZATION_ID,
+        input2.catalogSource,
+        input2.productScope,
+        input2.freeShippingThreshold,
+        input2.shippingFee
+      ]);
+      await this.audit(client, actorId, "STOREFRONT_SETTINGS_UPDATED", DEFAULT_ORGANIZATION_ID, before.rows[0], result.rows[0]);
+      return result.rows[0];
+    }));
+  }
+  async discountCodes() {
+    const result = await this.requireMigration(() => this.db.query(`SELECT ${codeColumns} FROM discount_codes d
+         WHERE d.organization_id = $1 ORDER BY d.active DESC, d.created_at DESC`, [DEFAULT_ORGANIZATION_ID]));
+    return result.rows;
+  }
+  async createDiscountCode(input2, actorId) {
+    input2 = discountCodeSchema.parse(input2);
+    return this.uniqueCode(() => this.db.withTransaction(async (client) => {
+      const created = await client.query(`INSERT INTO discount_codes
+            (organization_id, code, type, value, min_subtotal, expires_on, active, created_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`, [DEFAULT_ORGANIZATION_ID, input2.code, input2.type, input2.value, input2.minSubtotal, input2.expiresOn, input2.active, actorId]);
+      const item = await this.discountCode(client, created.rows[0].id);
+      await this.audit(client, actorId, "DISCOUNT_CODE_CREATED", item.id, null, item);
+      return item;
+    }));
+  }
+  async updateDiscountCode(id, input2, actorId) {
+    input2 = discountCodeSchema.parse(input2);
+    return this.uniqueCode(() => this.db.withTransaction(async (client) => {
+      const before = await this.discountCode(client, id, true);
+      await client.query(`UPDATE discount_codes SET code = $3, type = $4, value = $5, min_subtotal = $6,
+             expires_on = $7, active = $8, updated_at = now()
+           WHERE organization_id = $1 AND id = $2`, [DEFAULT_ORGANIZATION_ID, id, input2.code, input2.type, input2.value, input2.minSubtotal, input2.expiresOn, input2.active]);
+      const item = await this.discountCode(client, id);
+      await this.audit(client, actorId, "DISCOUNT_CODE_UPDATED", id, before, item);
+      return item;
+    }));
+  }
+  async deleteDiscountCode(id, actorId) {
+    return this.requireMigration(() => this.db.withTransaction(async (client) => {
+      const before = await this.discountCode(client, id, true);
+      await client.query("DELETE FROM discount_codes WHERE organization_id = $1 AND id = $2", [DEFAULT_ORGANIZATION_ID, id]);
+      await this.audit(client, actorId, "DISCOUNT_CODE_DELETED", id, before, null);
+      return { deleted: true };
+    }));
+  }
+  /** An active, unexpired code as the storefront sees it, or undefined. */
+  async findUsableCode(code, client = this.db) {
+    try {
+      const result = await client.query(`SELECT d.code, d.type, d.value::float AS value, d.min_subtotal::float AS "minSubtotal"
+         FROM discount_codes d
+         WHERE d.organization_id = $1 AND d.code = $2 AND ${usableCode}`, [DEFAULT_ORGANIZATION_ID, code.trim().toUpperCase()]);
+      return result.rows[0];
+    } catch (error61) {
+      if (storefrontMigrationPending(error61) && client === this.db)
+        return void 0;
+      throw error61;
+    }
+  }
+  async discountCode(client, id, lock = false) {
+    const result = await client.query(`SELECT ${codeColumns} FROM discount_codes d
+       WHERE d.organization_id = $1 AND d.id = $2${lock ? " FOR UPDATE" : ""}`, [DEFAULT_ORGANIZATION_ID, id]);
+    if (!result.rows[0])
+      throw new import_common27.NotFoundException("Code de r\xE9duction introuvable.");
+    return result.rows[0];
+  }
+  async uniqueCode(write) {
+    try {
+      return await this.requireMigration(write);
+    } catch (error61) {
+      if (error61.code === "23505")
+        throw new import_common27.ConflictException("Ce code de r\xE9duction existe d\xE9j\xE0.");
+      throw error61;
+    }
+  }
+  async requireMigration(run) {
+    try {
+      return await run();
+    } catch (error61) {
+      if (storefrontMigrationPending(error61))
+        throw migrationRequired();
+      throw error61;
+    }
+  }
+  async audit(client, actorId, action, entityId, before, after) {
+    await client.query(`INSERT INTO audit_logs
+        (organization_id, actor_id, action, entity_type, entity_id, before_data, after_data)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb)`, [
+      DEFAULT_ORGANIZATION_ID,
+      actorId,
+      action,
+      action.startsWith("DISCOUNT") ? "discount_code" : "organization",
+      entityId,
+      before ? JSON.stringify(before) : null,
+      after ? JSON.stringify(after) : null
+    ]);
+  }
+};
+StoreSettingsService = __decorate26([
+  (0, import_common27.Injectable)(),
+  __metadata19("design:paramtypes", [DatabaseService])
+], StoreSettingsService);
+
+// apps/api/dist/storefront/store-settings.controller.js
+var __decorate27 = function(decorators, target, key, desc) {
+  var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+  if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+  else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+  return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata20 = function(k, v) {
+  if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param9 = function(paramIndex, decorator) {
+  return function(target, key) {
+    decorator(target, key, paramIndex);
+  };
+};
+var StoreSettingsController = class StoreSettingsController2 {
+  settings;
+  constructor(settings) {
+    this.settings = settings;
+  }
+  storefront() {
+    return this.settings.settings();
+  }
+  updateStorefront(input2, user) {
+    return this.settings.updateSettings(input2, user.id);
+  }
+  discountCodes() {
+    return this.settings.discountCodes();
+  }
+  createDiscountCode(input2, user) {
+    return this.settings.createDiscountCode(input2, user.id);
+  }
+  updateDiscountCode(id, input2, user) {
+    return this.settings.updateDiscountCode(id, input2, user.id);
+  }
+  deleteDiscountCode(id, user) {
+    return this.settings.deleteDiscountCode(id, user.id);
+  }
+};
+__decorate27([
+  (0, import_common28.Get)("storefront"),
+  __metadata20("design:type", Function),
+  __metadata20("design:paramtypes", []),
+  __metadata20("design:returntype", void 0)
+], StoreSettingsController.prototype, "storefront", null);
+__decorate27([
+  (0, import_common28.Patch)("storefront"),
+  __param9(0, (0, import_common28.Body)(new ZodValidationPipe(storefrontSettingsSchema))),
+  __param9(1, CurrentUser()),
+  __metadata20("design:type", Function),
+  __metadata20("design:paramtypes", [Object, Object]),
+  __metadata20("design:returntype", void 0)
+], StoreSettingsController.prototype, "updateStorefront", null);
+__decorate27([
+  (0, import_common28.Get)("discount-codes"),
+  __metadata20("design:type", Function),
+  __metadata20("design:paramtypes", []),
+  __metadata20("design:returntype", void 0)
+], StoreSettingsController.prototype, "discountCodes", null);
+__decorate27([
+  (0, import_common28.Post)("discount-codes"),
+  __param9(0, (0, import_common28.Body)(new ZodValidationPipe(discountCodeSchema))),
+  __param9(1, CurrentUser()),
+  __metadata20("design:type", Function),
+  __metadata20("design:paramtypes", [Object, Object]),
+  __metadata20("design:returntype", void 0)
+], StoreSettingsController.prototype, "createDiscountCode", null);
+__decorate27([
+  (0, import_common28.Patch)("discount-codes/:id"),
+  __param9(0, (0, import_common28.Param)("id", import_common28.ParseUUIDPipe)),
+  __param9(1, (0, import_common28.Body)(new ZodValidationPipe(discountCodeSchema))),
+  __param9(2, CurrentUser()),
+  __metadata20("design:type", Function),
+  __metadata20("design:paramtypes", [String, Object, Object]),
+  __metadata20("design:returntype", void 0)
+], StoreSettingsController.prototype, "updateDiscountCode", null);
+__decorate27([
+  (0, import_common28.Delete)("discount-codes/:id"),
+  __param9(0, (0, import_common28.Param)("id", import_common28.ParseUUIDPipe)),
+  __param9(1, CurrentUser()),
+  __metadata20("design:type", Function),
+  __metadata20("design:paramtypes", [String, Object]),
+  __metadata20("design:returntype", void 0)
+], StoreSettingsController.prototype, "deleteDiscountCode", null);
+StoreSettingsController = __decorate27([
+  Roles("OWNER"),
+  (0, import_common28.Controller)("settings"),
+  __metadata20("design:paramtypes", [StoreSettingsService])
+], StoreSettingsController);
+
+// apps/api/dist/storefront/storefront.controller.js
+var import_common30 = __toESM(require_common(), 1);
+
+// apps/api/dist/storefront/storefront.service.js
+var import_common29 = __toESM(require_common(), 1);
+var __decorate28 = function(decorators, target, key, desc) {
+  var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+  if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+  else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+  return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata21 = function(k, v) {
+  if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var StorefrontService = class StorefrontService2 {
+  db;
+  settings;
+  constructor(db, settings) {
+    this.db = db;
+    this.settings = settings;
+  }
+  async createOrder(input2) {
+    const settings = await this.settings.settings();
+    if (settings.catalogSource === "DEMO") {
+      throw new import_common29.BadRequestException("La boutique est en mode aper\xE7u : les commandes sont ferm\xE9es.");
+    }
+    const discount = input2.discountCode ? await this.settings.findUsableCode(input2.discountCode) : void 0;
+    if (input2.discountCode && !discount) {
+      throw new import_common29.BadRequestException("Ce code de r\xE9duction n\u2019est pas valide ou a expir\xE9.");
+    }
     return this.db.withTransaction(async (client) => {
       const requested = /* @__PURE__ */ new Map();
       for (const item of input2.items) {
@@ -98404,16 +98735,16 @@ var StorefrontService = class StorefrontService2 {
          FROM product_variants v
          JOIN products p ON p.id = v.product_id
          JOIN inventory_balances b ON b.variant_id = v.id AND b.location_id = $2
-         WHERE p.organization_id = $1 AND p.retail_visible = true
+         WHERE p.organization_id = $1 AND ${storefrontScopeFilter(settings.productScope)}
            AND p.active = true AND v.active = true AND v.id = ANY($3::uuid[])
          ORDER BY v.id FOR UPDATE OF b`, [DEFAULT_ORGANIZATION_ID, DEFAULT_LOCATION_ID, variantIds]);
       if (variants.rowCount !== variantIds.length) {
-        throw new import_common27.BadRequestException("Un ou plusieurs produits ne sont plus disponibles.");
+        throw new import_common29.BadRequestException("Un ou plusieurs produits ne sont plus disponibles.");
       }
       for (const variant of variants.rows) {
         const quantity = requested.get(variant.id);
         if (variant.onHand - variant.reserved < quantity) {
-          throw new import_common27.BadRequestException(`Stock insuffisant pour ${variant.name}.`);
+          throw new import_common29.BadRequestException(`Stock insuffisant pour ${variant.name}.`);
         }
       }
       const customer = await client.query(`INSERT INTO customers (organization_id, type, name, phone, address)
@@ -98425,24 +98756,33 @@ var StorefrontService = class StorefrontService2 {
         `${input2.customer.address}, ${input2.customer.city}`
       ]);
       const subtotal = variants.rows.reduce((sum, variant) => sum + Number(variant.retailPrice) * requested.get(variant.id), 0);
-      const shippingTotal = subtotal >= 500 ? 0 : 35;
-      const grandTotal = subtotal + shippingTotal;
+      if (discount && subtotal < discount.minSubtotal) {
+        throw new import_common29.BadRequestException(`Le code ${discount.code} s\u2019applique d\xE8s ${discount.minSubtotal} MAD d\u2019achats.`);
+      }
+      const discountTotal = discount ? computeDiscount(discount, subtotal) : 0;
+      const shippingTotal = subtotal >= settings.freeShippingThreshold ? 0 : settings.shippingFee;
+      const grandTotal = subtotal - discountTotal + shippingTotal;
+      const notes = [input2.customer.notes, discount ? `Code de r\xE9duction : ${discount.code}` : ""].filter(Boolean).join("\n");
       const orderNumber = `WEB-${Date.now().toString(36).toUpperCase()}`;
       const order = await client.query(`INSERT INTO sales_orders
           (organization_id, location_id, customer_id, order_number, channel, status,
-           subtotal, shipping_total, grand_total, amount_paid, notes, placed_at)
-         VALUES ($1, $2, $3, $4, 'RETAIL_WEB', 'ORDERED', $5, $6, $7, 0, $8, now())
+           subtotal, discount_total, shipping_total, grand_total, amount_paid, notes, placed_at)
+         VALUES ($1, $2, $3, $4, 'RETAIL_WEB', 'ORDERED', $5, $6, $7, $8, 0, $9, now())
          RETURNING id`, [
         DEFAULT_ORGANIZATION_ID,
         DEFAULT_LOCATION_ID,
         customer.rows[0].id,
         orderNumber,
         subtotal,
+        discountTotal,
         shippingTotal,
         grandTotal,
-        input2.customer.notes
+        notes
       ]);
       const orderId = order.rows[0].id;
+      if (discount) {
+        await client.query("UPDATE sales_orders SET discount_code = $2 WHERE id = $1", [orderId, discount.code]);
+      }
       for (const variant of variants.rows) {
         const quantity = requested.get(variant.id);
         await client.query(`INSERT INTO sales_order_items
@@ -98474,6 +98814,7 @@ var StorefrontService = class StorefrontService2 {
         status: "ORDERED",
         paymentMethod: "COD",
         subtotal,
+        discountTotal,
         shippingTotal,
         grandTotal,
         currency: "MAD"
@@ -98481,22 +98822,25 @@ var StorefrontService = class StorefrontService2 {
     });
   }
 };
-StorefrontService = __decorate26([
-  (0, import_common27.Injectable)(),
-  __metadata19("design:paramtypes", [DatabaseService])
+StorefrontService = __decorate28([
+  (0, import_common29.Injectable)(),
+  __metadata21("design:paramtypes", [
+    DatabaseService,
+    StoreSettingsService
+  ])
 ], StorefrontService);
 
 // apps/api/dist/storefront/storefront.controller.js
-var __decorate27 = function(decorators, target, key, desc) {
+var __decorate29 = function(decorators, target, key, desc) {
   var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
   if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
   else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
   return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __metadata20 = function(k, v) {
+var __metadata22 = function(k, v) {
   if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var __param9 = function(paramIndex, decorator) {
+var __param10 = function(paramIndex, decorator) {
   return function(target, key) {
     decorator(target, key, paramIndex);
   };
@@ -98504,39 +98848,69 @@ var __param9 = function(paramIndex, decorator) {
 var StorefrontController = class StorefrontController2 {
   catalog;
   storefront;
-  constructor(catalog, storefront) {
+  settings;
+  constructor(catalog, storefront, settings) {
     this.catalog = catalog;
     this.storefront = storefront;
+    this.settings = settings;
   }
-  products(query) {
-    return this.catalog.list(query, true);
+  async publicSettings() {
+    const { catalogSource, freeShippingThreshold, shippingFee } = await this.settings.settings();
+    return { catalogSource, freeShippingThreshold, shippingFee };
+  }
+  async products(query) {
+    const { productScope } = await this.settings.settings();
+    return this.catalog.list(query, productScope);
+  }
+  async discountCode(code) {
+    const discount = await this.settings.findUsableCode(code);
+    if (!discount)
+      throw new import_common30.NotFoundException("Ce code de r\xE9duction n\u2019est pas valide ou a expir\xE9.");
+    return discount;
   }
   createOrder(input2) {
     return this.storefront.createOrder(input2);
   }
 };
-__decorate27([
-  (0, import_common28.Get)("products"),
-  __param9(0, (0, import_common28.Query)(new ZodValidationPipe(productListQuerySchema))),
-  __metadata20("design:type", Function),
-  __metadata20("design:paramtypes", [Object]),
-  __metadata20("design:returntype", void 0)
+__decorate29([
+  (0, import_common30.Get)("settings"),
+  __metadata22("design:type", Function),
+  __metadata22("design:paramtypes", []),
+  __metadata22("design:returntype", Promise)
+], StorefrontController.prototype, "publicSettings", null);
+__decorate29([
+  (0, import_common30.Get)("products"),
+  __param10(0, (0, import_common30.Query)(new ZodValidationPipe(productListQuerySchema))),
+  __metadata22("design:type", Function),
+  __metadata22("design:paramtypes", [Object]),
+  __metadata22("design:returntype", Promise)
 ], StorefrontController.prototype, "products", null);
-__decorate27([
-  (0, import_common28.Post)("orders"),
-  __param9(0, (0, import_common28.Body)(new ZodValidationPipe(createRetailOrderSchema))),
-  __metadata20("design:type", Function),
-  __metadata20("design:paramtypes", [Object]),
-  __metadata20("design:returntype", void 0)
+__decorate29([
+  (0, import_common30.Get)("discount-codes/:code"),
+  __param10(0, (0, import_common30.Param)("code")),
+  __metadata22("design:type", Function),
+  __metadata22("design:paramtypes", [String]),
+  __metadata22("design:returntype", Promise)
+], StorefrontController.prototype, "discountCode", null);
+__decorate29([
+  (0, import_common30.Post)("orders"),
+  __param10(0, (0, import_common30.Body)(new ZodValidationPipe(createRetailOrderSchema))),
+  __metadata22("design:type", Function),
+  __metadata22("design:paramtypes", [Object]),
+  __metadata22("design:returntype", void 0)
 ], StorefrontController.prototype, "createOrder", null);
-StorefrontController = __decorate27([
+StorefrontController = __decorate29([
   Public(),
-  (0, import_common28.Controller)("store"),
-  __metadata20("design:paramtypes", [CatalogService, StorefrontService])
+  (0, import_common30.Controller)("store"),
+  __metadata22("design:paramtypes", [
+    CatalogService,
+    StorefrontService,
+    StoreSettingsService
+  ])
 ], StorefrontController);
 
 // apps/api/dist/storefront/storefront.module.js
-var __decorate28 = function(decorators, target, key, desc) {
+var __decorate30 = function(decorators, target, key, desc) {
   var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
   if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
   else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
@@ -98544,12 +98918,16 @@ var __decorate28 = function(decorators, target, key, desc) {
 };
 var StorefrontModule = class StorefrontModule2 {
 };
-StorefrontModule = __decorate28([
-  (0, import_common29.Module)({ imports: [CatalogModule], controllers: [StorefrontController], providers: [StorefrontService] })
+StorefrontModule = __decorate30([
+  (0, import_common31.Module)({
+    imports: [CatalogModule],
+    controllers: [StorefrontController, StoreSettingsController],
+    providers: [StorefrontService, StoreSettingsService]
+  })
 ], StorefrontModule);
 
 // apps/api/dist/app.module.js
-var __decorate29 = function(decorators, target, key, desc) {
+var __decorate31 = function(decorators, target, key, desc) {
   var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
   if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
   else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
@@ -98557,8 +98935,8 @@ var __decorate29 = function(decorators, target, key, desc) {
 };
 var AppModule = class AppModule2 {
 };
-AppModule = __decorate29([
-  (0, import_common30.Module)({
+AppModule = __decorate31([
+  (0, import_common32.Module)({
     imports: [
       import_config2.ConfigModule.forRoot({ isGlobal: true, envFilePath: ["../../.env", ".env"] }),
       DatabaseModule,

@@ -9,6 +9,7 @@ export interface DashboardSummary {
   outOfStockCount: number;
   customerReceivables: number;
   incomeReceived: number;
+  cashAvailable: number;
   supplierPayables: number;
   pendingChecks: number;
   ordersToProcess: number;
@@ -112,6 +113,7 @@ export interface DashboardAnalytics {
     discountTotal: number;
     shippingTotal: number;
     taxTotal: number;
+    expenses: number;
   }[];
   activity: { id: string; title: string; detail: string; occurredAt: string }[];
   products: {

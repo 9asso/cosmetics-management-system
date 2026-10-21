@@ -103,7 +103,7 @@ export class FinanceService implements OnModuleInit, OnModuleDestroy {
     await this.generateRecurringExpenses();
     const result = await this.db.query<FinanceSummary>(
       `SELECT
-      (SELECT COALESCE(SUM(GREATEST(0,grand_total-amount_paid)),0)::float FROM sales_orders WHERE organization_id=$1 AND status IN ${eligibleSales}) AS receivables,
+      (SELECT COALESCE(SUM(GREATEST(0,grand_total-amount_paid)),0)::float FROM sales_orders WHERE organization_id=$1 AND legacy_payment_method IS DISTINCT FROM 'Cheque' AND status IN ${eligibleSales}) AS receivables,
       (SELECT COALESCE(SUM(GREATEST(0,total-amount_paid)),0)::float FROM purchase_orders WHERE organization_id=$1 AND status IN ('RECEIVED','PARTIALLY_RECEIVED')) AS payables,
       (SELECT COUNT(*)::int FROM payments WHERE organization_id=$1 AND method='CHECK' AND status='PENDING') AS "pendingChecks",
       (SELECT COALESCE(SUM(amount),0)::float FROM payments WHERE organization_id=$1 AND method='CHECK' AND status='PENDING') AS "pendingCheckAmount",
@@ -147,6 +147,7 @@ export class FinanceService implements OnModuleInit, OnModuleDestroy {
       FROM ${sale ? "sales_orders" : "purchase_orders"} d
       CROSS JOIN LATERAL (SELECT COALESCE(SUM(amount),0) AS pending FROM payments WHERE ${sale ? "sales_order_id" : "purchase_order_id"}=d.id AND status='PENDING' AND method='CHECK') p
       WHERE d.organization_id=$1 AND d.status IN ${sale ? eligibleSales : "('RECEIVED','PARTIALLY_RECEIVED')"}
+      ${sale ? "AND d.legacy_payment_method IS DISTINCT FROM 'Cheque'" : ""}
       AND ${sale ? "grand_total" : "total"} > amount_paid AND (d.order_number ILIKE $2 OR d.partner_snapshot->>'name' ILIKE $2)
       ORDER BY COALESCE(${sale ? "placed_at" : "ordered_at"},d.created_at), d.id`,
       [org, `%${query.search}%`],
