@@ -6,6 +6,10 @@
 node_modules
 old
 release
+backups
+.deployment-credentials
+*.db
+pnpm-lock 2.yaml
 backup_before_reset_*.sql.gz
 database/seeds/dev 2.sql
 apps/desktop/src-tauri/target
