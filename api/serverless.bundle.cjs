@@ -96988,9 +96988,15 @@ var DashboardService = class DashboardService2 {
             WHERE organization_id=$1 AND status='COMPLETED'),0)
           -COALESCE((SELECT SUM(amount) FROM expenses WHERE organization_id=$1 AND voided_at IS NULL),0))::text AS "cashAvailable",
         COALESCE((SELECT SUM(b.on_hand * v.purchase_price)
-          FROM inventory_balances b JOIN product_variants v ON v.id = b.variant_id
-          WHERE b.location_id = $2), 0)::text AS "inventoryValue",
-        COALESCE((SELECT SUM(on_hand) FROM inventory_balances WHERE location_id = $2), 0)::text AS "unitsInStock",
+          FROM inventory_balances b
+          JOIN product_variants v ON v.id = b.variant_id
+          JOIN products p ON p.id = v.product_id
+          WHERE b.location_id = $2 AND p.organization_id=$1 AND p.active=true AND v.active=true), 0)::text AS "inventoryValue",
+        COALESCE((SELECT SUM(b.on_hand)
+          FROM inventory_balances b
+          JOIN product_variants v ON v.id = b.variant_id
+          JOIN products p ON p.id = v.product_id
+          WHERE b.location_id = $2 AND p.organization_id=$1 AND p.active=true AND v.active=true), 0)::text AS "unitsInStock",
         COALESCE((SELECT COUNT(*) FROM product_variants v JOIN products p ON p.id=v.product_id
           LEFT JOIN inventory_balances b ON b.variant_id=v.id AND b.location_id=$2
           WHERE p.organization_id=$1 AND p.active=true AND v.active=true AND COALESCE(b.on_hand,0)-COALESCE(b.reserved,0) > 0 AND COALESCE(b.on_hand,0)-COALESCE(b.reserved,0) <= v.low_stock_threshold),0)::text AS "lowStockCount",

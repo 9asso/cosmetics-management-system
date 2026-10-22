@@ -182,6 +182,12 @@ describe.skipIf(!url)(
       expect((await dashboard.summary()).outOfStockCount).toBe(
         before.outOfStockCount,
       );
+      expect((await dashboard.summary()).unitsInStock).toBe(
+        before.unitsInStock - 20,
+      );
+      expect((await dashboard.summary()).inventoryValue).toBe(
+        before.inventoryValue - 200,
+      );
     });
     it("processes multi-product receipts and sales atomically with cent precision", async () => {
       const { customer, supplier, product } = await fixture();
