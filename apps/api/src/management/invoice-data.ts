@@ -14,6 +14,31 @@ export interface InvoiceQueryable {
   ): Promise<QueryResult<T>>;
 }
 
+type InvoiceProductRow = Omit<
+  InvoiceSnapshot["items"][number],
+  "description"
+> & {
+  productName: string;
+  productBrand: string;
+  productReference: string | null;
+};
+
+function invoiceProductDescription(
+  item: Pick<
+    InvoiceProductRow,
+    "productName" | "productBrand" | "productReference"
+  >,
+): string {
+  const reference = item.productReference?.trim();
+  return [
+    item.productName.trim(),
+    item.productBrand.trim(),
+    reference ? `Réf. ${reference}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 export async function loadInvoiceSnapshot(
   db: InvoiceQueryable,
   kind: "sale" | "purchase",
@@ -42,15 +67,17 @@ export async function loadInvoiceSnapshot(
   const header = result.rows[0];
   if (!header) throw new NotFoundException("Document introuvable.");
 
-  const items = await db.query<InvoiceSnapshot["items"][number]>(
+  const items = await db.query<InvoiceProductRow>(
     sale
-      ? `SELECT i.id, i.variant_id AS "variantId", i.description,
+      ? `SELECT i.id, i.variant_id AS "variantId", p.name AS "productName",
+           p.brand AS "productBrand", v.reference AS "productReference",
            COALESCE(p.image_url, '') AS "imageUrl", i.quantity,
            i.returned_quantity AS "returnedQuantity", i.unit_multiplier AS "unitMultiplier",
            i.unit_price::float AS "unitPrice", i.line_total::float AS "lineTotal"
          FROM sales_order_items i JOIN product_variants v ON v.id=i.variant_id
          JOIN products p ON p.id=v.product_id WHERE i.sales_order_id=$1 ORDER BY i.id`
-      : `SELECT i.id, i.variant_id AS "variantId", p.name || ' · ' || v.sku AS description,
+      : `SELECT i.id, i.variant_id AS "variantId", p.name AS "productName",
+           p.brand AS "productBrand", v.reference AS "productReference",
            COALESCE(p.image_url, '') AS "imageUrl", i.quantity, 0 AS "returnedQuantity",
            1 AS "unitMultiplier", i.unit_cost::float AS "unitPrice", i.line_total::float AS "lineTotal"
          FROM purchase_order_items i JOIN product_variants v ON v.id=i.variant_id
@@ -79,7 +106,16 @@ export async function loadInvoiceSnapshot(
   return {
     ...header,
     kind,
-    items: items.rows,
+    items: items.rows.map(
+      ({ productName, productBrand, productReference, ...item }) => ({
+        ...item,
+        description: invoiceProductDescription({
+          productName,
+          productBrand,
+          productReference,
+        }),
+      }),
+    ),
     payments: payments.rows,
     returns: returns.rows,
   };

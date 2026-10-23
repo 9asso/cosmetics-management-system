@@ -1,6 +1,6 @@
 [package]
 name = "cosmetics-desktop"
-version = "0.1.8"
+version = "0.1.9"
 description = "Wholesale cosmetics management desktop application"
 authors = ["ONight"]
 edition = "2021"
