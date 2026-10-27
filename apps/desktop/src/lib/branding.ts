@@ -7,7 +7,7 @@ export const restrictedBrandName = "Yamoura";
 const onightPattern = /o(?:['’\s-]?night)/gi;
 
 export function brandNameForRole(role?: UserRole | null) {
-  return role === "SALES_REP" ? restrictedBrandName : primaryBrandName;
+  return role === "SALES_REP" || role === "STOREFRONT_MANAGER" ? restrictedBrandName : primaryBrandName;
 }
 
 export function replaceRestrictedBrand(value: string) {

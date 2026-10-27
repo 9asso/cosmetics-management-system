@@ -232,6 +232,7 @@ export interface InvoiceDetail extends InvoiceListItem {
     id: string;
     variantId: string;
     description: string;
+    reference?: string;
     imageUrl: string;
     quantity: number;
     returnedQuantity: number;

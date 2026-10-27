@@ -29,14 +29,12 @@ function invoiceProductDescription(
     "productName" | "productBrand" | "productReference"
   >,
 ): string {
-  const reference = item.productReference?.trim();
   return [
-    item.productName.trim(),
     item.productBrand.trim(),
-    reference ? `Réf. ${reference}` : "",
+    item.productName.trim(),
   ]
     .filter(Boolean)
-    .join(" · ");
+    .join(" - ");
 }
 
 export async function loadInvoiceSnapshot(
@@ -114,6 +112,7 @@ export async function loadInvoiceSnapshot(
           productBrand,
           productReference,
         }),
+        reference: productReference?.trim() ?? "",
       }),
     ),
     payments: payments.rows,

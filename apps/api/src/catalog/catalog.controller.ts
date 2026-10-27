@@ -31,12 +31,13 @@ export class CatalogController {
   constructor(private readonly catalog: CatalogService) {}
 
   @Get()
+  @Roles("OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT", "SALES_REP", "STAFF", "STOREFRONT_MANAGER")
   list(
     @Query(new ZodValidationPipe(productListQuerySchema))
     query: ProductListQuery,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.catalog.list(query, false, user.role === "SALES_REP");
+    return this.catalog.list(query, false, ["SALES_REP", "STOREFRONT_MANAGER"].includes(user.role));
   }
 
   @Get(":id/lots")

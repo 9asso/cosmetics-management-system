@@ -11,7 +11,7 @@ import { Reveal } from "./motion";
 import { Rail } from "./Rail";
 import { useStore } from "./store-context";
 
-export const brandTints = ["#f6e4e2", "#f6ecda", "#ebe6f5", "#e1f0e8", "#f8e8de", "#e5ecf5"];
+export const brandTints = ["#f3e3d6", "#ead6cf", "#f1e4cc", "#e9d8d0", "#f6ebe0", "#e6d2c6"];
 const badges = [
   { label: "Tendance", icon: Flame },
   { label: "On adore", icon: Heart },

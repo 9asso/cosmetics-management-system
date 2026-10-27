@@ -21,6 +21,7 @@ const roleLabels: Record<UserRole, string> = {
   WAREHOUSE: "Magasinier",
   ACCOUNTANT: "Comptable",
   SALES_REP: "Commercial restreint",
+  STOREFRONT_MANAGER: "Responsable boutique en ligne",
   STAFF: "Employé",
 };
 const blank: CreateUserInput = {

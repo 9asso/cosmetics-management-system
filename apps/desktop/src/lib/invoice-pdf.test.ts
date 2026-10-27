@@ -32,6 +32,7 @@ const sample: InvoiceDetail = {
       id: "item-qa",
       variantId: "variant-qa",
       description: "Sérum éclat à la vitamine C · Édition été",
+      reference: "REF-42",
       imageUrl: "",
       quantity: 2,
       returnedQuantity: 0,

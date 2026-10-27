@@ -27,6 +27,7 @@ import type {
   Paginated,
   UpdateInvoiceInput,
   BrandSettings,
+  UserRole,
 } from "@cosmetics/contracts";
 import type { PoolClient } from "pg";
 import type { AuthenticatedUser } from "../auth/auth.types.js";
@@ -1059,9 +1060,10 @@ export class ManagementService {
     });
   }
 
-  async orders(query: OrderListQuery): Promise<OrderListItem[]> {
+  async orders(query: OrderListQuery, actor?: AuthenticatedUser): Promise<OrderListItem[]> {
     const values: unknown[] = [DEFAULT_ORGANIZATION_ID];
     const filters = ["so.organization_id = $1"];
+    if (actor?.role === "STOREFRONT_MANAGER") filters.push("so.channel = 'RETAIL_WEB'");
     if (query.channel !== "all") {
       values.push(query.channel);
       filters.push(`so.channel = $${values.length}`);
@@ -1105,6 +1107,7 @@ export class ManagementService {
     id: string,
     status: OrderStatus,
     actorId: string,
+    actorRole?: UserRole,
   ): Promise<OrderListItem> {
     await this.db.withTransaction(async (client) => {
       const orderResult = await client.query<{
@@ -1120,6 +1123,8 @@ export class ManagementService {
       );
       const order = orderResult.rows[0];
       if (!order) throw new NotFoundException("Commande introuvable.");
+      if (actorRole === "STOREFRONT_MANAGER" && order.channel !== "RETAIL_WEB")
+        throw new NotFoundException("Commande introuvable.");
       const current = this.normalizeStatus(order.status);
       if (
         current === "CANCELED" ||
@@ -1286,6 +1291,15 @@ export class ManagementService {
     id: string,
     actor: AuthenticatedUser,
   ) {
+    if (actor.role === "STOREFRONT_MANAGER") {
+      if (kind !== "sale") throw new NotFoundException("Document introuvable.");
+      const result = await this.db.query(
+        `SELECT 1 FROM sales_orders WHERE id=$1 AND organization_id=$2 AND channel='RETAIL_WEB'`,
+        [id, DEFAULT_ORGANIZATION_ID],
+      );
+      if (!result.rowCount) throw new NotFoundException("Document introuvable.");
+      return;
+    }
     if (actor.role !== "SALES_REP") return;
     if (kind !== "sale") throw new NotFoundException("Document introuvable.");
     const result = await this.db.query(

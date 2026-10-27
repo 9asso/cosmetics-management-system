@@ -24,6 +24,7 @@ export class AuthController {
   }
 
   @Get("me")
+  @Roles("OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT", "SALES_REP", "STAFF", "STOREFRONT_MANAGER")
   me(@CurrentUser() user: AuthenticatedUser) {
     return user;
   }

@@ -2,8 +2,11 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   defaultStorefrontSettings,
+  productCategories,
+  productTaxonomy,
   type DiscountCodeInput,
   type DiscountCodeItem,
+  type ProductListItem,
   type StorefrontSettings,
 } from "@cosmetics/contracts";
 import {
@@ -84,6 +87,44 @@ function Choice({
   );
 }
 
+function ProductPicker({
+  label, products, selected, max, onChange,
+}: {
+  label: string;
+  products: ProductListItem[];
+  selected: string[];
+  max: number;
+  onChange: (ids: string[]) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const matches = products.filter((product) =>
+    `${product.brand} ${product.name} ${product.reference}`.toLocaleLowerCase("fr").includes(search.toLocaleLowerCase("fr")) &&
+    !selected.includes(product.variantId),
+  ).slice(0, 30);
+  return (
+    <div className="rounded-xl border border-line p-3.5">
+      <strong className="block text-sm text-ink">{label}</strong>
+      <small className="text-muted">{selected.length ? `${selected.length}/${max} sélectionnés` : "Automatique si vide"}</small>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {selected.map((id) => {
+          const product = products.find((item) => item.variantId === id);
+          return <button key={id} type="button" className="rounded-full border border-brand px-3 py-1 text-xs text-brand" onClick={() => onChange(selected.filter((value) => value !== id))}>
+            {product ? `${product.brand} · ${product.name}` : "Produit indisponible"} ×
+          </button>;
+        })}
+      </div>
+      {selected.length < max && <>
+        <input className="mt-3" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Chercher un produit" aria-label={`Chercher pour ${label}`} />
+        <select className="mt-2" value="" onChange={(event) => onChange([...selected, event.target.value])} aria-label={`Ajouter à ${label}`}>
+          <option value="">Ajouter un produit…</option>
+          {matches.map((product) => <option key={product.variantId} value={product.variantId}>{product.brand} · {product.name}</option>)}
+        </select>
+      </>}
+    </div>
+  );
+}
+
+
 export function StorefrontSettingsPanel() {
   const cache = useQueryClient();
   const [draft, setDraft] = useState<StorefrontSettings>(
@@ -93,6 +134,17 @@ export function StorefrontSettingsPanel() {
   const settings = useQuery({
     queryKey: ["storefront-settings"],
     queryFn: api.storefrontSettings,
+  });
+  const catalog = useQuery({
+    queryKey: ["storefront-curation-products"],
+    queryFn: async () => {
+      const first = await api.products({ page: 1, pageSize: 100 });
+      const pages = Math.min(50, Math.ceil(first.total / 100));
+      const rest = await Promise.all(Array.from({ length: Math.max(0, pages - 1) }, (_, index) =>
+        api.products({ page: index + 2, pageSize: 100 }),
+      ));
+      return [first, ...rest].flatMap((page) => page.items);
+    },
   });
   useEffect(() => {
     if (settings.data) setDraft(settings.data);
@@ -109,6 +161,8 @@ export function StorefrontSettingsPanel() {
     setSaved(false);
     setDraft({ ...draft, ...patch });
   };
+  const setFeatured = (patch: Partial<StorefrontSettings["featured"]>) =>
+    set({ featured: { ...draft.featured, ...patch } });
 
   if (settings.isError)
     return (
@@ -119,6 +173,11 @@ export function StorefrontSettingsPanel() {
     );
 
   const demo = draft.catalogSource === "DEMO";
+  const curatableProducts = (catalog.data ?? []).filter((product) =>
+    draft.productScope === "VISIBLE"
+      ? product.retailVisible
+      : product.available > 0 && product.retailPrice > 0,
+  );
   return (
     <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
       <form
@@ -222,6 +281,42 @@ export function StorefrontSettingsPanel() {
                 }
               />
             </label>
+          </div>
+          <div className="space-y-3 border-t border-line pt-5">
+            <div>
+              <h3 className="text-base font-bold text-ink">Sections de la page d’accueil</h3>
+              <p className="text-xs text-muted">Choisissez les produits visibles dans chaque section. Une sélection vide garde le choix automatique.</p>
+            </div>
+            <ProductPicker label="Produits du hero" products={curatableProducts} selected={draft.featured.heroProductIds} max={3}
+              onChange={(heroProductIds) => setFeatured({ heroProductIds })} />
+            <div className="rounded-xl border border-line p-3.5">
+              <strong className="block text-sm text-ink">Catégories affichées</strong>
+              <small className="text-muted">L’ordre de sélection devient l’ordre d’affichage.</small>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {productCategories.map((category) => <label key={category} className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={draft.featured.categories.includes(category)} onChange={(event) =>
+                    setFeatured({ categories: event.target.checked
+                      ? [...draft.featured.categories, category]
+                      : draft.featured.categories.filter((value) => value !== category) })} />
+                  {productTaxonomy[category].label}
+                </label>)}
+              </div>
+              <button type="button" className="mt-2 text-xs text-brand underline" onClick={() => setFeatured({ categories: [] })}>Choix automatique</button>
+            </div>
+            <ProductPicker label="Produits de la promotion" products={curatableProducts.filter((product) => product.compareAtPrice && product.compareAtPrice > product.retailPrice)}
+              selected={draft.featured.promoProductIds} max={4} onChange={(promoProductIds) => setFeatured({ promoProductIds })} />
+            <div className="rounded-xl border border-line p-3.5">
+              <strong className="block text-sm text-ink">Produits de la routine</strong>
+              {([ ["cleanse", "Nettoyer"], ["treat", "Traiter"], ["hydrate", "Hydrater"], ["protect", "Protéger"] ] as const).map(([step, label]) =>
+                <label key={step} className="mt-2 block"><span>{label}</span>
+                  <select value={draft.featured.routineProductIds[step] ?? ""} onChange={(event) =>
+                    setFeatured({ routineProductIds: { ...draft.featured.routineProductIds, [step]: event.target.value || null } })}>
+                    <option value="">Choix automatique</option>
+                    {curatableProducts.filter((product) => product.category === "SKIN_CARE").map((product) =>
+                      <option key={product.variantId} value={product.variantId}>{product.brand} · {product.name}</option>)}
+                  </select>
+                </label>)}
+            </div>
           </div>
         </fieldset>
         {mutation.isError && showError(mutation.error) && (

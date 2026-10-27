@@ -25,6 +25,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Yamoura | Beauty end Luxury",
   description: "Cosmétiques authentiques sélectionnés avec soin, livrés partout au Maroc. Paiement à la livraison.",
+  icons: { icon: "/brand-yamoura.png", apple: "/brand-yamoura.png" },
   openGraph: {
     title: "Yamoura | Beauty end Luxury",
     description: "Skin care, maquillage, parfums et soins capillaires authentiques, livrés partout au Maroc.",
@@ -35,7 +36,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#faf3f0",
+  themeColor: "#48242c",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

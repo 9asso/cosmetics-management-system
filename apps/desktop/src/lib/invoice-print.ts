@@ -79,6 +79,7 @@ export function buildInvoiceHtml(
               : ""
           }
         </td>
+        <td class="ref">${escapeHtml(item.reference ?? "")}</td>
         <td class="qty">${item.quantity}${item.unitMultiplier > 1 ? ` &times; ${item.unitMultiplier}` : ""}</td>
         <td class="num">${formatMoney(item.unitPrice)}</td>
         <td class="num total-col">${formatMoney(item.lineTotal)}</td>
@@ -135,8 +136,8 @@ export function buildInvoiceHtml(
     body {
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      font-size: 11px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12px;
       color: #262126;
       background: #ffffff;
       line-height: 1.45;
@@ -197,7 +198,7 @@ export function buildInvoiceHtml(
       display: inline-block;
       padding: 3px 9px;
       border-radius: 9999px;
-      font-size: 9px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.3px;
@@ -274,7 +275,7 @@ export function buildInvoiceHtml(
     }
     .items-table th {
       padding: 8px 10px;
-      font-size: 9px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -293,11 +294,16 @@ export function buildInvoiceHtml(
     }
     .items-table td {
       padding: 8px 10px;
-      font-size: 10px;
+      font-size: 11px;
       vertical-align: top;
     }
     .items-table td.desc {
-      width: 50%;
+      width: 38%;
+    }
+    .items-table td.ref {
+      width: 17%;
+      color: #554e56;
+      overflow-wrap: anywhere;
     }
     .items-table td.qty {
       text-align: center;
@@ -460,6 +466,7 @@ export function buildInvoiceHtml(
       <thead>
         <tr>
           <th>Désignation</th>
+          <th>Référence</th>
           <th style="text-align: center;">Quantité</th>
           <th class="num">Prix unitaire</th>
           <th class="num">Total</th>

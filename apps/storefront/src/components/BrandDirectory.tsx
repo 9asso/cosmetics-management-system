@@ -201,7 +201,8 @@ export function BrandDirectory() {
           </Reveal>
           <div className="brand-wall">
             {iconic.map((brand, position) => {
-              const style = partnerWordmarks[brand.name.toLocaleLowerCase("fr")]?.style ?? fallbackStyles[position % fallbackStyles.length]!;
+              const wordmark = partnerWordmarks[brand.name.toLocaleLowerCase("fr")];
+              const style = wordmark?.style ?? fallbackStyles[position % fallbackStyles.length]!;
               return (
                 <Reveal key={brand.slug} className="brand-wall-item" delay={(position % 4) * 70} variant="zoom">
                   <Link
@@ -209,7 +210,7 @@ export function BrandDirectory() {
                     className={`brand-tile wordmark-${style}`}
                     style={{ "--tint": brandTints[position % brandTints.length] } as CSSProperties}
                   >
-                    <span>{brand.name}</span>
+                    {wordmark?.logo ? <img className="brand-tile-wordmark" src={wordmark.logo} alt={brand.name} /> : <span>{brand.name}</span>}
                     {brand.products.length > 0 && (
                       <small className="brand-tile-tag">
                         <Store size={12} /> En boutique

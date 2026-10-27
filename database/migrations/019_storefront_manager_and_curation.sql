@@ -1,0 +1,5 @@
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+ALTER TABLE users ADD CONSTRAINT users_role_check
+  CHECK (role IN ('OWNER', 'MANAGER', 'CASHIER', 'WAREHOUSE', 'ACCOUNTANT', 'SALES_REP', 'STAFF', 'STOREFRONT_MANAGER'));
+
+ALTER TABLE organizations ADD COLUMN store_featured jsonb NOT NULL DEFAULT '{}'::jsonb;

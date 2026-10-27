@@ -23,8 +23,8 @@ export class StorefrontController {
 
   @Get('settings')
   async publicSettings(): Promise<PublicStorefrontSettings> {
-    const { catalogSource, freeShippingThreshold, shippingFee } = await this.settings.settings();
-    return { catalogSource, freeShippingThreshold, shippingFee };
+    const { catalogSource, freeShippingThreshold, shippingFee, featured } = await this.settings.settings();
+    return { catalogSource, freeShippingThreshold, shippingFee, featured };
   }
 
   @Get('products')

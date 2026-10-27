@@ -147,8 +147,9 @@ export async function makeInvoicePdf(
       color: rgb(0.97, 0.94, 0.95),
     });
     text("DÉSIGNATION", 50, y, 8, muted);
-    right("QUANTITÉ", 347, y, 8);
-    right("PRIX UNITAIRE", 441, y, 8);
+    text("RÉFÉRENCE", 252, y, 8, muted);
+    right("QUANTITÉ", 376, y, 8);
+    right("PRIX UNITAIRE", 456, y, 8);
     right("TOTAL", 545, y, 8);
     y -= 30;
   };
@@ -169,28 +170,31 @@ export async function makeInvoicePdf(
   if (y < 130) newPage();
   tableHeader();
   for (const item of value.items) {
-    const description = wrap(item.description, 235, 10);
+    const description = wrap(item.description, 190, 10);
+    const reference = wrap(item.reference ?? "", 90, 9);
     // Also split exceptionally long legacy descriptions across pages.
     let first = true;
-    while (description.length) {
+    while (description.length || reference.length) {
       if (y < 100) {
         newPage();
         tableHeader();
       }
       const room = Math.max(1, Math.floor((y - 80) / 13));
       const segment = description.splice(0, room);
+      const referenceSegment = reference.splice(0, room);
       segment.forEach((row, index) => text(row, 50, y - index * 13));
+      referenceSegment.forEach((row, index) => text(row, 252, y - index * 13, 9, muted));
       if (first) {
         right(
           `${item.quantity}${item.unitMultiplier > 1 ? " × " + item.unitMultiplier : ""}`,
-          347,
+          376,
           y,
           9,
         );
-        right(amount(item.unitPrice), 441, y, 8.5);
+        right(amount(item.unitPrice), 456, y, 8.5);
         right(amount(item.lineTotal), 545, y, 8.5);
       }
-      y -= Math.max(30, segment.length * 13 + 14);
+      y -= Math.max(30, Math.max(segment.length, referenceSegment.length) * 13 + 14);
       page.drawLine({
         start: { x: 42, y: y + 12 },
         end: { x: 553, y: y + 12 },

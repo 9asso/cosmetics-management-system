@@ -69,8 +69,8 @@ const navigation: Array<{
   {
     group: "Menu principal",
     items: [
-      { id: "dashboard", label: "Vue d’ensemble", icon: LayoutDashboard },
-      { id: "inventory", label: "Produits & stock", icon: Boxes },
+      { id: "dashboard", label: "Vue d’ensemble", icon: LayoutDashboard, roles: ["OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT", "SALES_REP", "STAFF"] },
+      { id: "inventory", label: "Produits & stock", icon: Boxes, roles: ["OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT", "SALES_REP", "STAFF"] },
     ],
   },
   {
@@ -99,9 +99,10 @@ const navigation: Array<{
           "WAREHOUSE",
           "ACCOUNTANT",
           "STAFF",
+          "STOREFRONT_MANAGER",
         ],
       },
-      { id: "invoices", label: "Historique des factures", icon: FileClock },
+      { id: "invoices", label: "Historique des factures", icon: FileClock, roles: ["OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT", "SALES_REP", "STAFF"] },
     ],
   },
   {
@@ -113,7 +114,7 @@ const navigation: Array<{
         icon: Wallet,
         roles: ["OWNER", "MANAGER", "ACCOUNTANT"],
       },
-      { id: "partners", label: "Clients & fournisseurs", icon: Building2 },
+      { id: "partners", label: "Clients & fournisseurs", icon: Building2, roles: ["OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT", "SALES_REP", "STAFF"] },
       {
         id: "team",
         label: "Équipe & rôles",
@@ -124,7 +125,7 @@ const navigation: Array<{
         id: "settings",
         label: "Paramètres",
         icon: Settings,
-        roles: ["OWNER"],
+        roles: ["OWNER", "STOREFRONT_MANAGER"],
       },
     ],
   },
@@ -196,6 +197,7 @@ const roleLabels: Record<UserRole, string> = {
   WAREHOUSE: "Magasinier",
   ACCOUNTANT: "Comptable",
   SALES_REP: "Commercial restreint",
+  STOREFRONT_MANAGER: "Responsable boutique en ligne",
   STAFF: "Employé",
 };
 
@@ -351,9 +353,9 @@ export function App() {
         group.items.some((item) => item.id === active),
       )
     ) {
-      setActive("dashboard");
+      setActive(user.role === "STOREFRONT_MANAGER" ? "orders" : "dashboard");
       setNavigationOptions({});
-      window.history.replaceState({}, "", sectionPath("dashboard"));
+      window.history.replaceState({}, "", sectionPath(user.role === "STOREFRONT_MANAGER" ? "orders" : "dashboard"));
     }
   }, [active, user, visibleNavigation]);
 
@@ -661,7 +663,8 @@ export function App() {
           {active === "invoices" && <InvoicesPage role={user.role} />}
           {active === "orders" && (
             <OrdersPage
-              canUpdate={["OWNER", "MANAGER", "CASHIER", "WAREHOUSE"].includes(
+              retailOnly={user.role === "STOREFRONT_MANAGER"}
+              canUpdate={["OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "STOREFRONT_MANAGER"].includes(
                 user.role,
               )}
             />
@@ -678,7 +681,7 @@ export function App() {
               }}
             />
           )}
-          {active === "settings" && user.role === "OWNER" && <SettingsPage />}
+          {active === "settings" && ["OWNER", "STOREFRONT_MANAGER"].includes(user.role) && <SettingsPage storefrontOnly={user.role === "STOREFRONT_MANAGER"} />}
         </div>
       </main>
       {editProfile && user.role === "OWNER" && (

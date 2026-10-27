@@ -3,26 +3,26 @@
    ========================================================================== */
 
 :root {
-  /* Rose-gold: dusty rose drives shopping actions, gold carries the brand. */
-  --rose: #d68f98;
-  --rose-deep: #b5596a;
-  --rose-ink: #8e3f4f;
-  --rose-soft: #e7aab2;
-  --blush: #f9efec;
-  --blush-2: #f2e0db;
-  --ink: #241a1f;
-  --ink-2: #43363c;
-  --muted: #7d6f72;
-  --line: #eee3de;
-  --line-strong: #e2d1c9;
-  --cream: #faf5f0;
-  --shelf: #f6f0ec;
+  /* Burgundy, warm cream and gold from the Yamoura card. */
+  --rose: #a66a70;
+  --rose-deep: #71383e;
+  --rose-ink: #54292f;
+  --rose-soft: #c99b91;
+  --blush: #f7ede2;
+  --blush-2: #ead8c4;
+  --ink: #301f23;
+  --ink-2: #4e3438;
+  --muted: #705e5d;
+  --line: #e9dacb;
+  --line-strong: #d8bea7;
+  --cream: #fbf5e9;
+  --shelf: #f3e8db;
   --paper: #fff;
-  --night: #1f1519;
+  --night: #3d2027;
   --success: #1f7a54;
-  --gold: #b8875a;
-  --gold-text: #9a6b40;
-  --gold-light: #dcbb94;
+  --gold: #c99c54;
+  --gold-text: #8c632d;
+  --gold-light: #e4c583;
 
   --radius-xl: 32px;
   --radius-lg: 24px;
@@ -36,7 +36,7 @@
 
   --gutter: clamp(16px, 4vw, 48px);
   --maxw: 1400px;
-  --header-h: 76px;
+  --header-h: 90px;
   --display: var(--font-display), "Iowan Old Style", Georgia, serif;
   --sans: var(--font-sans), "Helvetica Neue", Arial, sans-serif;
 }
@@ -243,11 +243,11 @@ p {
 }
 .button-primary {
   color: #fff;
-  background: linear-gradient(135deg, #c46b79, #a24c5c);
-  box-shadow: 0 14px 30px -12px rgba(162, 76, 92, 0.55);
+  background: linear-gradient(135deg, #71383e, #48242c);
+  box-shadow: 0 14px 30px -12px rgba(72, 36, 44, 0.55);
 }
 .button-primary:hover:not(:disabled) {
-  box-shadow: 0 20px 36px -12px rgba(162, 76, 92, 0.65);
+  box-shadow: 0 20px 36px -12px rgba(72, 36, 44, 0.65);
 }
 .button-dark {
   color: #fff;
@@ -685,8 +685,8 @@ a.chip {
   text-decoration: none;
 }
 .brand-logo-mark img {
-  width: 44px;
-  height: 45px;
+  width: 86px;
+  height: 86px;
   object-fit: contain;
   transition: transform 0.6s var(--ease-spring);
 }
@@ -694,7 +694,7 @@ a.chip {
   transform: rotate(-8deg) scale(1.06);
 }
 .brand-logo-text {
-  display: grid;
+  display: none;
   line-height: 1;
 }
 .brand-logo-text strong {
@@ -859,7 +859,7 @@ a.nav-item.is-current,
   border: 0;
   border-radius: 22px;
   overflow: hidden;
-  background: radial-gradient(circle at 80% 10%, rgba(236, 210, 172, 0.45), transparent 45%), linear-gradient(140deg, #c98990, var(--rose-deep) 55%, #7a3445);
+  background: radial-gradient(circle at 80% 10%, rgba(228, 197, 131, 0.36), transparent 45%), linear-gradient(140deg, #71383e, #48242c 65%, #311a20);
   color: #fff;
   text-align: left;
   transition: transform 0.5s var(--ease-out);
@@ -1094,28 +1094,28 @@ a.nav-item.is-current,
   transition: opacity 0.9s var(--ease-in-out);
 }
 .theme-photo {
-  background: #f6e7e3;
+  background: #f3e8db;
 }
 .theme-peach {
-  --hero-accent: #a95a37;
-  background: radial-gradient(circle at 74% 46%, #fff8f2 0, transparent 52%), linear-gradient(135deg, #fbe9dd, #f0cdb5);
+  --hero-accent: #8c632d;
+  background: radial-gradient(circle at 74% 46%, #fffaf0 0, transparent 52%), linear-gradient(135deg, #f8efdf, #e4cfb3);
 }
 .theme-rose {
-  --hero-accent: #a94d60;
-  background: radial-gradient(circle at 74% 46%, #fdf6f4 0, transparent 52%), linear-gradient(135deg, #f8e5e3, #ebc5c6);
+  --hero-accent: #71383e;
+  background: radial-gradient(circle at 74% 46%, #fff7ed 0, transparent 52%), linear-gradient(135deg, #f3e2d5, #d9b8aa);
 }
 .theme-lilac {
-  --hero-accent: #6a55b0;
-  background: radial-gradient(circle at 74% 46%, #fbf8ff 0, transparent 52%), linear-gradient(135deg, #efeaf7, #dccff0);
+  --hero-accent: #78464a;
+  background: radial-gradient(circle at 74% 46%, #fff8ed 0, transparent 52%), linear-gradient(135deg, #eee0d1, #d2b0a3);
 }
 .theme-honey {
   --hero-accent: #8f632c;
-  background: radial-gradient(circle at 74% 46%, #fffaf0 0, transparent 52%), linear-gradient(135deg, #f8eedd, #e9d0a3);
+  background: radial-gradient(circle at 74% 46%, #fffaf0 0, transparent 52%), linear-gradient(135deg, #f8eedd, #dfc18c);
 }
 .theme-night {
   --hero-accent: var(--gold-light);
   color: #fff;
-  background: radial-gradient(circle at 72% 42%, #5c3340 0, transparent 58%), linear-gradient(135deg, #1d1418, #3a2229);
+  background: radial-gradient(circle at 72% 42%, #744149 0, transparent 58%), linear-gradient(135deg, #311a20, #48242c);
 }
 .hero-backdrop {
   position: absolute;
@@ -1593,10 +1593,40 @@ a.nav-item.is-current,
   transform: translateY(-3px) scale(1.05);
 }
 .partner-logo img {
-  max-width: 140px;
-  max-height: 42px;
+  max-width: 184px;
+  max-height: 66px;
   object-fit: contain;
 }
+.partner-logo:has(img) {
+  opacity: 1;
+  filter: none;
+}
+.partner-logo img[src$="/rituals.png"],
+.brand-tile-wordmark[src$="/rituals.png"] {
+  filter: brightness(0);
+}
+.partner-logo:has(img[src$="/beauty-of-joseon-wordmark.png"]) {
+  min-width: 250px;
+  padding-inline: 16px;
+}
+.partner-logo img[src$="/beauty-of-joseon-wordmark.png"] {
+  width: 220px;
+  height: 66px;
+  max-width: none;
+  object-fit: cover;
+  object-position: center;
+}
+.partner-logo img[src$="/arencia.jpg"],
+.partner-logo img[src$="/anua.jpg"],
+.partner-logo img[src$="/celimax.png"] {
+  width: 180px;
+  height: 64px;
+  max-width: none;
+  object-fit: cover;
+}
+.partner-logo img[src$="/arencia.jpg"] { object-position: center 35%; }
+.partner-logo img[src$="/anua.jpg"] { object-position: center 48%; }
+.partner-logo img[src$="/celimax.png"] { object-position: center 42%; }
 .wordmark-serif span {
   font: 600 27px/1 var(--display);
   letter-spacing: -0.015em;
@@ -2319,7 +2349,7 @@ a.nav-item.is-current,
   padding: clamp(28px, 5vw, 68px);
   overflow: hidden;
   border-radius: 38px;
-  background: linear-gradient(120deg, #cf8a92 0%, var(--rose-deep) 46%, #7e3346 100%);
+  background: linear-gradient(120deg, #613037 0%, #48242c 58%, #311a20 100%);
   color: #fff;
   isolation: isolate;
 }
@@ -3097,17 +3127,13 @@ a.nav-item.is-current,
   aspect-ratio: 2 / 1;
   margin-top: 34px;
 }
-.ig-tile.is-feature {
-  grid-column: span 2;
-  grid-row: span 2;
-}
 .instagram-grid.is-few {
-  grid-template-columns: repeat(var(--tiles), minmax(0, 1fr));
-  grid-template-rows: none;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: auto;
   aspect-ratio: auto;
 }
 .instagram-grid.is-few .ig-tile {
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 1;
 }
 /* Instagram's own profile embed, used when its posts can't be fetched server-side. */
 .ig-embed {
@@ -3136,6 +3162,20 @@ a.nav-item.is-current,
   border: 0;
   border-radius: 26px;
   background: var(--tint, var(--shelf));
+}
+.ig-profile-tile > a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  background: linear-gradient(145deg, #4a1e2b, #2b111c);
+  color: #e9c47b;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-size: clamp(12px, 1.2vw, 17px);
+  font-weight: 600;
 }
 .ig-tile img {
   width: 100%;
@@ -3204,17 +3244,26 @@ a.nav-item.is-current,
   margin-top: clamp(64px, 8vw, 116px);
   padding: clamp(60px, 7vw, 104px) 0;
   overflow: hidden;
-  background: #0d0a0f;
+  background: #321b22;
   color: #fff;
   isolation: isolate;
 }
 .tiktok > .social-head,
-.tiktok > .rail {
+.tiktok > .tt-grid {
   width: min(100% - 2 * var(--gutter), var(--maxw));
   margin-inline: auto;
 }
-.tiktok > .rail {
+.tiktok > .tt-grid {
   margin-top: 36px;
+}
+.tt-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+}
+.tt-grid .tt-card-wrap {
+  width: 100%;
+  min-width: 0;
 }
 .tiktok-glow span {
   position: absolute;
@@ -3458,7 +3507,7 @@ a.nav-item.is-current,
   padding: clamp(28px, 5vw, 76px);
   overflow: hidden;
   border-radius: 40px;
-  background: radial-gradient(circle at 82% 30%, #fff 0, transparent 42%), linear-gradient(135deg, #faefea, #f2dcd6 55%, #e9c8c1);
+  background: radial-gradient(circle at 82% 30%, #fff 0, transparent 42%), linear-gradient(135deg, #fbf5e9, #ead8c4 55%, #d8bea7);
 }
 .closing-title {
   font-family: var(--display);
@@ -4665,6 +4714,9 @@ a.nav-item.is-current,
   gap: 26px;
   padding: 22px 24px 28px;
   overflow-y: auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 .search-group h3 {
   margin-bottom: 12px;
@@ -4955,7 +5007,7 @@ a.nav-item.is-current,
   overflow: hidden;
   isolation: isolate;
   border-radius: var(--radius-xl);
-  background: linear-gradient(135deg, #fbf1ee 0%, #f6e6e3 48%, #efe7f6 100%);
+  background: linear-gradient(135deg, #fbf5e9 0%, #f3e8db 48%, #ead8c4 100%);
 }
 .brands-hero-glow {
   position: absolute;
@@ -4976,7 +5028,7 @@ a.nav-item.is-current,
   right: 18%;
   width: 380px;
   height: 380px;
-  background: #f3c9cf;
+  background: #e2c9b8;
 }
 .brands-hero-glow span:nth-child(2) {
   bottom: -170px;
@@ -5236,6 +5288,23 @@ a.nav-item.is-current,
   line-height: 1.1;
   overflow-wrap: anywhere;
 }
+.brand-tile-wordmark {
+  width: min(85%, 180px);
+  max-height: 62px;
+  object-fit: contain;
+}
+.brand-tile-wordmark[src$="/beauty-of-joseon-wordmark.png"],
+.brand-tile-wordmark[src$="/arencia.jpg"],
+.brand-tile-wordmark[src$="/anua.jpg"],
+.brand-tile-wordmark[src$="/celimax.png"] {
+  width: min(100%, 180px);
+  height: 62px;
+  object-fit: cover;
+}
+.brand-tile-wordmark[src$="/beauty-of-joseon-wordmark.png"] { object-position: center; }
+.brand-tile-wordmark[src$="/arencia.jpg"] { object-position: center 35%; }
+.brand-tile-wordmark[src$="/anua.jpg"] { object-position: center 48%; }
+.brand-tile-wordmark[src$="/celimax.png"] { object-position: center 42%; }
 .brand-tile-tag {
   position: absolute;
   bottom: 12px;
@@ -5797,8 +5866,9 @@ body:has(.site-header.is-hidden) .az-bar {
 
 @media (max-width: 1024px) {
   :root {
-    --header-h: 66px;
+    --header-h: 78px;
   }
+  .brand-logo-mark img { width: 74px; height: 74px; }
   .main-nav,
   .header-search {
     display: none;
@@ -6054,24 +6124,24 @@ body:has(.site-header.is-hidden) .az-bar {
     font-size: 14.5px;
   }
   .instagram-grid {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
     aspect-ratio: auto;
-    margin-inline: calc(var(--gutter) * -1);
-    padding: 0 var(--gutter) 6px;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: var(--gutter);
-    scrollbar-width: none;
+    margin-inline: 0;
+    padding: 0;
+    overflow: visible;
+    gap: 10px;
   }
-  .instagram-grid::-webkit-scrollbar {
-    display: none;
+  .instagram-grid.is-few {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .ig-tile,
-  .ig-tile.is-feature {
-    flex: none;
-    width: 70vw;
+  .ig-tile {
+    width: auto;
     aspect-ratio: 1;
-    scroll-snap-align: start;
+  }
+  .ig-tile > a {
+    border-radius: 14px;
   }
   .ig-overlay {
     opacity: 1;
@@ -6120,7 +6190,13 @@ body:has(.site-header.is-hidden) .az-bar {
   }
   .search-panel {
     top: 12px;
-    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px - env(safe-area-inset-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .search-body {
+    overflow: visible;
   }
   .toast {
     bottom: 14px;
@@ -6128,6 +6204,11 @@ body:has(.site-header.is-hidden) .az-bar {
   .toast-copy small {
     max-width: 130px;
   }
+}
+
+@media (max-width: 900px) {
+  .tt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .tt-grid .tt-card-wrap { width: 100%; }
 }
 
 /* ----------------------------- Reduced motion --------------------------- */

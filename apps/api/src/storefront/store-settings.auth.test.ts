@@ -6,6 +6,8 @@ import type { AuthService } from "../auth/auth.service.js";
 import { storefrontScopeFilter } from "../catalog/catalog.service.js";
 import { StoreSettingsController } from "./store-settings.controller.js";
 import { StorefrontController } from "./storefront.controller.js";
+import { ManagementController } from "../management/management.controller.js";
+import { CatalogController } from "../catalog/catalog.controller.js";
 
 function contextFor(role: string | null, handler: object, controller: object) {
   const auth = {
@@ -34,6 +36,28 @@ describe("storefront settings access control", () => {
   it("allows the owner", async () => {
     const { guard, context } = contextFor("OWNER", StoreSettingsController.prototype.updateStorefront, StoreSettingsController);
     await expect(guard.canActivate(context)).resolves.toBe(true);
+  });
+
+  it("allows the storefront manager to edit shop settings and view retail orders", async () => {
+    for (const [handler, controller] of [
+      [StoreSettingsController.prototype.updateStorefront, StoreSettingsController],
+      [ManagementController.prototype.orders, ManagementController],
+      [CatalogController.prototype.list, CatalogController],
+    ] as const) {
+      const { guard, context } = contextFor("STOREFRONT_MANAGER", handler, controller);
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+    }
+  });
+
+  it("blocks the storefront manager from stock editing and unrelated records", async () => {
+    for (const [handler, controller] of [
+      [CatalogController.prototype.update, CatalogController],
+      [ManagementController.prototype.invoices, ManagementController],
+      [ManagementController.prototype.purchase, ManagementController],
+    ] as const) {
+      const { guard, context } = contextFor("STOREFRONT_MANAGER", handler, controller);
+      await expect(guard.canActivate(context)).rejects.toThrow("boutique en ligne");
+    }
   });
 
   it("keeps shopper endpoints public", async () => {

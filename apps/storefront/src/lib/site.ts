@@ -118,14 +118,14 @@ export type WordmarkStyle = "serif" | "serif-caps" | "bold" | "wide" | "lower" |
  * /public/partners and set `logo` to use an official logo instead.
  */
 export const partnerWordmarks: Record<string, { style: WordmarkStyle; logo?: string }> = {
-  rituals: { style: "wide" },
-  medicube: { style: "lower" },
-  arencia: { style: "serif-caps" },
-  "huda beauty": { style: "bold" },
-  "beauty of joseon": { style: "serif" },
-  gisou: { style: "italic" },
-  anua: { style: "lower" },
-  celimax: { style: "lower" },
+  rituals: { style: "wide", logo: "/partners/rituals.png" },
+  medicube: { style: "lower", logo: "/partners/medicube.png" },
+  arencia: { style: "serif-caps", logo: "/partners/arencia.jpg" },
+  "huda beauty": { style: "bold", logo: "/partners/huda-beauty.png" },
+  "beauty of joseon": { style: "serif", logo: "/partners/beauty-of-joseon-wordmark.png" },
+  gisou: { style: "italic", logo: "/partners/gisou.png" },
+  anua: { style: "lower", logo: "/partners/anua.jpg" },
+  celimax: { style: "lower", logo: "/partners/celimax.png" },
   "dr. althea": { style: "serif-caps" },
   "victoria's secret": { style: "serif-caps" },
   "sol de janeiro": { style: "italic" },

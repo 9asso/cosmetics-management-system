@@ -42,6 +42,7 @@ export class ManagementController {
   constructor(private readonly management: ManagementService) {}
 
   @Get("settings/brand")
+  @Roles("OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT", "SALES_REP", "STAFF", "STOREFRONT_MANAGER")
   brandSettings() {
     return this.management.brandSettings();
   }
@@ -104,6 +105,7 @@ export class ManagementController {
   }
 
   @Get("invoices/:kind/:id")
+  @Roles("OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT", "SALES_REP", "STAFF", "STOREFRONT_MANAGER")
   invoice(
     @Param(new ZodValidationPipe(invoiceParamsSchema))
     params: {
@@ -138,6 +140,7 @@ export class ManagementController {
   }
 
   @Post("invoices/:kind/:id/prints")
+  @Roles("OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT", "SALES_REP", "STAFF", "STOREFRONT_MANAGER")
   recordInvoicePrint(
     @Param(new ZodValidationPipe(invoiceParamsSchema))
     params: { kind: "sale" | "purchase"; id: string },
@@ -197,14 +200,15 @@ export class ManagementController {
   }
 
   @Get("orders")
-  @Roles("OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT", "STAFF")
+  @Roles("OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "ACCOUNTANT", "STAFF", "STOREFRONT_MANAGER")
   orders(
     @Query(new ZodValidationPipe(orderListQuerySchema)) query: OrderListQuery,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.management.orders(query);
+    return this.management.orders(query, user);
   }
 
-  @Roles("OWNER", "MANAGER", "CASHIER", "WAREHOUSE")
+  @Roles("OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "STOREFRONT_MANAGER")
   @Patch("orders/:id/status")
   updateOrder(
     @Param(new ZodValidationPipe(orderParamsSchema)) params: { id: string },
@@ -212,6 +216,6 @@ export class ManagementController {
     input: UpdateOrderStatusInput,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.management.updateOrderStatus(params.id, input.status, user.id);
+    return this.management.updateOrderStatus(params.id, input.status, user.id, user.role);
   }
 }

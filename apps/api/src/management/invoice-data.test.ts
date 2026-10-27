@@ -57,8 +57,9 @@ describe("invoice product labels", () => {
       const invoice = await loadInvoiceSnapshot(db, kind, "invoice-1");
 
       expect(invoice.items[0]?.description).toBe(
-        "Fauxfilter concealer · Huda Beauty · Réf. REF-42",
+        "Huda Beauty - Fauxfilter concealer",
       );
+      expect(invoice.items[0]?.reference).toBe("REF-42");
       expect(
         queries.find((sql) =>
           sql.includes(
@@ -74,7 +75,8 @@ describe("invoice product labels", () => {
     const invoice = await loadInvoiceSnapshot(db, "sale", "invoice-1");
 
     expect(invoice.items[0]?.description).toBe(
-      "Fauxfilter concealer · Huda Beauty",
+      "Huda Beauty - Fauxfilter concealer",
     );
+    expect(invoice.items[0]?.reference).toBe("");
   });
 });

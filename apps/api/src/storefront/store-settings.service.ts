@@ -2,6 +2,8 @@ import { ConflictException, Injectable, NotFoundException, ServiceUnavailableExc
 import type { DatabaseError } from 'pg';
 import {
   defaultStorefrontSettings,
+  defaultFeaturedSections,
+  featuredSectionsSchema,
   discountCodeSchema,
   storefrontSettingsSchema,
   type DiscountCodeInput,
@@ -37,7 +39,7 @@ export const storefrontMigrationPending = (error: unknown) =>
 
 const migrationRequired = () =>
   new ServiceUnavailableException(
-    'La base de données doit être mise à jour (migration 017_storefront_settings) avant d’utiliser ces réglages.',
+    'La base de données doit être mise à jour (migrations 017_storefront_settings et 019_storefront_manager_and_curation) avant d’utiliser ces réglages.',
   );
 
 /** Codes are valid through their last day, Moroccan time. */
@@ -55,7 +57,17 @@ export class StoreSettingsService {
         [DEFAULT_ORGANIZATION_ID],
       );
       if (!result.rows[0]) throw new NotFoundException('Organisation introuvable.');
-      return result.rows[0];
+      try {
+        const featured = await client.query<{ featured: unknown }>(
+          'SELECT store_featured AS featured FROM organizations WHERE id = $1',
+          [DEFAULT_ORGANIZATION_ID],
+        );
+        return { ...result.rows[0], featured: featuredSectionsSchema.parse(featured.rows[0]?.featured ?? {}) };
+      } catch (error) {
+        if (storefrontMigrationPending(error) && client === this.db)
+          return { ...result.rows[0], featured: defaultFeaturedSections };
+        throw error;
+      }
     } catch (error) {
       // Inside a transaction a failed statement aborts it, so only the pool may fall back.
       if (storefrontMigrationPending(error) && client === this.db) return defaultStorefrontSettings;
@@ -83,8 +95,13 @@ export class StoreSettingsService {
           input.shippingFee,
         ],
       );
-      await this.audit(client, actorId, 'STOREFRONT_SETTINGS_UPDATED', DEFAULT_ORGANIZATION_ID, before.rows[0], result.rows[0]);
-      return result.rows[0]!;
+      await client.query(
+        'UPDATE organizations SET store_featured = $2::jsonb WHERE id = $1',
+        [DEFAULT_ORGANIZATION_ID, JSON.stringify(input.featured)],
+      );
+      const after = { ...result.rows[0]!, featured: input.featured };
+      await this.audit(client, actorId, 'STOREFRONT_SETTINGS_UPDATED', DEFAULT_ORGANIZATION_ID, before.rows[0], after);
+      return after;
     }));
   }
 

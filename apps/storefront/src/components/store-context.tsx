@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, type Dispatch, type SetStateAction } from "react";
-import type { ProductListItem } from "@cosmetics/contracts";
+import type { FeaturedSections, ProductListItem } from "@cosmetics/contracts";
 import type { CatalogFilter } from "@/lib/catalog";
 import type { ShippingSettings } from "@/lib/products";
 
@@ -10,6 +10,7 @@ export type StoreApi = {
   demo: boolean;
   /** Free-delivery threshold and fee, set in the desktop app. */
   shipping: ShippingSettings;
+  featured: FeaturedSections;
   add: (product: ProductListItem, quantity?: number) => void;
   openProduct: (product: ProductListItem) => void;
   favorites: string[];

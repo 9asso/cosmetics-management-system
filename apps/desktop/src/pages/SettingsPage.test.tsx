@@ -19,6 +19,7 @@ vi.mock("../lib/api", () => ({
     brandSettings: vi.fn(),
     updateBrandSettings: vi.fn(),
     storefrontSettings: vi.fn(),
+    products: vi.fn(),
     updateStorefrontSettings: vi.fn(),
     discountCodes: vi.fn(),
     createDiscountCode: vi.fn(),
@@ -36,6 +37,7 @@ function renderPage() {
   vi.mocked(api.storefrontSettings).mockResolvedValue(defaultStorefrontSettings);
   vi.mocked(api.discountCodes).mockResolvedValue([]);
   vi.mocked(api.brandSettings).mockResolvedValue(defaultBrandSettings);
+  vi.mocked(api.products).mockResolvedValue({ items: [], page: 1, pageSize: 100, total: 0 });
   const client = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -51,6 +53,15 @@ function renderPage() {
 }
 
 describe("storefront settings", () => {
+  it("shows only storefront controls to the storefront manager", async () => {
+    vi.mocked(api.storefrontSettings).mockResolvedValue(defaultStorefrontSettings);
+    vi.mocked(api.products).mockResolvedValue({ items: [], page: 1, pageSize: 100, total: 0 });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><SettingsPage storefrontOnly /></QueryClientProvider>);
+    expect(await screen.findByText("Sections de la page d’accueil")).toBeTruthy();
+    expect(screen.queryByRole("tab", { name: "Facture" })).toBeNull();
+    client.clear();
+  });
   it("switches to every product in stock and saves the delivery amounts", async () => {
     vi.mocked(api.updateStorefrontSettings).mockImplementation(
       async (value) => value,

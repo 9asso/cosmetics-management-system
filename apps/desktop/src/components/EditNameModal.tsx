@@ -73,6 +73,7 @@ export function EditNameModal({
                 WAREHOUSE: "Magasinier",
                 ACCOUNTANT: "Comptable",
                 SALES_REP: "Commercial restreint",
+                STOREFRONT_MANAGER: "Responsable boutique en ligne",
                 STAFF: "Employé",
               }).map(([value, label]) => (
                 <option key={value} value={value}>

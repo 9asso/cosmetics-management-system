@@ -14,7 +14,7 @@ const tabs = [
   { id: "invoice", label: "Facture", icon: ReceiptText },
 ] as const;
 
-export function SettingsPage() {
+export function SettingsPage({ storefrontOnly = false }: { storefrontOnly?: boolean }) {
   const [tab, setTab] = useState<(typeof tabs)[number]["id"]>("store");
   return (
     <div className={ui("page-stack")}>
@@ -23,7 +23,7 @@ export function SettingsPage() {
         role="tablist"
         aria-label="Paramètres"
       >
-        {tabs.map(({ id, label, icon: Icon }) => (
+        {tabs.filter(({ id }) => !storefrontOnly || id !== "invoice").map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             type="button"

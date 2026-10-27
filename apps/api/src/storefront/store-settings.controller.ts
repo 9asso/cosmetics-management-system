@@ -11,17 +11,18 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import { StoreSettingsService } from './store-settings.service.js';
 
 /** Online shop settings and discount codes, edited from the desktop Settings page. */
-@Roles('OWNER')
 @Controller('settings')
 export class StoreSettingsController {
   constructor(private readonly settings: StoreSettingsService) {}
 
   @Get('storefront')
+  @Roles('OWNER', 'STOREFRONT_MANAGER')
   storefront() {
     return this.settings.settings();
   }
 
   @Patch('storefront')
+  @Roles('OWNER', 'STOREFRONT_MANAGER')
   updateStorefront(
     @Body(new ZodValidationPipe(storefrontSettingsSchema)) input: StorefrontSettings,
     @CurrentUser() user: AuthenticatedUser,
@@ -30,11 +31,13 @@ export class StoreSettingsController {
   }
 
   @Get('discount-codes')
+  @Roles('OWNER', 'STOREFRONT_MANAGER')
   discountCodes() {
     return this.settings.discountCodes();
   }
 
   @Post('discount-codes')
+  @Roles('OWNER', 'STOREFRONT_MANAGER')
   createDiscountCode(
     @Body(new ZodValidationPipe(discountCodeSchema)) input: DiscountCodeInput,
     @CurrentUser() user: AuthenticatedUser,
@@ -43,6 +46,7 @@ export class StoreSettingsController {
   }
 
   @Patch('discount-codes/:id')
+  @Roles('OWNER', 'STOREFRONT_MANAGER')
   updateDiscountCode(
     @Param('id', ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(discountCodeSchema)) input: DiscountCodeInput,
@@ -52,6 +56,7 @@ export class StoreSettingsController {
   }
 
   @Delete('discount-codes/:id')
+  @Roles('OWNER', 'STOREFRONT_MANAGER')
   deleteDiscountCode(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.settings.deleteDiscountCode(id, user.id);
   }

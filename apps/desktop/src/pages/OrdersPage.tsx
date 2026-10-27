@@ -29,7 +29,7 @@ function tone(status: OrderStatus) {
   return "warn" as const;
 }
 
-export function OrdersPage({ canUpdate = true }: { canUpdate?: boolean }) {
+export function OrdersPage({ canUpdate = true, retailOnly = false }: { canUpdate?: boolean; retailOnly?: boolean }) {
   const client = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -38,8 +38,8 @@ export function OrdersPage({ canUpdate = true }: { canUpdate?: boolean }) {
   >("all");
   const [status, setStatus] = useState<"all" | OrderStatus>("all");
   const orders = useQuery({
-    queryKey: ["orders", search, channel, status],
-    queryFn: () => api.orders({ search, channel, status }),
+    queryKey: ["orders", search, channel, status, retailOnly],
+    queryFn: () => api.orders({ search, channel: retailOnly ? "RETAIL_WEB" : channel, status }),
   });
   const changeStatus = useMutation({
     mutationFn: ({ id, next }: { id: string; next: OrderStatus }) =>
@@ -106,7 +106,7 @@ export function OrdersPage({ canUpdate = true }: { canUpdate?: boolean }) {
               placeholder="N° commande ou client"
             />
           </div>
-          <select
+          {!retailOnly && <select
             value={channel}
             onChange={(event) =>
               setChannel(event.target.value as typeof channel)
@@ -115,7 +115,7 @@ export function OrdersPage({ canUpdate = true }: { canUpdate?: boolean }) {
             <option value="all">Tous les canaux</option>
             <option value="RETAIL_WEB">Boutique retail</option>
             <option value="WHOLESALE_DESKTOP">Vente grossiste</option>
-          </select>
+          </select>}
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value as typeof status)}
@@ -283,6 +283,7 @@ export function OrdersPage({ canUpdate = true }: { canUpdate?: boolean }) {
           kind="sale"
           id={selectedId}
           surface="order"
+          restricted={retailOnly}
           onClose={() => setSelectedId(null)}
         />
       )}

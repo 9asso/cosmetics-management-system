@@ -8,7 +8,6 @@ import type { InstagramPost } from "@/lib/instagram";
 import { site, type TikTokVideo } from "@/lib/site";
 import { InstagramIcon, TikTokIcon } from "./icons";
 import { Reveal } from "./motion";
-import { Rail } from "./Rail";
 import { useStore } from "./store-context";
 
 /** One product per category first, then the rest, so curated grids feel varied. */
@@ -22,7 +21,8 @@ function varied(products: ProductListItem[], count: number) {
 }
 
 export function InstagramFeed({ posts }: { posts: InstagramPost[] }) {
-  const tiles = posts.slice(0, 5);
+  const tiles = posts.slice(0, 8);
+  const profileTiles = Array.from({ length: Math.max(0, 8 - tiles.length) });
   return (
     <section className="section instagram" id="instagram" aria-labelledby="instagram-title">
       <Reveal className="social-head">
@@ -43,13 +43,13 @@ export function InstagramFeed({ posts }: { posts: InstagramPost[] }) {
 
       {tiles.length > 0 ? (
         <div
-          className={`instagram-grid ${tiles.length < 5 ? "is-few" : ""}`}
+          className={`instagram-grid ${tiles.length < 8 ? "is-few" : ""}`}
           style={{ "--tiles": tiles.length } as CSSProperties}
         >
           {tiles.map((post, index) => (
             <Reveal
               key={post.id}
-              className={`ig-tile ${index === 0 && tiles.length >= 5 ? "is-feature" : ""}`}
+              className="ig-tile"
               delay={index * 80}
               variant="zoom"
             >
@@ -64,6 +64,14 @@ export function InstagramFeed({ posts }: { posts: InstagramPost[] }) {
                   <InstagramIcon size={24} />
                   <span dir="auto">{post.caption.slice(0, 120)}</span>
                 </span>
+              </a>
+            </Reveal>
+          ))}
+          {profileTiles.map((_, index) => (
+            <Reveal key={`profile-${index}`} className="ig-tile ig-profile-tile" delay={(tiles.length + index) * 80} variant="zoom">
+              <a href={site.instagram.url} target="_blank" rel="noreferrer" aria-label="Voir le profil Instagram de Yamoura">
+                <InstagramIcon size={32} />
+                <span>{index % 2 === 0 ? "Voir toutes les publications" : "Découvrir nos stories"}</span>
               </a>
             </Reveal>
           ))}
@@ -120,7 +128,7 @@ export function TikTokFeed() {
         </a>
       </Reveal>
 
-      <Rail label="Vidéos TikTok" dark>
+      <div className="tt-grid" role="region" aria-label="Vidéos TikTok">
         {videos.length > 0
           ? videos.map((video, index) => {
               const product = video.productSku ? bySku.get(video.productSku) : undefined;
@@ -174,7 +182,7 @@ export function TikTokFeed() {
                 </div>
               </Reveal>
             ))}
-      </Rail>
+      </div>
 
       {playing && (
         <div className="video-modal" role="dialog" aria-modal="true" aria-label={playing.caption} onClick={() => setPlaying(null)}>

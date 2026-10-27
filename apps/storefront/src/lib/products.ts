@@ -1,6 +1,7 @@
 import { cache } from "react";
 import {
   defaultStorefrontSettings,
+  defaultFeaturedSections,
   type Paginated,
   type ProductListItem,
   type PublicStorefrontSettings,
@@ -51,9 +52,10 @@ export const getStoreCatalog = cache(async () => {
     freeShippingThreshold: settings?.freeShippingThreshold ?? defaultStorefrontSettings.freeShippingThreshold,
     shippingFee: settings?.shippingFee ?? defaultStorefrontSettings.shippingFee,
   };
-  if (live) return { products: live, demo: false, shipping };
+  const featured = settings?.featured ?? defaultFeaturedSections;
+  if (live) return { products: live, demo: false, shipping, featured };
   // Demo products (ordering disabled) when chosen in the desktop app, or when the
   // API is unreachable unless STORE_DEMO_FALLBACK=false.
   const demo = settings?.catalogSource === "DEMO" || process.env.STORE_DEMO_FALLBACK !== "false";
-  return { products: demo ? demoCatalog : [], demo, shipping };
+  return { products: demo ? demoCatalog : [], demo, shipping, featured };
 });

@@ -17,7 +17,7 @@ function trailingSpans(count: number) {
 }
 
 export function CategoryShowcase() {
-  const { products, shop } = useStore();
+  const { products, shop, featured } = useStore();
   const tiles = useMemo(() => {
     const entries = allCategories.map((category) => {
       const items = products.filter((product) => product.category === category);
@@ -28,9 +28,15 @@ export function CategoryShowcase() {
         subcategories: [...new Set(items.map((product) => product.subcategory).filter(Boolean))].slice(0, 4),
       };
     });
+    if (featured.categories.length) {
+      return featured.categories.flatMap((category) => {
+        const entry = entries.find((item) => item.category === category);
+        return entry ? [entry] : [];
+      });
+    }
     const stocked = entries.filter((entry) => entry.count > 0).sort((a, b) => b.count - a.count);
     return stocked.length ? stocked : entries;
-  }, [products]);
+  }, [featured.categories, products]);
 
   const featureLayout = tiles.length >= 5;
   const spans = featureLayout ? [0, 1, 1, 1, 1, ...trailingSpans(tiles.length - 5)] : [];

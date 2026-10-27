@@ -38,6 +38,9 @@ export class AuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
+    if (user.role === 'STOREFRONT_MANAGER' && !roles?.includes('STOREFRONT_MANAGER')) {
+      throw new ForbiddenException('Accès limité à la boutique en ligne.');
+    }
     if (roles?.length && !roles.includes(user.role)) {
       throw new ForbiddenException('Vous ne disposez pas des permissions requises.');
     }

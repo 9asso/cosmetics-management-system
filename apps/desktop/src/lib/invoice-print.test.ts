@@ -29,6 +29,7 @@ const sampleSale: InvoiceDetail = {
       id: "it-1",
       variantId: "var-1",
       description: "Crème Hydratante 50ml",
+      reference: "REF-42",
       imageUrl: "",
       quantity: 10,
       returnedQuantity: 1,
@@ -94,6 +95,8 @@ describe("Invoice HTML Print Generator", () => {
     expect(html).toContain("Facture de vente");
     expect(html).toContain("Boutique Beauté Plus");
     expect(html).toContain("Crème Hydratante 50ml");
+    expect(html).toContain("<th>Référence</th>");
+    expect(html).toContain('<td class="ref">REF-42</td>');
     expect(html).toContain("500,00 MAD");
     expect(html).toContain("200,00 MAD");
     expect(html).toContain("300,00 MAD"); // balance

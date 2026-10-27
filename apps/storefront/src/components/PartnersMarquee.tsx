@@ -5,26 +5,24 @@ import Link from "next/link";
 import { ArrowRight, BadgeCheck } from "lucide-react";
 import { brandHref } from "@/lib/brands";
 import { rankBrands } from "@/lib/catalog";
-import { partnerWordmarks, type WordmarkStyle } from "@/lib/site";
+import { partnerWordmarks } from "@/lib/site";
 import { Reveal } from "./motion";
 import { useStore } from "./store-context";
-
-const fallbackStyles: WordmarkStyle[] = ["serif", "bold", "wide", "lower", "italic", "serif-caps"];
 
 export function PartnersMarquee() {
   const { products } = useStore();
   const partners = useMemo(
     () =>
       rankBrands(products)
-        .slice(0, 28)
-        .map((brand, index) => {
+        .map((brand) => {
           const config = partnerWordmarks[brand.name.toLocaleLowerCase("fr")];
           return {
             name: brand.name,
-            style: config?.style ?? fallbackStyles[index % fallbackStyles.length]!,
             logo: config?.logo,
           };
-        }),
+        })
+        .filter((partner): partner is { name: string; logo: string } => Boolean(partner.logo))
+        .slice(0, 28),
     [products],
   );
   if (partners.length === 0) return null;
@@ -56,12 +54,12 @@ export function PartnersMarquee() {
             <Link
               key={`${partner.name}-${index}`}
               href={brandHref(partner.name)}
-              className={`partner-logo wordmark-${partner.style}`}
+              className="partner-logo"
               tabIndex={index >= partners.length ? -1 : 0}
               aria-hidden={index >= partners.length || undefined}
               title={partner.name}
             >
-              {partner.logo ? <img src={partner.logo} alt={partner.name} /> : <span>{partner.name}</span>}
+              <img src={partner.logo} alt={partner.name} />
             </Link>
           ))}
         </div>

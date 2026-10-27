@@ -7,14 +7,19 @@ import { CountUp, Reveal } from "./motion";
 import { useStore } from "./store-context";
 
 export function PromoBanner() {
-  const { products, shop, openProduct, shipping } = useStore();
+  const { products, shop, openProduct, shipping, featured } = useStore();
   const deals = useMemo(
     () =>
-      products
+      (featured.promoProductIds.length
+        ? featured.promoProductIds.flatMap((id) => {
+            const product = products.find((item) => item.variantId === id);
+            return product ? [product] : [];
+          })
+        : products)
         .filter((product) => discountPercent(product) > 0 && productImages(product).length)
         .sort((a, b) => discountPercent(b) - discountPercent(a))
         .slice(0, 6),
-    [products],
+    [featured.promoProductIds, products],
   );
   const best = deals[0] ? discountPercent(deals[0]) : 0;
 

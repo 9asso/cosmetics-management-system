@@ -39,7 +39,7 @@ const steps = [
 ];
 
 export function RoutineBuilder() {
-  const { products, add, openProduct, shop } = useStore();
+  const { products, add, openProduct, shop, featured } = useStore();
   const routine = useMemo(() => {
     const skin = products.filter((product) => product.category === "SKIN_CARE" && productImages(product).length);
     const used = new Set<string>();
@@ -49,11 +49,17 @@ export function RoutineBuilder() {
           !used.has(product.variantId) &&
           (step.subcategories.includes(product.subcategory) || step.keywords.test(normalize(product.name))),
       );
-      const ordered = [...matches.filter((product) => product.available > 0), ...matches.filter((product) => product.available <= 0)];
+      const curatedId = featured.routineProductIds[step.id as keyof typeof featured.routineProductIds];
+      const curated = curatedId ? skin.find((product) => product.variantId === curatedId) : undefined;
+      const ordered = [
+        ...(curated ? [curated] : []),
+        ...matches.filter((product) => product.variantId !== curatedId && product.available > 0),
+        ...matches.filter((product) => product.variantId !== curatedId && product.available <= 0),
+      ];
       ordered.slice(0, 3).forEach((product) => used.add(product.variantId));
       return { ...step, items: ordered.slice(0, 3) };
     });
-  }, [products]);
+  }, [featured.routineProductIds, products]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [choice, setChoice] = useState<Record<string, number>>({});
 

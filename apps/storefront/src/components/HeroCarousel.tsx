@@ -28,7 +28,7 @@ function pick(products: ProductListItem[], category: Category, prefer?: (product
 }
 
 export function HeroCarousel() {
-  const { products, shop, openProduct } = useStore();
+  const { products, shop, openProduct, featured } = useStore();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchStart = useRef<number | null>(null);
@@ -53,6 +53,10 @@ export function HeroCarousel() {
         copy: "Soins, maquillage et parfums authentiques, sélectionnés avec exigence et livrés partout au Maroc.",
         cta: "Découvrir la boutique",
         onCta: () => shop(),
+        products: featured.heroProductIds.flatMap((id) => {
+          const product = products.find((item) => item.variantId === id && productImages(item).length);
+          return product ? [product] : [];
+        }),
       },
       {
         id: "skin",
@@ -134,7 +138,7 @@ export function HeroCarousel() {
       .filter((slide) => slide.theme === "photo" || (slide.products?.length ?? 0) >= 2)
       .filter((slide) => slide.id !== "offers" || bestDiscount > 0)
       .slice(0, 5);
-  }, [products, shop]);
+  }, [featured.heroProductIds, products, shop]);
 
   const count = slides.length;
   const go = (index: number) => setActive(((index % count) + count) % count);

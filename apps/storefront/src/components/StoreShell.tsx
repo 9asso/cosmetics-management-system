@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import type { ProductListItem, StoreDiscount } from "@cosmetics/contracts";
+import type { FeaturedSections, ProductListItem, StoreDiscount } from "@cosmetics/contracts";
 import { emptyFilter, type CartLine, type CatalogFilter } from "@/lib/catalog";
 import type { ShippingSettings } from "@/lib/products";
 import { BottomSection } from "./Footer";
@@ -34,11 +34,13 @@ export function StoreShell({
   products,
   demo,
   shipping,
+  featured,
   children,
 }: {
   products: ProductListItem[];
   demo: boolean;
   shipping: ShippingSettings;
+  featured: FeaturedSections;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -163,6 +165,7 @@ export function StoreShell({
       products,
       demo,
       shipping,
+      featured,
       add,
       openProduct: setQuickView,
       favorites,
@@ -173,7 +176,7 @@ export function StoreShell({
       setFilter,
       openInfo: setInfo,
     }),
-    [add, demo, favorites, filter, goTo, products, shipping, shop, toggleFavorite],
+    [add, demo, favorites, featured, filter, goTo, products, shipping, shop, toggleFavorite],
   );
   const count = cart.reduce((sum, line) => sum + line.quantity, 0);
   const openCart = useCallback(() => {
