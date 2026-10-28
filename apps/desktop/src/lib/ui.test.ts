@@ -36,7 +36,7 @@ describe("Tailwind recipes", () => {
     expect(css).not.toContain("@apply");
     expect(css).not.toMatch(/#677b74|#263b33/);
     expect(css).toContain(
-      '--font-sans: "Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif',
+      '--font-sans: Arial, "Helvetica Neue", system-ui, sans-serif',
     );
     expect(css).toContain("--color-app: #151416");
     expect(css).toContain("--color-surface: #1c1a1d");
