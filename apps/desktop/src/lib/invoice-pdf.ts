@@ -2,6 +2,8 @@ import { PDFDocument, rgb, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import type { BrandSettings, InvoiceSnapshot } from "@cosmetics/contracts";
 import { defaultBrandSettings } from "./brand-settings";
+// Bundled with the code: Vite's publicDir is the storefront's, which has no fonts.
+import invoiceFontUrl from "../assets/fonts/Lato-Regular.ttf?url";
 
 const amount = (value: number) =>
   new Intl.NumberFormat("fr-FR", {
@@ -100,14 +102,20 @@ export async function makeInvoicePdf(
       fittedSize(settings.title, 300, 17, 10),
       brand,
     );
+    if (settings.subtitle)
+      text(
+        settings.subtitle,
+        42,
+        777,
+        fittedSize(settings.subtitle, 300, 9),
+        muted,
+      );
     text(
-      settings.subtitle,
+      settings.phones,
       42,
-      777,
-      fittedSize(settings.subtitle, 300, 9),
-      muted,
+      settings.subtitle ? 762 : 777,
+      fittedSize(settings.phones, 300, 9),
     );
-    text(settings.phones, 42, 762, fittedSize(settings.phones, 300, 9));
     right(
       value.kind === "sale" ? "FACTURE DE VENTE" : "DOCUMENT D’ACHAT",
       553,
@@ -171,7 +179,7 @@ export async function makeInvoicePdf(
   tableHeader();
   for (const item of value.items) {
     const description = wrap(item.description, 190, 10);
-    const reference = wrap(item.reference ?? "", 90, 9);
+    const reference = wrap(item.reference?.trim() || "—", 90, 9);
     // Also split exceptionally long legacy descriptions across pages.
     let first = true;
     while (description.length || reference.length) {
@@ -283,9 +291,7 @@ export async function downloadInvoicePdf(
   value: InvoiceSnapshot,
   settings: BrandSettings = defaultBrandSettings,
 ) {
-  const response = await fetch(
-    `${import.meta.env.BASE_URL}fonts/Lato-Regular.ttf`,
-  );
+  const response = await fetch(invoiceFontUrl);
   if (!response.ok)
     throw new Error("Impossible de charger la police du document. Réessayez.");
   const bytes = await makeInvoicePdf(
@@ -293,12 +299,25 @@ export async function downloadInvoicePdf(
     await response.arrayBuffer(),
     settings,
   );
+  const filename = `${value.documentNumber.replace(/[^a-zA-Z0-9_-]/g, "_")}.pdf`;
+  if ("__TAURI_INTERNALS__" in window) {
+    const [{ save }, { writeFile }] = await Promise.all([
+      import("@tauri-apps/plugin-dialog"),
+      import("@tauri-apps/plugin-fs"),
+    ]);
+    const path = await save({
+      defaultPath: filename,
+      filters: [{ name: "Document PDF", extensions: ["pdf"] }],
+    });
+    if (path) await writeFile(path, bytes);
+    return;
+  }
   const url = URL.createObjectURL(
     new Blob([new Uint8Array(bytes)], { type: "application/pdf" }),
   );
   const link = document.createElement("a");
   link.href = url;
-  link.download = `${value.documentNumber.replace(/[^a-zA-Z0-9_-]/g, "_")}.pdf`;
+  link.download = filename;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

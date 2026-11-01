@@ -472,7 +472,7 @@ export function FinancePage({
                     <tr key={row.id}>
                       <td>
                         <button
-                          className="font-semibold text-brand hover:underline"
+                          className="font-semibold text-brand-ink hover:underline"
                           onClick={() =>
                             setInvoice({ kind: row.kind, id: row.id })
                           }
@@ -549,7 +549,7 @@ export function FinancePage({
                         </small>
                         {row.kind && row.documentId ? (
                           <button
-                            className="text-xs text-brand hover:underline"
+                            className="text-xs text-brand-ink hover:underline"
                             onClick={() =>
                               setInvoice({
                                 kind: row.kind!,
@@ -637,7 +637,7 @@ export function FinancePage({
                           {row.notes}
                         </small>
                         {row.voidReason && (
-                          <small className="block max-w-80 whitespace-normal text-rose-700">
+                          <small className="block max-w-80 whitespace-normal text-rose-700 dark:text-rose-300">
                             Motif : {row.voidReason}
                           </small>
                         )}

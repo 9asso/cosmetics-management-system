@@ -167,7 +167,7 @@ export function OrdersPage({ canUpdate = true, retailOnly = false }: { canUpdate
                   </td>
                   <td>
                     <button
-                      className="text-left font-bold text-brand hover:underline"
+                      className="text-left font-bold text-brand-ink hover:underline"
                       onClick={(event) => {
                         event.stopPropagation();
                         setSelectedId(order.id);

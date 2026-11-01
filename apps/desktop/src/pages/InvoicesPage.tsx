@@ -88,7 +88,7 @@ export function InvoicesPage({ role = "OWNER" }: { role?: UserRole }) {
                 >
                   <td>
                     <button
-                      className="text-left font-bold text-brand"
+                      className="text-left font-bold text-brand-ink"
                       onClick={(event) => {
                         event.stopPropagation();
                         setSelected(invoice);

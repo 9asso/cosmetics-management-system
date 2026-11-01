@@ -20,8 +20,8 @@ describe("role-based branding", () => {
         true,
       ),
     ).toEqual({
-      title: "Yamoura DISTRIBUTEUR",
-      subtitle: "Facture Yamoura",
+      title: "Yamoura",
+      subtitle: "",
       phones: "Contact Yamoura",
       thankYouText: "Merci, Yamoura",
       returnPolicy: "Retour chez Yamoura",

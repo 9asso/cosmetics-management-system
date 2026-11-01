@@ -2,13 +2,18 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: Arial, "Helvetica Neue", system-ui, sans-serif;
-  --color-brand: #ff848f;
-  --color-brand-secondary: #ff848f;
+  --font-sans: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  /* 11px and 12px at the default size; rem so the text size control scales them. */
+  --text-3xs: 0.647rem;
+  --text-2xs: 0.706rem;
+  /* Fills carry white text; brand-ink is the same hue for text on surfaces. */
+  --color-brand: #d1405c;
+  --color-brand-secondary: #d1405c;
+  --color-brand-ink: #a92a46;
   --color-brand-soft: #fff0f3;
-  --color-ink: #3f3a3e;
-  --color-muted: #746b71;
-  --color-line: #e8e1e5;
+  --color-ink: #2a2629;
+  --color-muted: #5e565b;
+  --color-line: #dcd4d9;
   --color-app: #f6f4f5;
   --color-surface: #fbfafb;
   --color-card: #ffffff;
@@ -16,15 +21,24 @@
   --shadow-sm: 0 2px 10px rgb(48 35 42 / 0.045);
 }
 
+@layer base {
+  html {
+    font-size: calc(17px * var(--ui-text-scale, 1));
+  }
+}
+
 .dark {
   color-scheme: dark;
-  --color-brand-soft: #35272c;
-  --color-ink: #f5f2f4;
-  --color-muted: #c2b9bf;
-  --color-line: #3a353b;
-  --color-app: #151416;
-  --color-surface: #1c1a1d;
-  --color-card: #242126;
-  --color-card-muted: #2b272c;
+  --color-brand: #b4465b;
+  --color-brand-secondary: #b4465b;
+  --color-brand-ink: #ffb3bc;
+  --color-brand-soft: #332c31;
+  --color-ink: #f8f6f7;
+  --color-muted: #d2cbcf;
+  --color-line: #423d44;
+  --color-app: #121113;
+  --color-surface: #19171a;
+  --color-card: #211f23;
+  --color-card-muted: #2a272c;
   --shadow-sm: 0 2px 12px rgb(0 0 0 / 0.16);
 }

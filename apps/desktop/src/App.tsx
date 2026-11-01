@@ -38,6 +38,7 @@ import {
 import { TeamPage } from "./pages/TeamPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { EditNameModal } from "./components/EditNameModal";
+import { TextSizeControl } from "./components/TextSizeControl";
 import { ErrorState } from "./components/EmptyState";
 import {
   api,
@@ -275,7 +276,7 @@ export function App() {
       .querySelector('meta[name="theme-color"]')
       ?.setAttribute(
         "content",
-        authenticated && darkMode ? "#181619" : "#ff848f",
+        authenticated && darkMode ? "#121113" : "#d1405c",
       );
   }, [darkMode, authenticated]);
 
@@ -562,6 +563,7 @@ export function App() {
             <strong>{pageTitles[active].title}</strong>
           </div>
           <div className={ui("top-actions")}>
+            <TextSizeControl />
             <button
               className={ui("theme-toggle")}
               type="button"

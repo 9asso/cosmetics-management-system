@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { PDFDocument } from "pdf-lib";
 import type { InvoiceDetail } from "@cosmetics/contracts";
 import { makeInvoicePdf } from "./invoice-pdf";
-const font = readFileSync(resolve("public/fonts/Lato-Regular.ttf"));
+const font = readFileSync(resolve("src/assets/fonts/Lato-Regular.ttf"));
 const sample: InvoiceDetail = {
   id: "qa",
   kind: "sale",

@@ -4,6 +4,9 @@ import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react
 import { App } from './App';
 import './styles.css';
 import { ConfirmationHost } from './components/ConfirmationHost';
+import { applyTextScale, readTextScale } from './lib/text-scale';
+
+applyTextScale(readTextScale());
 
 const queryClient: QueryClient = new QueryClient({
   mutationCache: new MutationCache({ onSuccess: () => {

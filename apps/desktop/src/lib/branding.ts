@@ -21,8 +21,8 @@ export function invoiceBrandSettings(
   const source = settings ?? defaultBrandSettings;
   if (!restricted) return source;
   return {
-    title: replaceRestrictedBrand(source.title),
-    subtitle: replaceRestrictedBrand(source.subtitle),
+    title: restrictedBrandName,
+    subtitle: "",
     phones: replaceRestrictedBrand(source.phones),
     thankYouText: replaceRestrictedBrand(source.thankYouText),
     returnPolicy: replaceRestrictedBrand(source.returnPolicy),

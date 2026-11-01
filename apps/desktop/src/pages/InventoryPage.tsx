@@ -806,7 +806,7 @@ export function InventoryPage({
                 {suppliers.isError && (
                   <button
                     type="button"
-                    className="text-brand"
+                    className="text-brand-ink"
                     onClick={() => void suppliers.refetch()}
                   >
                     Réessayer de charger les fournisseurs
@@ -966,7 +966,7 @@ export function InventoryPage({
                                   alt=""
                                 />
                               ) : (
-                                <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-brand-soft font-bold text-brand">
+                                <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-brand-soft font-bold text-brand-ink">
                                   {product.name.slice(0, 1)}
                                 </span>
                               )}
@@ -977,25 +977,25 @@ export function InventoryPage({
                                 <p className="truncate text-xs text-muted">
                                   {product.brand} · {product.sku}
                                 </p>
-                                <p className="mt-1 text-[11px] text-muted">
+                                <p className="mt-1 text-2xs text-muted">
                                   Code-barres : {product.barcode || "Aucun"} ·
                                   Stock : {product.onHand}
                                 </p>
                                 <div className="mt-1 flex flex-wrap gap-1">
                                   {product.active === false && (
-                                    <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-100">
+                                    <span className="rounded-full bg-slate-200 px-2 py-0.5 text-2xs font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-100">
                                       Produit archivé
                                     </span>
                                   )}
                                   {product.sku === draft.sku.trim() && (
-                                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700">
+                                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-2xs font-bold text-rose-700 dark:bg-rose-950/55 dark:text-rose-300">
                                       Même SKU
                                     </span>
                                   )}
                                   {draft.barcode.trim() !== "" &&
                                     product.barcode ===
                                       draft.barcode.trim() && (
-                                      <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700">
+                                      <span className="rounded-full bg-rose-100 px-2 py-0.5 text-2xs font-bold text-rose-700 dark:bg-rose-950/55 dark:text-rose-300">
                                         Même code-barres
                                       </span>
                                     )}

@@ -92,7 +92,7 @@ function PerformanceTooltip({
     ? (period.grossMargin / period.revenue) * 100
     : 0;
   return (
-    <div className="min-w-60 rounded-xl border border-line bg-white p-3 text-[12px] text-ink shadow-xl dark:bg-card/80 backdrop-blur-xl">
+    <div className="min-w-60 rounded-xl border border-line bg-white p-3 text-xs text-ink shadow-xl dark:bg-card/80 backdrop-blur-xl">
       <strong className="mb-2 block text-xs capitalize">
         {periodLabel(String(label))}
       </strong>
@@ -146,7 +146,7 @@ function ProductImage({
   ) : (
     <span
       aria-hidden="true"
-      className={`${className} grid place-items-center bg-linear-to-br from-brand/10 to-[#ff848f]/10 text-xl font-bold text-brand`}
+      className={`${className} grid place-items-center bg-linear-to-br from-brand/10 to-[#ff848f]/10 text-xl font-bold text-brand-ink`}
     >
       {product.name.slice(0, 1).toUpperCase()}
     </span>
@@ -171,7 +171,7 @@ function RecentProductsPanel({
   return (
     <article className={`${ui("panel")} overflow-hidden p-0!`}>
       <header className="flex items-center gap-3 border-b border-line bg-linear-to-r from-brand-soft/80 via-white to-amber-50/60 p-4 dark:via-card dark:to-card">
-        <span className="grid size-10 place-items-center rounded-xl bg-white text-brand shadow-sm dark:bg-card-muted">
+        <span className="grid size-10 place-items-center rounded-xl bg-white text-brand-ink shadow-sm dark:bg-card-muted">
           {icon}
         </span>
         <div>
@@ -191,31 +191,31 @@ function RecentProductsPanel({
             >
               <div className="relative">
                 <ProductImage product={product} />
-                <span className="absolute right-2 top-2 rounded-full bg-white/95 px-2 py-1 text-[10px] font-bold text-ink shadow-sm dark:bg-card/95">
+                <span className="absolute right-2 top-2 rounded-full bg-white/95 px-2 py-1 text-3xs font-bold text-ink shadow-sm dark:bg-card/95">
                   {integer.format(product.quantity)} unité(s)
                 </span>
               </div>
-              <p className="mt-2 truncate text-[10px] font-bold uppercase tracking-wider text-brand">
+              <p className="mt-2 truncate text-3xs font-bold uppercase tracking-wider text-brand-ink">
                 {product.brand}
               </p>
               <h3 className="mt-0.5 line-clamp-2 min-h-8 text-xs font-bold leading-4">
                 {product.name}
               </h3>
-              <p className="mt-1 truncate text-[10px] text-muted">
+              <p className="mt-1 truncate text-3xs text-muted">
                 {product.partnerName}
               </p>
               <div className="mt-2 flex items-end justify-between gap-2 border-t border-line pt-2">
                 <strong className="text-xs">
                   {money.format(product.amount)}
                 </strong>
-                <time className="text-[10px] text-muted">
+                <time className="text-3xs text-muted">
                   {new Date(product.occurredAt).toLocaleDateString("fr-FR", {
                     day: "2-digit",
                     month: "short",
                   })}
                 </time>
               </div>
-              <span className="mt-2 block text-[10px] font-semibold text-brand opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+              <span className="mt-2 block text-3xs font-semibold text-brand-ink opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
                 Voir les détails →
               </span>
             </button>
@@ -247,7 +247,7 @@ function TopProductsPanel({
   return (
     <article className={`${ui("panel")} overflow-hidden p-0!`}>
       <header className="flex items-center gap-3 border-b border-line bg-linear-to-r from-brand-soft/80 via-white to-amber-50/60 p-4 dark:via-card dark:to-card">
-        <span className="grid size-10 place-items-center rounded-xl bg-white text-brand shadow-sm dark:bg-card-muted">
+        <span className="grid size-10 place-items-center rounded-xl bg-white text-brand-ink shadow-sm dark:bg-card-muted">
           {icon}
         </span>
         <div>
@@ -268,7 +268,7 @@ function TopProductsPanel({
               className="absolute inset-y-0 left-0 dark:bg-black/30 bg-brand-soft/70 transition-all rounded-md"
               style={{ width: `${(product.unitsSold / maximum) * 100}%` }}
             />
-            <span className="relative grid size-6 shrink-0 place-items-center rounded-full bg-white text-[11px] font-bold text-brand shadow-sm dark:bg-card-muted">
+            <span className="relative grid size-6 shrink-0 place-items-center rounded-full bg-white text-2xs font-bold text-brand-ink shadow-sm dark:bg-card-muted">
               {index + 1}
             </span>
             <div className="relative">
@@ -276,7 +276,7 @@ function TopProductsPanel({
             </div>
             <div className="relative min-w-0 flex-1">
               <strong className="block truncate text-xs">{product.name}</strong>
-              <small className="mt-0.5 block truncate text-[10px] text-muted">
+              <small className="mt-0.5 block truncate text-3xs text-muted">
                 {product.brand} · {product.sku} · {product.orderCount}{" "}
                 commande(s)
               </small>
@@ -285,7 +285,7 @@ function TopProductsPanel({
               <strong className="block text-xs">
                 {integer.format(product.unitsSold)} u.
               </strong>
-              <small className="text-[10px] text-muted">
+              <small className="text-3xs text-muted">
                 {money.format(product.revenue)}
               </small>
             </div>
@@ -318,7 +318,7 @@ function TopCustomersPanel({
   return (
     <article className={`${ui("panel")} overflow-hidden p-0!`}>
       <header className="flex items-center gap-3 border-b border-line bg-linear-to-r from-brand-soft/80 via-white to-amber-50/60 p-4 dark:via-card dark:to-card">
-        <span className="grid size-10 place-items-center rounded-xl bg-white text-brand shadow-sm dark:bg-card-muted">
+        <span className="grid size-10 place-items-center rounded-xl bg-white text-brand-ink shadow-sm dark:bg-card-muted">
           {icon}
         </span>
         <div>
@@ -339,17 +339,17 @@ function TopCustomersPanel({
               className="absolute inset-y-0 left-0 rounded-md bg-brand-soft/70 dark:bg-black/30"
               style={{ width: `${(customer.revenue / maximum) * 100}%` }}
             />
-            <span className="relative grid size-7 shrink-0 place-items-center rounded-full bg-white text-[11px] font-bold text-brand shadow-sm dark:bg-card-muted">
+            <span className="relative grid size-7 shrink-0 place-items-center rounded-full bg-white text-2xs font-bold text-brand-ink shadow-sm dark:bg-card-muted">
               {index + 1}
             </span>
-            {/* <span className="relative grid size-10 shrink-0 place-items-center rounded-xl bg-linear-to-br from-brand/10 to-[#ff848f]/10 text-xs font-bold text-brand">
+            {/* <span className="relative grid size-10 shrink-0 place-items-center rounded-xl bg-linear-to-br from-brand/10 to-[#ff848f]/10 text-xs font-bold text-brand-ink">
               {customer.name.slice(0, 1).toUpperCase()}
             </span> */}
             <div className="relative min-w-0 flex-1">
               <strong className="block truncate text-xs">
                 {customer.name}
               </strong>
-              <small className="mt-0.5 block truncate text-[10px] text-muted">
+              <small className="mt-0.5 block truncate text-3xs text-muted">
                 {customer.city} · {integer.format(customer.orderCount)}{" "}
                 commande(s) · {integer.format(customer.unitsBought)} unité(s)
               </small>
@@ -380,7 +380,7 @@ function TopCitiesPanel({
   return (
     <article className={`${ui("panel")} overflow-hidden p-0!`}>
       <header className="flex items-center gap-3 border-b border-line bg-linear-to-r from-brand-soft/80 via-white to-amber-50/60 p-4 dark:via-card dark:to-card">
-        <span className="grid size-10 place-items-center rounded-xl bg-white text-brand shadow-sm dark:bg-card-muted">
+        <span className="grid size-10 place-items-center rounded-xl bg-white text-brand-ink shadow-sm dark:bg-card-muted">
           <MapPinned size={19} />
         </span>
         <div>
@@ -401,15 +401,15 @@ function TopCitiesPanel({
               className="absolute inset-y-0 left-0 rounded-md bg-brand-soft/70 dark:bg-black/30"
               style={{ width: `${(city.revenue / maximum) * 100}%` }}
             />
-            <span className="relative grid size-7 shrink-0 place-items-center rounded-full bg-white text-[11px] font-bold text-brand shadow-sm dark:bg-card-muted">
+            <span className="relative grid size-7 shrink-0 place-items-center rounded-full bg-white text-2xs font-bold text-brand-ink shadow-sm dark:bg-card-muted">
               {index + 1}
             </span>
-            {/* <span className="relative grid size-10 shrink-0 place-items-center rounded-xl bg-linear-to-br from-brand/10 to-[#ff848f]/10 text-xs font-bold text-brand">
+            {/* <span className="relative grid size-10 shrink-0 place-items-center rounded-xl bg-linear-to-br from-brand/10 to-[#ff848f]/10 text-xs font-bold text-brand-ink">
               <MapPinned size={17} />
             </span> */}
             <div className="relative min-w-0 flex-1">
               <strong className="block truncate text-xs">{city.city}</strong>
-              <small className="mt-0.5 block text-[10px] text-muted">
+              <small className="mt-0.5 block text-3xs text-muted">
                 {integer.format(city.customerCount)} client(s) ·{" "}
                 {integer.format(city.orderCount)} commande(s)
               </small>
@@ -432,7 +432,7 @@ function TopCitiesPanel({
 function InsightMetric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-line bg-surface px-3 py-3">
-      <small className="block text-[10px] font-semibold uppercase tracking-wider text-muted">
+      <small className="block text-3xs font-semibold uppercase tracking-wider text-muted">
         {label}
       </small>
       <strong className="mt-1.5 block text-sm">{value}</strong>
@@ -565,7 +565,7 @@ function DashboardInsightModal({
               <ProductImage product={insight.item} />
             </div>
           ) : (
-            <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-white text-brand shadow-sm dark:bg-card-muted">
+            <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-white text-brand-ink shadow-sm dark:bg-card-muted">
               {insight.kind === "customer" ? (
                 <UsersRound size={24} />
               ) : (
@@ -576,7 +576,7 @@ function DashboardInsightModal({
           <div className="min-w-0">
             <p className={ui("overline")}>{supporting}</p>
             <h3 className="mt-1 text-lg font-bold">{heading}</h3>
-            <p className="mt-1 text-[11px] text-muted">
+            <p className="mt-1 text-2xs text-muted">
               {insight.kind === "recent-product"
                 ? "Données du mouvement enregistré dans le stock."
                 : "Résumé calculé sur la période active du tableau de bord."}
@@ -772,7 +772,7 @@ export function DashboardPage({
                   key={value}
                   type="button"
                   aria-pressed={range === value}
-                  className={`rounded-lg px-3 py-1.5 text-[11px] font-bold transition-all ${range === value ? "bg-white text-ink shadow-sm dark:bg-card-muted" : "text-muted hover:text-ink"}`}
+                  className={`rounded-lg px-3 py-1.5 text-2xs font-bold transition-all ${range === value ? "bg-white text-ink shadow-sm dark:bg-card-muted" : "text-muted hover:text-ink"}`}
                   onClick={() => setRange(value)}
                 >
                   {rangeCopy[value].button}
@@ -780,7 +780,7 @@ export function DashboardPage({
               ))}
             </div>
           </div>
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-2xs text-muted">
             <p>
               CA total et marge brute · MAD · le détail par canal reste visible
               au survol.
@@ -822,14 +822,14 @@ export function DashboardPage({
                     key={label}
                     className="rounded-xl border border-line bg-surface px-3 py-2.5"
                   >
-                    <small className="block text-[10px] text-muted">
+                    <small className="block text-3xs text-muted">
                       {label}
                     </small>
                     <strong className="mt-1 block text-xs">{metric}</strong>
                   </div>
                 ))}
               </div>
-              <div className="h-80 min-w-0 text-[11px] [&_.recharts-surface]:outline-none [&_.recharts-surface_*]:outline-none">
+              <div className="h-80 min-w-0 text-2xs [&_.recharts-surface]:outline-none [&_.recharts-surface_*]:outline-none">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
                     data={periods}
@@ -847,7 +847,7 @@ export function DashboardPage({
                       tickLine={false}
                       axisLine={false}
                       minTickGap={22}
-                      tick={{ fill: "var(--color-muted)", fontSize: 10 }}
+                      tick={{ fill: "var(--color-muted)", fontSize: "0.65rem" }}
                     />
                     <YAxis
                       domain={[
@@ -863,7 +863,7 @@ export function DashboardPage({
                       tickLine={false}
                       axisLine={false}
                       width={48}
-                      tick={{ fill: "var(--color-muted)", fontSize: 10 }}
+                      tick={{ fill: "var(--color-muted)", fontSize: "0.65rem" }}
                     />
                     <Tooltip
                       content={<PerformanceTooltip periodLabel={periodLabel} />}
@@ -896,7 +896,7 @@ export function DashboardPage({
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
-              <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-muted">
+              <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-2xs text-muted">
                 <span>
                   Remises sur la période : <b>{money.format(discounts)}</b>
                 </span>
@@ -905,7 +905,7 @@ export function DashboardPage({
                 </span>
               </div>
               <details className="mt-3 text-xs">
-                <summary className="cursor-pointer font-semibold text-brand">
+                <summary className="cursor-pointer font-semibold text-brand-ink">
                   Voir les valeurs détaillées
                 </summary>
                 <div className={ui("table-wrap")}>
@@ -937,7 +937,7 @@ export function DashboardPage({
                   </table>
                 </div>
               </details>
-              <p className="mt-3 text-[11px] leading-relaxed text-muted">
+              <p className="mt-3 text-2xs leading-relaxed text-muted">
                 Source : commandes et coûts historiques en base · fuseau
                 Casablanca · actualisé{" "}
                 {analytics.data &&
@@ -1103,7 +1103,7 @@ export function DashboardPage({
               Ce qui entre, ce qui sort et ce qui performe
             </h2>
           </div>
-          <small className="text-[11px] text-muted">
+          <small className="text-2xs text-muted">
             Classements sur {rangeCopy[range].detail.toLowerCase()} · quantités
             nettes après retours
           </small>
@@ -1176,7 +1176,7 @@ export function DashboardPage({
               Meilleurs clients et zones de vente
             </h2>
           </div>
-          <small className="text-[11px] text-muted">
+          <small className="text-2xs text-muted">
             Classement par chiffre d’affaires ·{" "}
             {rangeCopy[range].detail.toLowerCase()}
           </small>
@@ -1266,7 +1266,7 @@ function ReportCalendarMonth({
           <button
             type="button"
             aria-label="Mois précédents"
-            className="grid size-8 place-items-center rounded-lg border border-line bg-white text-ink transition hover:border-brand hover:text-brand dark:bg-card-muted"
+            className="grid size-8 place-items-center rounded-lg border border-line bg-white text-ink transition hover:border-brand hover:text-brand-ink dark:bg-card-muted"
             onClick={previous}
           >
             <ChevronLeft size={16} />
@@ -1279,7 +1279,7 @@ function ReportCalendarMonth({
           <button
             type="button"
             aria-label="Mois suivants"
-            className="grid size-8 place-items-center rounded-lg border border-line bg-white text-ink transition hover:border-brand hover:text-brand dark:bg-card-muted"
+            className="grid size-8 place-items-center rounded-lg border border-line bg-white text-ink transition hover:border-brand hover:text-brand-ink dark:bg-card-muted"
             onClick={next}
           >
             <ChevronRight size={16} />
@@ -1288,7 +1288,7 @@ function ReportCalendarMonth({
           <span />
         )}
       </header>
-      <div className="grid grid-cols-7 text-center text-[10px] font-bold text-muted">
+      <div className="grid grid-cols-7 text-center text-3xs font-bold text-muted">
         {["D", "L", "M", "M", "J", "V", "S"].map((day, index) => (
           <span key={`${day}-${index}`} className="py-1">
             {day}
@@ -1307,14 +1307,14 @@ function ReportCalendarMonth({
               )}
               disabled={day > today}
               onClick={() => onSelect(day)}
-              className={`mx-auto grid size-8 place-items-center rounded-lg text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-25 ${
+              className={`mx-auto grid size-8 place-items-center rounded-lg text-2xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-25 ${
                 day === dateFrom || day === dateTo
                   ? "bg-brand text-white shadow-sm"
                   : day > dateFrom && day < dateTo
-                    ? "bg-brand-soft text-brand"
+                    ? "bg-brand-soft text-brand-ink"
                     : day === today
-                      ? "ring-1 ring-brand/50 text-brand"
-                      : "text-ink hover:bg-brand-soft hover:text-brand"
+                      ? "ring-1 ring-brand/50 text-brand-ink"
+                      : "text-ink hover:bg-brand-soft hover:text-brand-ink"
               }`}
             >
               {Number(day.slice(-2))}
@@ -1483,18 +1483,18 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
         <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm dark:bg-card">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3.5">
             <div className="flex items-center gap-3">
-              <span className="grid size-10 place-items-center rounded-xl bg-brand-soft text-brand">
+              <span className="grid size-10 place-items-center rounded-xl bg-brand-soft text-brand-ink">
                 <CalendarClock size={19} />
               </span>
               <div>
                 <strong className="block text-sm">Période du rapport</strong>
-                <small className="text-[11px] text-muted">
+                <small className="text-2xs text-muted">
                   {selectedDays} jour{selectedDays > 1 ? "s" : ""} sélectionné
                   {selectedDays > 1 ? "s" : ""}
                 </small>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-[11px] text-muted">
+            <div className="flex items-center gap-2 text-2xs text-muted">
               <span
                 className={`size-2 rounded-full ${choosingEnd ? "animate-pulse bg-brand" : "bg-emerald-500"}`}
               />
@@ -1505,7 +1505,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
             <div className="space-y-4">
               <div className="grid items-end gap-2 sm:grid-cols-[1fr_auto_1fr]">
                 <label className="block">
-                  <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted">
+                  <span className="mb-1.5 block text-3xs font-bold uppercase tracking-wider text-muted">
                     Date de début
                   </span>
                   <input
@@ -1519,11 +1519,11 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                     }
                   />
                 </label>
-                <span className="hidden pb-3 text-[11px] font-bold text-muted sm:block">
+                <span className="hidden pb-3 text-2xs font-bold text-muted sm:block">
                   au
                 </span>
                 <label className="block">
-                  <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted">
+                  <span className="mb-1.5 block text-3xs font-bold uppercase tracking-wider text-muted">
                     Date de fin
                   </span>
                   <input
@@ -1546,7 +1546,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                     <button
                       key={label}
                       type="button"
-                      className={`rounded-lg px-3 py-2.5 text-left text-[11px] font-semibold transition ${active ? "bg-brand-soft text-brand" : "text-ink hover:bg-black/4 dark:hover:bg-white/5"}`}
+                      className={`rounded-lg px-3 py-2.5 text-left text-2xs font-semibold transition ${active ? "bg-brand-soft text-brand-ink" : "text-ink hover:bg-black/4 dark:hover:bg-white/5"}`}
                       onClick={() => selectRange(from, to)}
                     >
                       {label}
@@ -1592,18 +1592,18 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
           <div className="report-print-area space-y-5 rounded-2xl border border-line bg-white p-4 text-ink dark:bg-card sm:p-5">
             <header className="report-hero flex flex-wrap items-end justify-between gap-4 border-b-2 border-brand pb-4">
               <div>
-                <p className="report-brand text-[11px] font-black uppercase tracking-[0.2em] text-brand">
+                <p className="report-brand text-2xs font-black uppercase tracking-[0.2em] text-brand-ink">
                   ONight Business
                 </p>
                 <h2 className="mt-1 text-xl font-bold">
                   Rapport de performance
                 </h2>
-                <p className="mt-1 text-[11px] text-muted">
+                <p className="mt-1 text-2xs text-muted">
                   Synthèse commerciale, financière et opérationnelle
                 </p>
               </div>
               <div className="report-period rounded-xl bg-brand-soft px-4 py-2 text-right">
-                <small className="block text-[10px] uppercase tracking-wider text-muted">
+                <small className="block text-3xs uppercase tracking-wider text-muted">
                   Période analysée
                 </small>
                 <strong className="mt-1 block text-xs">
@@ -1622,7 +1622,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
               <h3 className="report-section-title text-sm font-bold">
                 Résumé exécutif
               </h3>
-              <p className="report-copy mt-1 text-[11px] leading-relaxed text-muted">
+              <p className="report-copy mt-1 text-2xs leading-relaxed text-muted">
                 {integer.format(value.salesCount)} vente(s) représentant{" "}
                 {money.format(value.salesRevenue)} de chiffre d’affaires et{" "}
                 {integer.format(value.unitsSold)} unité(s). La marge brute
@@ -1691,7 +1691,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                   <strong className="mt-1 block text-base">
                     {money.format(Number(amount))}
                   </strong>
-                  <em className="mt-1 block text-[10px] not-italic text-muted">
+                  <em className="mt-1 block text-3xs not-italic text-muted">
                     {detail}
                   </em>
                 </article>
@@ -1702,7 +1702,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
               <h3 className="report-section-title text-sm font-bold">
                 Évolution de la période
               </h3>
-              <p className="report-copy mt-1 mb-3 text-[11px] text-muted">
+              <p className="report-copy mt-1 mb-3 text-2xs text-muted">
                 Les ventes et la marge suivent la date des factures ; les flux
                 suivent la date réelle des paiements et dépenses.
               </p>
@@ -1710,7 +1710,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                 <article className="report-chart overflow-hidden rounded-2xl border border-line bg-surface p-0">
                   <header className="flex items-center justify-between gap-3 border-b border-line bg-linear-to-r from-brand-soft/80 via-white to-amber-50/60 p-3.5 dark:via-card dark:to-card">
                     <div className="flex items-center gap-3">
-                      <span className="grid size-9 place-items-center rounded-xl bg-white text-brand shadow-sm dark:bg-card-muted">
+                      <span className="grid size-9 place-items-center rounded-xl bg-white text-brand-ink shadow-sm dark:bg-card-muted">
                         <TrendingUp size={17} />
                       </span>
                       <div>
@@ -1720,7 +1720,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                         </h4>
                       </div>
                     </div>
-                    <div className="hidden items-center gap-3 text-[10px] text-muted sm:flex">
+                    <div className="hidden items-center gap-3 text-3xs text-muted sm:flex">
                       <span className="flex items-center gap-1.5">
                         <i className="size-2 rounded-[3px] bg-[#ff848f]" />
                         Ventes
@@ -1731,7 +1731,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                       </span>
                     </div>
                   </header>
-                  <div className="h-52 min-w-0 p-3 text-[10px] [&_.recharts-surface]:outline-none [&_.recharts-surface_*]:outline-none">
+                  <div className="h-52 min-w-0 p-3 text-3xs [&_.recharts-surface]:outline-none [&_.recharts-surface_*]:outline-none">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart
                         data={value.periods}
@@ -1748,7 +1748,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                           tickLine={false}
                           axisLine={false}
                           minTickGap={18}
-                          tick={{ fill: "var(--color-muted)", fontSize: 9 }}
+                          tick={{ fill: "var(--color-muted)", fontSize: "0.6rem" }}
                         />
                         <YAxis
                           tickFormatter={(number) =>
@@ -1759,7 +1759,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                           tickLine={false}
                           axisLine={false}
                           width={42}
-                          tick={{ fill: "var(--color-muted)", fontSize: 9 }}
+                          tick={{ fill: "var(--color-muted)", fontSize: "0.6rem" }}
                         />
                         <Tooltip
                           formatter={(amount) => money.format(Number(amount))}
@@ -1809,7 +1809,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                 <article className="report-chart overflow-hidden rounded-2xl border border-line bg-surface p-0">
                   <header className="flex items-center justify-between gap-3 border-b border-line bg-linear-to-r from-brand-soft/80 via-white to-amber-50/60 p-3.5 dark:via-card dark:to-card">
                     <div className="flex items-center gap-3">
-                      <span className="grid size-9 place-items-center rounded-xl bg-white text-brand shadow-sm dark:bg-card-muted">
+                      <span className="grid size-9 place-items-center rounded-xl bg-white text-brand-ink shadow-sm dark:bg-card-muted">
                         <WalletCards size={17} />
                       </span>
                       <div>
@@ -1819,7 +1819,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                         </h4>
                       </div>
                     </div>
-                    <div className="hidden items-center gap-3 text-[10px] text-muted sm:flex">
+                    <div className="hidden items-center gap-3 text-3xs text-muted sm:flex">
                       <span className="flex items-center gap-1.5">
                         <i className="size-2 rounded-[3px] bg-[#e3a733]" />
                         Entrées
@@ -1830,7 +1830,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                       </span>
                     </div>
                   </header>
-                  <div className="h-52 min-w-0 p-3 text-[10px] [&_.recharts-surface]:outline-none [&_.recharts-surface_*]:outline-none">
+                  <div className="h-52 min-w-0 p-3 text-3xs [&_.recharts-surface]:outline-none [&_.recharts-surface_*]:outline-none">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart
                         data={cashPeriods}
@@ -1847,7 +1847,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                           tickLine={false}
                           axisLine={false}
                           minTickGap={18}
-                          tick={{ fill: "var(--color-muted)", fontSize: 9 }}
+                          tick={{ fill: "var(--color-muted)", fontSize: "0.6rem" }}
                         />
                         <YAxis
                           tickFormatter={(number) =>
@@ -1858,7 +1858,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                           tickLine={false}
                           axisLine={false}
                           width={42}
-                          tick={{ fill: "var(--color-muted)", fontSize: 9 }}
+                          tick={{ fill: "var(--color-muted)", fontSize: "0.6rem" }}
                         />
                         <Tooltip
                           formatter={(amount) => money.format(Number(amount))}
@@ -1919,7 +1919,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
               <h3 className="report-section-title text-sm font-bold">
                 Détail des opérations
               </h3>
-              <p className="report-copy mt-1 mb-3 text-[11px] text-muted">
+              <p className="report-copy mt-1 mb-3 text-2xs text-muted">
                 Toutes les factures, réceptions fournisseurs et dépenses
                 enregistrées dans la période.
               </p>
@@ -1969,7 +1969,7 @@ function DashboardReportModal({ onClose }: { onClose: () => void }) {
                 </table>
               </div>
             </section>
-            <footer className="report-footer flex flex-wrap justify-between gap-2 border-t border-line pt-3 text-[10px] text-muted">
+            <footer className="report-footer flex flex-wrap justify-between gap-2 border-t border-line pt-3 text-3xs text-muted">
               <span>
                 Généré le {new Date(value.generatedAt).toLocaleString("fr-FR")}
               </span>

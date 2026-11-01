@@ -29,6 +29,9 @@ const products = [
   {
     variantId: "a",
     name: "Serum",
+    brand: "Anua",
+    reference: "REF-SERUM",
+    barcode: "6111000000011",
     sku: "SERUM",
     available: 20,
     purchasePrice: 10,
@@ -158,7 +161,11 @@ describe("multi-product commerce entry", () => {
   it("searches the product popup while preserving the cart", async () => {
     const client = mount("sale");
     fireEvent.focus(screen.getByLabelText("Produit à ajouter"));
-    fireEvent.click(await screen.findByRole("option", { name: /Serum/ }));
+    const serum = await screen.findByRole("option", { name: /Serum/ });
+    expect(serum.textContent).toContain(
+      "Marque : Anua · Réf. : REF-SERUM · Code-barres : 6111000000011",
+    );
+    fireEvent.click(serum);
     fireEvent.click(screen.getByRole("button", { name: "Ajouter la ligne" }));
     vi.mocked(api.products).mockImplementation(() => new Promise(() => {}));
     fireEvent.change(screen.getByLabelText("Produit à ajouter"), {

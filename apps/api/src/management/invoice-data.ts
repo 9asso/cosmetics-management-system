@@ -73,13 +73,13 @@ export async function loadInvoiceSnapshot(
            i.returned_quantity AS "returnedQuantity", i.unit_multiplier AS "unitMultiplier",
            i.unit_price::float AS "unitPrice", i.line_total::float AS "lineTotal"
          FROM sales_order_items i JOIN product_variants v ON v.id=i.variant_id
-         JOIN products p ON p.id=v.product_id WHERE i.sales_order_id=$1 ORDER BY i.id`
+         JOIN products p ON p.id=v.product_id WHERE i.sales_order_id=$1 ORDER BY i.line_position`
       : `SELECT i.id, i.variant_id AS "variantId", p.name AS "productName",
            p.brand AS "productBrand", v.reference AS "productReference",
            COALESCE(p.image_url, '') AS "imageUrl", i.quantity, 0 AS "returnedQuantity",
            1 AS "unitMultiplier", i.unit_cost::float AS "unitPrice", i.line_total::float AS "lineTotal"
          FROM purchase_order_items i JOIN product_variants v ON v.id=i.variant_id
-         JOIN products p ON p.id=v.product_id WHERE i.purchase_order_id=$1 ORDER BY i.id`,
+         JOIN products p ON p.id=v.product_id WHERE i.purchase_order_id=$1 ORDER BY i.line_position`,
     [id],
   );
   const payments = await db.query<InvoiceSnapshot["payments"][number]>(

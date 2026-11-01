@@ -83,6 +83,7 @@ export function SearchablePopup<T>({
             setOpen(true);
             event.currentTarget.select();
           }}
+          onClick={() => setOpen(true)}
           onChange={(event) => {
             updateQuery(event.target.value);
             setOpen(true);
@@ -121,7 +122,7 @@ export function SearchablePopup<T>({
                 }}
               >
                 {getImage && (
-                  <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface text-[10px] text-muted">
+                  <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface text-3xs text-muted">
                     {image ? (
                       <img
                         src={image}
@@ -138,7 +139,7 @@ export function SearchablePopup<T>({
                     {getLabel(item)}
                   </strong>
                   {getDetail && (
-                    <small className="block truncate text-[11px] text-muted">
+                    <small className="block text-2xs wrap-break-word text-muted">
                       {getDetail(item)}
                     </small>
                   )}

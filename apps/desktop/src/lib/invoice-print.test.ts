@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { InvoiceDetail } from "@cosmetics/contracts";
+import { defaultBrandSettings } from "./brand-settings";
+import { invoiceBrandSettings } from "./branding";
 import { buildInvoiceHtml } from "./invoice-print";
 
 const sampleSale: InvoiceDetail = {
@@ -117,5 +119,28 @@ describe("Invoice HTML Print Generator", () => {
     expect(html).toContain("Shampoing Bio 250ml");
     expect(html).toContain("1 200,00 MAD");
     expect(html).not.toContain("Historique des règlements");
+  });
+
+  it("prints articles in the received order with their reference", () => {
+    const html = buildInvoiceHtml({
+      ...sampleSale,
+      items: [
+        { ...sampleSale.items[0]!, id: "z", description: "Premier article", reference: "REF-Z" },
+        { ...sampleSale.items[0]!, id: "a", description: "Second article", reference: "" },
+      ],
+    });
+    expect(html.indexOf("Premier article")).toBeLessThan(html.indexOf("Second article"));
+    expect(html).toContain('<td class="ref">REF-Z</td>');
+    expect(html).toContain('<td class="ref">—</td>');
+  });
+
+  it("shows only the Yamoura name on a restricted invoice", () => {
+    const html = buildInvoiceHtml(
+      sampleSale,
+      invoiceBrandSettings(defaultBrandSettings, true),
+    );
+    expect(html).toContain('<h1 class="brand-title">Yamoura</h1>');
+    expect(html).not.toMatch(/DISTRIBUTEUR|Distributeur/);
+    expect(html).not.toContain('class="brand-sub"');
   });
 });

@@ -8,7 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { defaultStorefrontSettings } from "@cosmetics/contracts";
+import { defaultStorefrontSettings, type ProductListItem } from "@cosmetics/contracts";
 import { defaultBrandSettings } from "../lib/brand-settings";
 import { api } from "../lib/api";
 import { SettingsPage } from "./SettingsPage";
@@ -60,6 +60,39 @@ describe("storefront settings", () => {
     render(<QueryClientProvider client={client}><SettingsPage storefrontOnly /></QueryClientProvider>);
     expect(await screen.findByText("Sections de la page d’accueil")).toBeTruthy();
     expect(screen.queryByRole("tab", { name: "Facture" })).toBeNull();
+    client.clear();
+  });
+  it("adds a homepage product from the search container and saves it", async () => {
+    const product = {
+      id: "p",
+      variantId: "11111111-1111-4111-8111-111111111111",
+      name: "Azelaic serum",
+      brand: "Anua",
+      reference: "REF-7",
+      sku: "AZ",
+      barcode: "611",
+      imageUrl: "",
+      category: "SKIN_CARE",
+      retailVisible: true,
+      available: 3,
+      retailPrice: 100,
+      compareAtPrice: null,
+    } as ProductListItem;
+    vi.mocked(api.storefrontSettings).mockResolvedValue(defaultStorefrontSettings);
+    vi.mocked(api.products).mockResolvedValue({ items: [product], page: 1, pageSize: 100, total: 1 });
+    vi.mocked(api.updateStorefrontSettings).mockImplementation(async (value) => value);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><SettingsPage storefrontOnly /></QueryClientProvider>);
+    const search = await screen.findByRole("combobox", { name: "Produits du hero" });
+    await waitFor(() => expect((search as HTMLInputElement).disabled).toBe(false));
+    fireEvent.focus(search);
+    fireEvent.change(search, { target: { value: "ref-7" } });
+    fireEvent.click(await screen.findByRole("option", { name: /Anua · Azelaic serum/ }));
+    expect(screen.getByRole("button", { name: "Retirer Anua · Azelaic serum" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() =>
+      expect(vi.mocked(api.updateStorefrontSettings).mock.calls[0]?.[0]?.featured.heroProductIds).toEqual([product.variantId]),
+    );
     client.clear();
   });
   it("switches to every product in stock and saves the delivery amounts", async () => {

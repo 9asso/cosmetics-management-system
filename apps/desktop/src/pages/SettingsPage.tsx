@@ -186,7 +186,7 @@ function InvoiceSettingsPanel() {
         <div className="border-b border-line bg-brand-soft/60 p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <strong className="block text-lg text-brand">
+              <strong className="block text-lg text-brand-ink">
                 {draft.title || "Titre de la marque"}
               </strong>
               <span className="mt-1 block text-xs text-muted">
@@ -196,19 +196,19 @@ function InvoiceSettingsPanel() {
                 {draft.phones || "Téléphones"}
               </span>
             </div>
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-brand shadow-sm dark:bg-card-muted">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-brand-ink shadow-sm dark:bg-card-muted">
               <ReceiptText size={19} />
             </span>
           </div>
         </div>
         <div className="space-y-2 p-5 text-center">
-          <strong className="block text-sm text-brand">
+          <strong className="block text-sm text-brand-ink">
             {draft.thankYouText || "Message de remerciement"}
           </strong>
           <p className="text-xs italic text-muted">
             {draft.returnPolicy || "Conditions de retour"}
           </p>
-          <small className="block pt-3 text-[11px] text-muted">
+          <small className="block pt-3 text-2xs text-muted">
             Aperçu du pied de facture
           </small>
         </div>

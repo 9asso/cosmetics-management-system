@@ -10,6 +10,7 @@
     "fs:allow-app-read-recursive",
     "fs:allow-app-write-recursive",
     "fs:allow-write-text-file",
+    "fs:allow-write-file",
     "opener:default"
   ]
 }

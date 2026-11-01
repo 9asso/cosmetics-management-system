@@ -36,11 +36,11 @@ describe("Tailwind recipes", () => {
     expect(css).not.toContain("@apply");
     expect(css).not.toMatch(/#677b74|#263b33/);
     expect(css).toContain(
-      '--font-sans: Arial, "Helvetica Neue", system-ui, sans-serif',
+      '--font-sans: "Segoe UI", system-ui, -apple-system, Arial, sans-serif',
     );
-    expect(css).toContain("--color-app: #151416");
-    expect(css).toContain("--color-surface: #1c1a1d");
-    expect(css).toContain("--color-card: #242126");
+    expect(css).toContain("--color-app: #121113");
+    expect(css).toContain("--color-surface: #19171a");
+    expect(css).toContain("--color-card: #211f23");
   });
   it("covers every semantic class passed to ui in the dashboard", () => {
     const files = [

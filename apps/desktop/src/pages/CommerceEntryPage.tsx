@@ -263,14 +263,14 @@ export function CommerceEntryPage({
                   <div className="min-w-0 flex-1">
                     <SearchablePopup
                       label="Produit à ajouter"
-                      placeholder="Nom, marque, SKU ou code-barres"
+                      placeholder="Nom, marque, référence, SKU ou code-barres"
                       items={products.data?.items ?? []}
                       value={productId}
                       onChange={setProductId}
                       getId={(product) => product.variantId}
                       getLabel={(product) => product.name}
                       getDetail={(product) =>
-                        `${product.sku} · ${product.available} disponible(s)`
+                        `Marque : ${product.brand || "—"} · Réf. : ${product.reference || "—"} · Code-barres : ${product.barcode || "—"} · ${product.sku} · ${product.available} disponible(s)`
                       }
                       getImage={(product) => resolveMediaUrl(product.imageUrl)}
                       query={search}

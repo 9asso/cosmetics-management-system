@@ -79,7 +79,7 @@ export function buildInvoiceHtml(
               : ""
           }
         </td>
-        <td class="ref">${escapeHtml(item.reference ?? "")}</td>
+        <td class="ref">${escapeHtml(item.reference?.trim() || "—")}</td>
         <td class="qty">${item.quantity}${item.unitMultiplier > 1 ? ` &times; ${item.unitMultiplier}` : ""}</td>
         <td class="num">${formatMoney(item.unitPrice)}</td>
         <td class="num total-col">${formatMoney(item.lineTotal)}</td>
@@ -428,7 +428,7 @@ export function buildInvoiceHtml(
     <header class="header">
       <div>
         <h1 class="brand-title">${escapeHtml(settings.title)}</h1>
-        <p class="brand-sub">${escapeHtml(settings.subtitle)}</p>
+        ${settings.subtitle ? `<p class="brand-sub">${escapeHtml(settings.subtitle)}</p>` : ""}
         <p class="brand-contact">${escapeHtml(settings.phones)}</p>
       </div>
       <div class="doc-meta">
@@ -446,7 +446,7 @@ export function buildInvoiceHtml(
         <div class="party-label">Émetteur</div>
         <div class="party-name">${escapeHtml(settings.title)}</div>
         <div class="party-details">
-          ${escapeHtml(settings.subtitle)}<br/>
+          ${settings.subtitle ? `${escapeHtml(settings.subtitle)}<br/>` : ""}
           Tél : ${escapeHtml(settings.phones)}
         </div>
       </div>

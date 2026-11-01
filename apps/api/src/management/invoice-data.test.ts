@@ -70,6 +70,18 @@ describe("invoice product labels", () => {
     },
   );
 
+  it.each(["sale", "purchase"] as const)(
+    "lists %s articles in the order they were entered",
+    async (kind) => {
+      const { db, queries } = invoiceDb("REF-42");
+      await loadInvoiceSnapshot(db, kind, "invoice-1");
+
+      expect(
+        queries.find((sql) => sql.includes("_order_items")),
+      ).toContain("ORDER BY i.line_position");
+    },
+  );
+
   it("does not substitute a SKU when the reference is empty", async () => {
     const { db } = invoiceDb(null);
     const invoice = await loadInvoiceSnapshot(db, "sale", "invoice-1");

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   defaultStorefrontSettings,
@@ -10,26 +10,33 @@ import {
   type StorefrontSettings,
 } from "@cosmetics/contracts";
 import {
+  BadgePercent,
   Boxes,
   CalendarClock,
   Eye,
   FlaskConical,
+  LayoutGrid,
+  ListChecks,
   PackageCheck,
   Pencil,
   Plus,
   Power,
   Save,
   Shuffle,
+  Sparkles,
   Store,
   TicketPercent,
   Trash2,
   Truck,
+  X,
 } from "lucide-react";
 import { ErrorState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
+import { SearchablePopup } from "../components/SearchablePopup";
 import { StatusPill } from "../components/StatusPill";
 import { api, ApiRequestError } from "../lib/api";
 import { integer, money } from "../lib/format";
+import { resolveMediaUrl } from "../lib/media";
 import { ui } from "../lib/ui";
 
 /** Status 499 means the owner cancelled the confirmation dialog. */
@@ -67,13 +74,13 @@ function Choice({
       }`}
     >
       <span
-        className={`grid size-9 shrink-0 place-items-center rounded-lg ${selected ? "bg-brand text-white" : "bg-brand-soft text-brand"}`}
+        className={`grid size-9 shrink-0 place-items-center rounded-lg ${selected ? "bg-brand text-white" : "bg-brand-soft text-brand-ink"}`}
       >
         {icon}
       </span>
       <span className="min-w-0 flex-1">
         <strong className="block text-xs text-ink">{title}</strong>
-        <small className="mt-0.5 block text-[12px] leading-snug text-muted">
+        <small className="mt-0.5 block text-xs leading-snug text-muted">
           {detail}
         </small>
       </span>
@@ -87,43 +94,209 @@ function Choice({
   );
 }
 
+const productTitle = (product: ProductListItem) =>
+  `${product.brand} · ${product.name}`;
+const productIdentifiers = (product: ProductListItem) =>
+  [
+    product.reference && `Réf. ${product.reference}`,
+    product.sku,
+    product.barcode && `Code-barres ${product.barcode}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+function ProductSearch({
+  label,
+  placeholder,
+  products,
+  value = "",
+  exclude = [],
+  disabled,
+  emptyLabel,
+  onSelect,
+}: {
+  label: string;
+  placeholder: string;
+  products: ProductListItem[];
+  value?: string;
+  exclude?: string[];
+  disabled?: boolean;
+  emptyLabel?: string;
+  onSelect: (id: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const items = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase("fr");
+    const matches = products
+      .filter(
+        (product) =>
+          !exclude.includes(product.variantId) &&
+          `${product.brand} ${product.name} ${product.reference} ${product.sku} ${product.barcode}`
+            .toLocaleLowerCase("fr")
+            .includes(normalized),
+      )
+      .slice(0, 30);
+    // The popup finds the current choice in its items to show its name when closed.
+    const current = products.find((product) => product.variantId === value);
+    return current && !matches.includes(current) ? [current, ...matches] : matches;
+  }, [exclude, products, query, value]);
+  return (
+    <SearchablePopup
+      label={label}
+      placeholder={placeholder}
+      items={items}
+      value={value}
+      onChange={(id) => {
+        setQuery("");
+        onSelect(id);
+      }}
+      getId={(product) => product.variantId}
+      getLabel={productTitle}
+      getDetail={productIdentifiers}
+      getImage={(product) => resolveMediaUrl(product.imageUrl)}
+      query={query}
+      onQueryChange={setQuery}
+      disabled={disabled}
+      emptyLabel={emptyLabel ?? "Aucun produit trouvé."}
+    />
+  );
+}
+
+function HomeSection({
+  icon,
+  title,
+  hint,
+  status,
+  onReset,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  hint: string;
+  status: string | null;
+  onReset: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      aria-label={title}
+      className="min-w-0 rounded-xl border border-line bg-white p-4 dark:bg-card"
+    >
+      <header className="mb-3 flex flex-wrap items-start gap-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand-ink">
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h4 className="text-sm font-bold text-ink">{title}</h4>
+          <p className="text-xs text-muted">{hint}</p>
+        </div>
+        <StatusPill tone={status ? "good" : "neutral"}>
+          {status ?? "Automatique"}
+        </StatusPill>
+      </header>
+      <div className="space-y-3">{children}</div>
+      {status && (
+        <button
+          type="button"
+          className="mt-3 text-xs font-semibold text-brand-ink underline"
+          onClick={onReset}
+        >
+          Revenir au choix automatique
+        </button>
+      )}
+    </section>
+  );
+}
+
 function ProductPicker({
-  label, products, selected, max, onChange,
+  label,
+  products,
+  selected,
+  max,
+  disabled,
+  emptyLabel,
+  onChange,
 }: {
   label: string;
   products: ProductListItem[];
   selected: string[];
   max: number;
+  disabled?: boolean;
+  emptyLabel?: string;
   onChange: (ids: string[]) => void;
 }) {
-  const [search, setSearch] = useState("");
-  const matches = products.filter((product) =>
-    `${product.brand} ${product.name} ${product.reference}`.toLocaleLowerCase("fr").includes(search.toLocaleLowerCase("fr")) &&
-    !selected.includes(product.variantId),
-  ).slice(0, 30);
   return (
-    <div className="rounded-xl border border-line p-3.5">
-      <strong className="block text-sm text-ink">{label}</strong>
-      <small className="text-muted">{selected.length ? `${selected.length}/${max} sélectionnés` : "Automatique si vide"}</small>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {selected.map((id) => {
-          const product = products.find((item) => item.variantId === id);
-          return <button key={id} type="button" className="rounded-full border border-brand px-3 py-1 text-xs text-brand" onClick={() => onChange(selected.filter((value) => value !== id))}>
-            {product ? `${product.brand} · ${product.name}` : "Produit indisponible"} ×
-          </button>;
-        })}
-      </div>
-      {selected.length < max && <>
-        <input className="mt-3" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Chercher un produit" aria-label={`Chercher pour ${label}`} />
-        <select className="mt-2" value="" onChange={(event) => onChange([...selected, event.target.value])} aria-label={`Ajouter à ${label}`}>
-          <option value="">Ajouter un produit…</option>
-          {matches.map((product) => <option key={product.variantId} value={product.variantId}>{product.brand} · {product.name}</option>)}
-        </select>
-      </>}
-    </div>
+    <>
+      {selected.length > 0 && (
+        <ol className="space-y-1.5">
+          {selected.map((id, index) => {
+            const product = products.find((item) => item.variantId === id);
+            const image = product && resolveMediaUrl(product.imageUrl);
+            return (
+              <li
+                key={id}
+                className="flex items-center gap-2.5 rounded-lg border border-line bg-surface p-2"
+              >
+                <span className="w-4 shrink-0 text-center text-xs font-bold text-muted">
+                  {index + 1}
+                </span>
+                <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-md bg-card-muted text-3xs text-muted">
+                  {image ? (
+                    <img src={image} alt="" className="size-full object-cover" />
+                  ) : (
+                    "Photo"
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <strong className="block truncate text-xs text-ink">
+                    {product ? productTitle(product) : "Produit indisponible"}
+                  </strong>
+                  {product && (
+                    <small className="block truncate text-2xs text-muted">
+                      {productIdentifiers(product)}
+                    </small>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  className={ui("icon-button")}
+                  aria-label={`Retirer ${product ? productTitle(product) : "ce produit"}`}
+                  onClick={() =>
+                    onChange(selected.filter((value) => value !== id))
+                  }
+                >
+                  <X size={15} />
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+      {selected.length < max ? (
+        <ProductSearch
+          label={label}
+          placeholder="Nom, marque, référence ou code-barres"
+          products={products}
+          exclude={selected}
+          disabled={disabled}
+          emptyLabel={emptyLabel}
+          onSelect={(id) => onChange([...selected, id])}
+        />
+      ) : (
+        <p className="text-xs text-muted">
+          Limite atteinte. Retirez un produit pour en choisir un autre.
+        </p>
+      )}
+    </>
   );
 }
 
+const routineSteps = [
+  ["cleanse", "Nettoyer"],
+  ["treat", "Traiter"],
+  ["hydrate", "Hydrater"],
+  ["protect", "Protéger"],
+] as const;
 
 export function StorefrontSettingsPanel() {
   const cache = useQueryClient();
@@ -178,6 +351,9 @@ export function StorefrontSettingsPanel() {
       ? product.retailVisible
       : product.available > 0 && product.retailPrice > 0,
   );
+  const routineCount = routineSteps.filter(
+    ([step]) => draft.featured.routineProductIds[step],
+  ).length;
   return (
     <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
       <form
@@ -285,38 +461,122 @@ export function StorefrontSettingsPanel() {
           <div className="space-y-3 border-t border-line pt-5">
             <div>
               <h3 className="text-base font-bold text-ink">Sections de la page d’accueil</h3>
-              <p className="text-xs text-muted">Choisissez les produits visibles dans chaque section. Une sélection vide garde le choix automatique.</p>
+              <p className="text-xs text-muted">Présentées dans l’ordre de la page. Une section vide garde le choix automatique.</p>
             </div>
-            <ProductPicker label="Produits du hero" products={curatableProducts} selected={draft.featured.heroProductIds} max={3}
-              onChange={(heroProductIds) => setFeatured({ heroProductIds })} />
-            <div className="rounded-xl border border-line p-3.5">
-              <strong className="block text-sm text-ink">Catégories affichées</strong>
-              <small className="text-muted">L’ordre de sélection devient l’ordre d’affichage.</small>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                {productCategories.map((category) => <label key={category} className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={draft.featured.categories.includes(category)} onChange={(event) =>
-                    setFeatured({ categories: event.target.checked
-                      ? [...draft.featured.categories, category]
-                      : draft.featured.categories.filter((value) => value !== category) })} />
-                  {productTaxonomy[category].label}
-                </label>)}
-              </div>
-              <button type="button" className="mt-2 text-xs text-brand underline" onClick={() => setFeatured({ categories: [] })}>Choix automatique</button>
+            <div className="grid items-start gap-3 min-[90rem]:grid-cols-2">
+              <HomeSection
+                icon={<Sparkles size={18} />}
+                title="Hero"
+                hint="Les produits mis en avant en haut de la page."
+                status={draft.featured.heroProductIds.length ? `${draft.featured.heroProductIds.length}/3 choisis` : null}
+                onReset={() => setFeatured({ heroProductIds: [] })}
+              >
+                <ProductPicker
+                  label="Produits du hero"
+                  products={curatableProducts}
+                  selected={draft.featured.heroProductIds}
+                  max={3}
+                  disabled={catalog.isLoading}
+                  onChange={(heroProductIds) => setFeatured({ heroProductIds })}
+                />
+              </HomeSection>
+              <HomeSection
+                icon={<LayoutGrid size={18} />}
+                title="Catégories"
+                hint="L’ordre de sélection devient l’ordre d’affichage."
+                status={draft.featured.categories.length ? `${draft.featured.categories.length} choisie(s)` : null}
+                onReset={() => setFeatured({ categories: [] })}
+              >
+                <div className="flex flex-wrap gap-2">
+                  {productCategories.map((category) => {
+                    const position = draft.featured.categories.indexOf(category);
+                    return (
+                      <button
+                        key={category}
+                        type="button"
+                        aria-pressed={position >= 0}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                          position >= 0
+                            ? "border-brand bg-brand text-white"
+                            : "border-line bg-surface text-ink hover:border-brand"
+                        }`}
+                        onClick={() =>
+                          setFeatured({
+                            categories:
+                              position >= 0
+                                ? draft.featured.categories.filter((value) => value !== category)
+                                : [...draft.featured.categories, category],
+                          })
+                        }
+                      >
+                        {position >= 0 && <span>{position + 1}.</span>}
+                        {productTaxonomy[category].label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </HomeSection>
+              <HomeSection
+                icon={<BadgePercent size={18} />}
+                title="Promotion"
+                hint="Uniquement les produits avec un prix barré."
+                status={draft.featured.promoProductIds.length ? `${draft.featured.promoProductIds.length}/4 choisis` : null}
+                onReset={() => setFeatured({ promoProductIds: [] })}
+              >
+                <ProductPicker
+                  label="Produits de la promotion"
+                  products={curatableProducts.filter((product) => product.compareAtPrice && product.compareAtPrice > product.retailPrice)}
+                  selected={draft.featured.promoProductIds}
+                  max={4}
+                  disabled={catalog.isLoading}
+                  emptyLabel="Aucun produit avec un prix barré."
+                  onChange={(promoProductIds) => setFeatured({ promoProductIds })}
+                />
+              </HomeSection>
+              <HomeSection
+                icon={<ListChecks size={18} />}
+                title="Routine"
+                hint="Un produit de soin de la peau pour chaque étape."
+                status={routineCount ? `${routineCount}/4 choisis` : null}
+                onReset={() =>
+                  setFeatured({ routineProductIds: { cleanse: null, treat: null, hydrate: null, protect: null } })
+                }
+              >
+                {routineSteps.map(([step, label]) => {
+                  const current = draft.featured.routineProductIds[step] ?? "";
+                  return (
+                    <div key={step}>
+                      <ProductSearch
+                        label={label}
+                        placeholder="Choix automatique — chercher un produit"
+                        products={curatableProducts.filter((product) => product.category === "SKIN_CARE")}
+                        value={current}
+                        disabled={catalog.isLoading}
+                        onSelect={(id) =>
+                          setFeatured({ routineProductIds: { ...draft.featured.routineProductIds, [step]: id } })
+                        }
+                      />
+                      {current && (
+                        <button
+                          type="button"
+                          className="mt-1 text-2xs font-semibold text-brand-ink underline"
+                          onClick={() =>
+                            setFeatured({ routineProductIds: { ...draft.featured.routineProductIds, [step]: null } })
+                          }
+                        >
+                          Retirer · {label}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </HomeSection>
             </div>
-            <ProductPicker label="Produits de la promotion" products={curatableProducts.filter((product) => product.compareAtPrice && product.compareAtPrice > product.retailPrice)}
-              selected={draft.featured.promoProductIds} max={4} onChange={(promoProductIds) => setFeatured({ promoProductIds })} />
-            <div className="rounded-xl border border-line p-3.5">
-              <strong className="block text-sm text-ink">Produits de la routine</strong>
-              {([ ["cleanse", "Nettoyer"], ["treat", "Traiter"], ["hydrate", "Hydrater"], ["protect", "Protéger"] ] as const).map(([step, label]) =>
-                <label key={step} className="mt-2 block"><span>{label}</span>
-                  <select value={draft.featured.routineProductIds[step] ?? ""} onChange={(event) =>
-                    setFeatured({ routineProductIds: { ...draft.featured.routineProductIds, [step]: event.target.value || null } })}>
-                    <option value="">Choix automatique</option>
-                    {curatableProducts.filter((product) => product.category === "SKIN_CARE").map((product) =>
-                      <option key={product.variantId} value={product.variantId}>{product.brand} · {product.name}</option>)}
-                  </select>
-                </label>)}
-            </div>
+            {catalog.isError && (
+              <p role="alert" className={ui("form-error")}>
+                Impossible de charger les produits.
+              </p>
+            )}
           </div>
         </fieldset>
         {mutation.isError && showError(mutation.error) && (
@@ -345,14 +605,14 @@ export function StorefrontSettingsPanel() {
             {demo ? "Mode démo" : "En ligne"}
           </StatusPill>
         </div>
-        <div className="bg-[#241a1f] px-4 py-2 text-center text-[11px] font-semibold text-white">
+        <div className="bg-[#241a1f] px-4 py-2 text-center text-2xs font-semibold text-white">
           Livraison offerte dès {integer.format(draft.freeShippingThreshold)}{" "}
           MAD d’achats
         </div>
         <div className="space-y-3 p-4">
           <div className="rounded-xl bg-brand-soft/70 p-3">
-            <p className="flex items-center gap-1.5 text-[12px] text-ink">
-              <Truck size={14} className="text-brand" /> Plus que{" "}
+            <p className="flex items-center gap-1.5 text-xs text-ink">
+              <Truck size={14} className="text-brand-ink" /> Plus que{" "}
               <strong>
                 {money.format(Math.max(0, draft.freeShippingThreshold - 200))}
               </strong>{" "}
@@ -366,11 +626,11 @@ export function StorefrontSettingsPanel() {
                 }}
               />
             </span>
-            <small className="mt-1.5 block text-[11px] text-muted">
+            <small className="mt-1.5 block text-2xs text-muted">
               Exemple pour un panier de 200 MAD
             </small>
           </div>
-          <dl className="space-y-1.5 text-[12px] [&>div]:flex [&>div]:justify-between [&_dt]:text-muted [&_dd]:font-semibold">
+          <dl className="space-y-1.5 text-xs [&>div]:flex [&>div]:justify-between [&_dt]:text-muted [&_dd]:font-semibold">
             <div>
               <dt>Livraison</dt>
               <dd>
@@ -564,7 +824,7 @@ function DiscountCodeModal({
           <span>Utilisable sur la boutique</span>
         </label>
         <div className="mt-4 flex items-center gap-3 rounded-xl border border-dashed border-brand/40 bg-brand-soft/50 px-4 py-3">
-          <TicketPercent size={20} className="shrink-0 text-brand" />
+          <TicketPercent size={20} className="shrink-0 text-brand-ink" />
           <p className="text-xs text-ink">
             <strong className="font-mono tracking-widest">
               {draft.code || "CODE"}
@@ -704,12 +964,12 @@ export function DiscountCodesPanel() {
                   <td colSpan={7} className="py-12! text-center">
                     <TicketPercent
                       size={26}
-                      className="mx-auto mb-2 text-brand"
+                      className="mx-auto mb-2 text-brand-ink"
                     />
                     <strong className="block text-xs">
                       Aucun code de réduction
                     </strong>
-                    <small className="text-[12px] text-muted">
+                    <small className="text-xs text-muted">
                       Créez un code pour vos clientes fidèles ou vos campagnes
                       Instagram.
                     </small>
@@ -726,7 +986,7 @@ export function DiscountCodesPanel() {
                       </strong>
                     </td>
                     <td>
-                      <strong className="text-brand">
+                      <strong className="text-brand-ink">
                         {reductionLabel(code)}
                       </strong>
                     </td>

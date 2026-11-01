@@ -196,7 +196,7 @@ export function InvoiceDetailModal({
                   <ReceiptText size={21} />
                 </span>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[.18em] text-brand">
+                  <p className="text-3xs font-bold uppercase tracking-[.18em] text-brand-ink">
                     {kind === "sale"
                       ? surface === "order"
                         ? "Commande client"
@@ -210,12 +210,12 @@ export function InvoiceDetailModal({
               </div>
               <div className="text-right">
                 <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold ${statusStyle(value.status)}`}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-2xs font-bold ${statusStyle(value.status)}`}
                 >
                   <i className="size-1.5 rounded-full bg-current" />
                   {documentStatuses[value.status] ?? value.status}
                 </span>
-                <p className="mt-2 flex items-center justify-end gap-1.5 text-[11px] text-muted">
+                <p className="mt-2 flex items-center justify-end gap-1.5 text-2xs text-muted">
                   <CalendarDays size={13} />
                   {new Date(value.issuedAt).toLocaleString("fr-FR", {
                     dateStyle: "long",
@@ -226,12 +226,12 @@ export function InvoiceDetailModal({
             </div>
             <div className="grid border-t border-line md:grid-cols-[1.1fr_.9fr]">
               <div className="p-5 sm:p-6 md:border-r md:border-line">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+                <p className="text-3xs font-bold uppercase tracking-widest text-muted">
                   {kind === "sale" ? "Client" : "Fournisseur"} · coordonnées
                   enregistrées à l’émission
                 </p>
                 <div className="mt-4 flex items-start gap-3">
-                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand-ink">
                     {kind === "sale" ? (
                       <UserRound size={18} />
                     ) : (
@@ -242,11 +242,11 @@ export function InvoiceDetailModal({
                     <h3 className="text-base font-bold text-ink">
                       {value.partnerName}
                     </h3>
-                    <div className="mt-3 grid gap-2 text-[12px] text-muted">
+                    <div className="mt-3 grid gap-2 text-xs text-muted">
                       <p className="flex items-start gap-2">
                         <Phone
                           size={14}
-                          className="mt-0.5 shrink-0 text-brand"
+                          className="mt-0.5 shrink-0 text-brand-ink"
                         />
                         <span>
                           {value.partner?.phone || "Téléphone non renseigné"}
@@ -255,7 +255,7 @@ export function InvoiceDetailModal({
                       <p className="flex items-start gap-2">
                         <Mail
                           size={14}
-                          className="mt-0.5 shrink-0 text-brand"
+                          className="mt-0.5 shrink-0 text-brand-ink"
                         />
                         <span className="break-all">
                           {value.partner?.email || "Email non renseigné"}
@@ -264,7 +264,7 @@ export function InvoiceDetailModal({
                       <p className="flex items-start gap-2">
                         <MapPin
                           size={14}
-                          className="mt-0.5 shrink-0 text-brand"
+                          className="mt-0.5 shrink-0 text-brand-ink"
                         />
                         <span className="whitespace-pre-wrap">
                           {value.partner?.address || "Adresse non renseignée"}
@@ -275,11 +275,11 @@ export function InvoiceDetailModal({
                 </div>
               </div>
               <div className="bg-surface p-5 sm:p-6">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+                <p className="text-3xs font-bold uppercase tracking-widest text-muted">
                   Canal &amp; règlement
                 </p>
                 <p className="mt-4 flex items-center gap-2 text-xs font-bold text-ink">
-                  <PackageOpen size={16} className="text-brand" />
+                  <PackageOpen size={16} className="text-brand-ink" />
                   {value.channel === "RETAIL_WEB"
                     ? "Boutique · paiement à la livraison"
                     : kind === "purchase"
@@ -288,14 +288,14 @@ export function InvoiceDetailModal({
                 </p>
                 <div className="mt-5 flex items-end justify-between gap-3">
                   <div>
-                    <small className="text-[10px] text-muted">
+                    <small className="text-3xs text-muted">
                       Montant réglé
                     </small>
                     <strong className="mt-1 block text-lg text-ink">
                       {money.format(value.amountPaid)}
                     </strong>
                   </div>
-                  <span className="text-[11px] font-bold text-brand">
+                  <span className="text-2xs font-bold text-brand-ink">
                     {paidProgress}%
                   </span>
                 </div>
@@ -306,7 +306,7 @@ export function InvoiceDetailModal({
                   />
                 </div>
                 {!isCancelled && (
-                  <p className="mt-3 text-[11px] text-muted">
+                  <p className="mt-3 text-2xs text-muted">
                     Reste à régler :{" "}
                     <strong className="text-ink">
                       {money.format(balance)}
@@ -320,12 +320,12 @@ export function InvoiceDetailModal({
           <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-card">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-brand">
+                <p className="text-3xs font-bold uppercase tracking-widest text-brand-ink">
                   Contenu
                 </p>
                 <h3 className="mt-1 text-sm font-bold">Articles du document</h3>
               </div>
-              <span className="rounded-lg bg-brand-soft px-2.5 py-1 text-[11px] font-bold text-brand">
+              <span className="rounded-lg bg-brand-soft px-2.5 py-1 text-2xs font-bold text-brand-ink">
                 {value.items.length} ligne(s)
               </span>
             </div>
@@ -345,7 +345,7 @@ export function InvoiceDetailModal({
                       <td className="whitespace-normal! font-semibold text-ink">
                         {item.description}
                         {item.returnedQuantity > 0 && (
-                          <small className="block text-rose-700">
+                          <small className="block text-rose-700 dark:text-rose-300">
                             {item.returnedQuantity} retourné(s)
                           </small>
                         )}
@@ -369,7 +369,7 @@ export function InvoiceDetailModal({
             <div>
               {value.notes ? (
                 <div className="rounded-2xl border border-brand/10 bg-brand-soft/55 p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-brand">
+                  <p className="text-3xs font-bold uppercase tracking-widest text-brand-ink">
                     Note interne
                   </p>
                   <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-ink">
@@ -401,7 +401,7 @@ export function InvoiceDetailModal({
               </div>
               <div className="mt-2 border-t border-line pt-3! text-sm">
                 <dt className="font-bold text-ink!">Total</dt>
-                <dd className="text-base text-brand!">
+                <dd className="text-base text-brand-ink!">
                   {money.format(value.total)}
                 </dd>
               </div>
@@ -411,14 +411,14 @@ export function InvoiceDetailModal({
           <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-card">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-brand">
+                <p className="text-3xs font-bold uppercase tracking-widest text-brand-ink">
                   Règlements
                 </p>
                 <h3 className="mt-1 text-sm font-bold">
                   Historique des paiements
                 </h3>
               </div>
-              <CreditCard size={19} className="text-brand" />
+              <CreditCard size={19} className="text-brand-ink" />
             </div>
             {value.payments.length === 0 ? (
               <div className="flex items-center gap-3 p-5 text-xs text-muted">
@@ -435,20 +435,20 @@ export function InvoiceDetailModal({
                     className="grid items-center gap-3 px-4 py-3 text-xs sm:grid-cols-[1fr_1fr_1fr_auto]"
                   >
                     <span className="flex items-center gap-2 text-ink">
-                      <CalendarDays size={14} className="text-brand" />
+                      <CalendarDays size={14} className="text-brand-ink" />
                       {new Date(payment.paidAt).toLocaleDateString("fr-FR")}
                     </span>
                     <span>
                       {paymentMethods[payment.method] ?? payment.method}
                     </span>
                     <span
-                      className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${payment.status === "COMPLETED" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" : payment.status === "PENDING" ? "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300" : "bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300"}`}
+                      className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-3xs font-bold ${payment.status === "COMPLETED" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" : payment.status === "PENDING" ? "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300" : "bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300"}`}
                     >
                       <CheckCircle2 size={11} />
                       {paymentStatuses[payment.status] ?? payment.status}
                     </span>
                     <strong
-                      className={`text-right ${payment.direction === "OUT" ? "text-rose-700" : "text-ink"}`}
+                      className={`text-right ${payment.direction === "OUT" ? "text-rose-700 dark:text-rose-300" : "text-ink"}`}
                     >
                       {payment.direction === "OUT" ? "- " : ""}
                       {money.format(payment.amount)}
@@ -462,7 +462,7 @@ export function InvoiceDetailModal({
           {value.returns.length > 0 && (
             <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-card">
               <div className="border-b border-line px-4 py-3">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-brand">
+                <p className="text-3xs font-bold uppercase tracking-widest text-brand-ink">
                   Retours
                 </p>
                 <h3 className="mt-1 text-sm font-bold">
@@ -488,14 +488,14 @@ export function InvoiceDetailModal({
           <section className="overflow-hidden rounded-2xl border border-line bg-white dark:bg-card">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-brand">
+                <p className="text-3xs font-bold uppercase tracking-widest text-brand-ink">
                   Traçabilité
                 </p>
                 <h3 className="mt-1 text-sm font-bold">
                   Historique des versions
                 </h3>
               </div>
-              <History size={19} className="text-brand" />
+              <History size={19} className="text-brand-ink" />
             </div>
             {value.history.length === 0 ? (
               <p className="p-5 text-xs text-muted">
@@ -526,7 +526,7 @@ export function InvoiceDetailModal({
                     </span>
                     <button
                       type="button"
-                      className="ml-auto inline-flex items-center gap-1.5 font-medium text-brand hover:underline"
+                      className="ml-auto inline-flex items-center gap-1.5 font-medium text-brand-ink hover:underline"
                       onClick={() => void handlePrint(entry.snapshot)}
                     >
                       <Printer size={13} />
@@ -540,7 +540,7 @@ export function InvoiceDetailModal({
 
           <footer className="flex flex-wrap justify-end gap-2 border-t border-line pt-5">
             {(downloadError || printError) && (
-              <p role="alert" className="w-full text-xs text-rose-700">
+              <p role="alert" className="w-full text-xs text-rose-700 dark:text-rose-300">
                 {downloadError || printError}
               </p>
             )}

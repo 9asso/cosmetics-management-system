@@ -49,7 +49,7 @@ function ReportCalendarMonth({
           <button
             type="button"
             aria-label="Mois précédents"
-            className="grid size-8 place-items-center rounded-lg border border-line bg-white text-ink transition hover:border-brand hover:text-brand dark:bg-card-muted"
+            className="grid size-8 place-items-center rounded-lg border border-line bg-white text-ink transition hover:border-brand hover:text-brand-ink dark:bg-card-muted"
             onClick={previous}
           >
             <ChevronLeft size={16} />
@@ -62,7 +62,7 @@ function ReportCalendarMonth({
           <button
             type="button"
             aria-label="Mois suivants"
-            className="grid size-8 place-items-center rounded-lg border border-line bg-white text-ink transition hover:border-brand hover:text-brand dark:bg-card-muted"
+            className="grid size-8 place-items-center rounded-lg border border-line bg-white text-ink transition hover:border-brand hover:text-brand-ink dark:bg-card-muted"
             onClick={next}
           >
             <ChevronRight size={16} />
@@ -71,7 +71,7 @@ function ReportCalendarMonth({
           <span />
         )}
       </header>
-      <div className="grid grid-cols-7 text-center text-[10px] font-bold text-muted">
+      <div className="grid grid-cols-7 text-center text-3xs font-bold text-muted">
         {["D", "L", "M", "M", "J", "V", "S"].map((day, index) => (
           <span key={`${day}-${index}`} className="py-1">
             {day}
@@ -90,14 +90,14 @@ function ReportCalendarMonth({
               )}
               disabled={day > today}
               onClick={() => onSelect(day)}
-              className={`mx-auto grid size-8 place-items-center rounded-lg text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-25 ${
+              className={`mx-auto grid size-8 place-items-center rounded-lg text-2xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-25 ${
                 day === dateFrom || day === dateTo
                   ? "bg-brand text-white shadow-sm"
                   : day > dateFrom && day < dateTo
-                    ? "bg-brand-soft text-brand"
+                    ? "bg-brand-soft text-brand-ink"
                     : day === today
-                      ? "ring-1 ring-brand/50 text-brand"
-                      : "text-ink hover:bg-brand-soft hover:text-brand"
+                      ? "ring-1 ring-brand/50 text-brand-ink"
+                      : "text-ink hover:bg-brand-soft hover:text-brand-ink"
               }`}
             >
               {Number(day.slice(-2))}
@@ -208,18 +208,18 @@ export function ReportPeriodPicker({
     <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm dark:bg-card">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3.5">
         <div className="flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-xl bg-brand-soft text-brand">
+          <span className="grid size-10 place-items-center rounded-xl bg-brand-soft text-brand-ink">
             <CalendarClock size={19} />
           </span>
           <div>
             <strong className="block text-sm">Période du rapport</strong>
-            <small className="text-[11px] text-muted">
+            <small className="text-2xs text-muted">
               {selectedDays} jour{selectedDays > 1 ? "s" : ""} sélectionné
               {selectedDays > 1 ? "s" : ""}
             </small>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-[11px] text-muted">
+        <div className="flex items-center gap-2 text-2xs text-muted">
           <span
             className={`size-2 rounded-full ${choosingEnd ? "animate-pulse bg-brand" : "bg-emerald-500"}`}
           />
@@ -230,7 +230,7 @@ export function ReportPeriodPicker({
         <div className="space-y-4">
           <div className="grid items-end gap-2 sm:grid-cols-[1fr_auto_1fr]">
             <label className="block">
-              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted">
+              <span className="mb-1.5 block text-3xs font-bold uppercase tracking-wider text-muted">
                 Date de début
               </span>
               <input
@@ -242,11 +242,11 @@ export function ReportPeriodPicker({
                 onChange={(event) => selectRange(event.target.value, dateTo)}
               />
             </label>
-            <span className="hidden pb-3 text-[11px] font-bold text-muted sm:block">
+            <span className="hidden pb-3 text-2xs font-bold text-muted sm:block">
               au
             </span>
             <label className="block">
-              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted">
+              <span className="mb-1.5 block text-3xs font-bold uppercase tracking-wider text-muted">
                 Date de fin
               </span>
               <input
@@ -267,7 +267,7 @@ export function ReportPeriodPicker({
                 <button
                   key={label}
                   type="button"
-                  className={`rounded-lg px-3 py-2.5 text-left text-[11px] font-semibold transition ${active ? "bg-brand-soft text-brand" : "text-ink hover:bg-black/4 dark:hover:bg-white/5"}`}
+                  className={`rounded-lg px-3 py-2.5 text-left text-2xs font-semibold transition ${active ? "bg-brand-soft text-brand-ink" : "text-ink hover:bg-black/4 dark:hover:bg-white/5"}`}
                   onClick={() => selectRange(from, to)}
                 >
                   {label}
