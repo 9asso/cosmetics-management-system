@@ -6,6 +6,7 @@ describe("role-based branding", () => {
   it("shows only the WhatsApp number on Commercial restreint invoices", () => {
     const settings = invoiceBrandSettings(defaultBrandSettings, true, true);
     expect(settings.phones).toBe("06 66 54 07 50");
+    expect(settings.subtitle).toBe("Beauty and Luxury");
     expect(invoiceBrandSettings(defaultBrandSettings, true).phones).toBe(
       defaultBrandSettings.phones,
     );

@@ -141,6 +141,7 @@ describe("Invoice HTML Print Generator", () => {
     );
     expect(html).not.toContain(defaultBrandSettings.phones);
     expect(html.match(/06 66 54 07 50/g)).toHaveLength(2);
+    expect(html).toContain('<h1 class="brand-title">Yamoura</h1>\n        <p class="brand-sub">Beauty and Luxury</p>');
     expect(html).toContain("0612345678");
   });
 
