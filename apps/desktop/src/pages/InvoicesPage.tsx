@@ -149,6 +149,7 @@ export function InvoicesPage({ role = "OWNER" }: { role?: UserRole }) {
           kind={selected.kind}
           id={selected.id}
           restricted={restricted}
+          salesRep={restricted}
           onClose={() => setSelected(null)}
         />
       )}

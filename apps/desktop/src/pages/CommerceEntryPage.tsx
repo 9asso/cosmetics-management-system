@@ -603,6 +603,7 @@ export function CommerceEntryPage({
           kind={kind}
           id={mutation.data.id}
           restricted={restricted}
+          salesRep={restricted}
           onClose={() => setShowInvoice(false)}
         />
       )}

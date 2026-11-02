@@ -134,6 +134,16 @@ describe("Invoice HTML Print Generator", () => {
     expect(html).toContain('<td class="ref">—</td>');
   });
 
+  it("replaces every company phone with the WhatsApp number for a sales rep", () => {
+    const html = buildInvoiceHtml(
+      sampleSale,
+      invoiceBrandSettings(defaultBrandSettings, true, true),
+    );
+    expect(html).not.toContain(defaultBrandSettings.phones);
+    expect(html.match(/06 66 54 07 50/g)).toHaveLength(2);
+    expect(html).toContain("0612345678");
+  });
+
   it("shows only the Yamoura name on a restricted invoice", () => {
     const html = buildInvoiceHtml(
       sampleSale,

@@ -77,12 +77,14 @@ export function InvoiceDetailModal({
   onClose,
   surface = "invoice",
   restricted = false,
+  salesRep = false,
 }: {
   kind: "sale" | "purchase";
   id: string;
   onClose: () => void;
   surface?: "order" | "invoice";
   restricted?: boolean;
+  salesRep?: boolean;
 }) {
   const cache = useQueryClient();
   const [downloading, setDownloading] = useState(false);
@@ -119,7 +121,7 @@ export function InvoiceDetailModal({
       }
       await printInvoice(
         docToPrint,
-        invoiceBrandSettings(brandSettings.data, restricted),
+        invoiceBrandSettings(brandSettings.data, restricted, salesRep),
       );
       if (!snapshot) {
         await detail.refetch();
@@ -141,7 +143,7 @@ export function InvoiceDetailModal({
       const { downloadInvoicePdf } = await import("../lib/invoice-pdf");
       await downloadInvoicePdf(
         detail.data,
-        invoiceBrandSettings(brandSettings.data, restricted),
+        invoiceBrandSettings(brandSettings.data, restricted, salesRep),
       );
       await detail.refetch();
     } catch (error) {

@@ -3,6 +3,8 @@ import { defaultBrandSettings } from "./brand-settings";
 
 export const primaryBrandName = "ONight";
 export const restrictedBrandName = "Yamoura";
+/** Commercial restreint invoices show this WhatsApp line instead of the company phones. */
+export const salesRepWhatsapp = "06 66 54 07 50";
 
 const onightPattern = /o(?:['’\s-]?night)/gi;
 
@@ -17,13 +19,14 @@ export function replaceRestrictedBrand(value: string) {
 export function invoiceBrandSettings(
   settings: BrandSettings | undefined,
   restricted: boolean,
+  salesRep = false,
 ): BrandSettings {
   const source = settings ?? defaultBrandSettings;
   if (!restricted) return source;
   return {
     title: restrictedBrandName,
     subtitle: "",
-    phones: replaceRestrictedBrand(source.phones),
+    phones: salesRep ? salesRepWhatsapp : replaceRestrictedBrand(source.phones),
     thankYouText: replaceRestrictedBrand(source.thankYouText),
     returnPolicy: replaceRestrictedBrand(source.returnPolicy),
   };
