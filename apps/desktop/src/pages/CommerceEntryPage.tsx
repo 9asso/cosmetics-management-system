@@ -10,7 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { api, ApiRequestError } from "../lib/api";
-import { money } from "../lib/format";
+import { money, productSearchDetail, referenceLabel } from "../lib/format";
 import { resolveMediaUrl } from "../lib/media";
 import { ui } from "../lib/ui";
 import { ErrorState } from "../components/EmptyState";
@@ -269,9 +269,7 @@ export function CommerceEntryPage({
                       onChange={setProductId}
                       getId={(product) => product.variantId}
                       getLabel={(product) => product.name}
-                      getDetail={(product) =>
-                        `Marque : ${product.brand || "—"} · Réf. : ${product.reference || "—"} · Code-barres : ${product.barcode || "—"} · ${product.sku} · ${product.available} disponible(s)`
-                      }
+                      getDetail={productSearchDetail}
                       getImage={(product) => resolveMediaUrl(product.imageUrl)}
                       query={search}
                       onQueryChange={(value) => {
@@ -316,13 +314,15 @@ export function CommerceEntryPage({
                 </tr>
               </thead>
               <tbody>
-                {lines.map((line) => (
+                {/* Newest line first; the document keeps the order they were added. */}
+                {[...lines].reverse().map((line) => (
                   <tr key={line.product.variantId}>
                     <td>
                       <strong className="block max-w-56 whitespace-normal">
                         {line.product.name}
                       </strong>
                       <small className={ui("sub-cell")}>
+                        {referenceLabel(line.product.reference)} ·{" "}
                         {line.product.sku} · {line.product.available}{" "}
                         disponible(s)
                       </small>

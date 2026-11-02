@@ -7,7 +7,7 @@ import type {
 } from "@cosmetics/contracts";
 import { Plus, Trash2 } from "lucide-react";
 import { api, ApiRequestError } from "../lib/api";
-import { money } from "../lib/format";
+import { money, productSearchDetail, referenceLabel } from "../lib/format";
 import { createRequestId } from "../lib/request-id";
 import { ui } from "../lib/ui";
 import { resolveMediaUrl } from "../lib/media";
@@ -135,6 +135,7 @@ export function InvoicePaymentModal({
 type EditLine = {
   variantId: string;
   description: string;
+  reference: string;
   quantity: number;
   unitPrice: number;
 };
@@ -154,6 +155,7 @@ export function InvoiceEditModal({
     value.items.map((item) => ({
       variantId: item.variantId,
       description: item.description,
+      reference: item.reference ?? "",
       quantity: item.quantity,
       unitPrice: item.unitPrice,
     })),
@@ -212,6 +214,7 @@ export function InvoiceEditModal({
       {
         variantId: product.variantId,
         description: `${product.name} · ${product.sku}`,
+        reference: product.reference,
         quantity: 1,
         unitPrice: purchase ? product.purchasePrice : product.wholesalePrice,
       },
@@ -249,15 +252,13 @@ export function InvoiceEditModal({
             <div className="min-w-0 flex-1">
               <SearchablePopup
                 label="Ajouter un produit"
-                placeholder="Nom, marque, SKU ou code-barres"
+                placeholder="Nom, marque, référence, SKU ou code-barres"
                 items={products.data?.items ?? []}
                 value={productId}
                 onChange={setProductId}
                 getId={(product) => product.variantId}
                 getLabel={(product) => product.name}
-                getDetail={(product) =>
-                  `${product.sku} · ${product.available} disponible(s)`
-                }
+                getDetail={productSearchDetail}
                 getImage={(product) => resolveMediaUrl(product.imageUrl)}
                 query={productSearch}
                 onQueryChange={setProductSearch}
@@ -286,7 +287,12 @@ export function InvoiceEditModal({
               <tbody>
                 {lines.map((line) => (
                   <tr key={line.variantId}>
-                    <td className="whitespace-normal!">{line.description}</td>
+                    <td className="whitespace-normal!">
+                      {line.description}
+                      <small className={ui("sub-cell")}>
+                        {referenceLabel(line.reference)}
+                      </small>
+                    </td>
                     <td>
                       <input
                         aria-label={`Quantité · ${line.description}`}
@@ -498,7 +504,12 @@ export function InvoiceReturnModal({
               <tbody>
                 {eligible.map((item) => (
                   <tr key={item.id}>
-                    <td className="whitespace-normal!">{item.description}</td>
+                    <td className="whitespace-normal!">
+                      {item.description}
+                      <small className={ui("sub-cell")}>
+                        {referenceLabel(item.reference)}
+                      </small>
+                    </td>
                     <td>
                       {item.returnedQuantity} / {item.quantity}
                     </td>

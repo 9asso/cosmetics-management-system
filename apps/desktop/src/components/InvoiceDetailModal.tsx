@@ -20,7 +20,7 @@ import { useState } from "react";
 import { Modal } from "./Modal";
 import { ErrorState } from "./EmptyState";
 import { api } from "../lib/api";
-import { money } from "../lib/format";
+import { money, referenceLabel } from "../lib/format";
 import { ui } from "../lib/ui";
 import { printInvoice } from "../lib/invoice-print";
 import { invoiceBrandSettings } from "../lib/branding";
@@ -346,6 +346,9 @@ export function InvoiceDetailModal({
                     <tr key={item.id}>
                       <td className="whitespace-normal! font-semibold text-ink">
                         {item.description}
+                        <small className={`${ui("sub-cell")} font-normal`}>
+                          {referenceLabel(item.reference)}
+                        </small>
                         {item.returnedQuantity > 0 && (
                           <small className="block text-rose-700 dark:text-rose-300">
                             {item.returnedQuantity} retourné(s)

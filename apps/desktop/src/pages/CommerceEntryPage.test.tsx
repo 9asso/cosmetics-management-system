@@ -118,6 +118,12 @@ describe("multi-product commerce entry", () => {
       expect(
         (screen.getByLabelText("Quantité · SERUM") as HTMLInputElement).value,
       ).toBe("2");
+      const quantityInputs = screen
+        .getAllByRole("spinbutton")
+        .map((input) => input.getAttribute("aria-label"))
+        .filter((label) => label?.startsWith("Quantité · "));
+      expect(quantityInputs).toEqual(["Quantité · LIP", "Quantité · SERUM"]);
+      expect(screen.getByText(/Réf\. REF-SERUM · SERUM/)).toBeTruthy();
       fireEvent.click(
         screen.getByRole("button", {
           name: kind === "sale" ? "Créer la vente" : "Valider la réception",
